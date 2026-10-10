@@ -37,10 +37,15 @@ struct OverviewView: View {
             HStack(spacing: 8) {
                 deviceMenu
                 Spacer()
-                if let ov = overview, let d = ov.device, d.connected {
-                    StatusPill(text: "在线", color: Theme.green)
-                } else {
-                    StatusPill(text: "离线", color: Theme.red)
+                VStack(alignment: .trailing, spacing: 3) {
+                    if let ov = overview, let d = ov.device, d.connected {
+                        StatusPill(text: "在线", color: Theme.green)
+                    } else {
+                        StatusPill(text: "离线", color: Theme.red)
+                    }
+                    Text("最后在线 \(lastSeenText)")
+                        .font(.system(size: 10.5))
+                        .foregroundColor(Theme.text.opacity(0.45))
                 }
             }
             if let d = overview?.device {
@@ -50,6 +55,17 @@ struct OverviewView: View {
                     .font(.system(size: 13)).foregroundColor(Theme.text.opacity(0.55))
             }
         }
+    }
+
+    /// 最后在线时间的相对展示
+    var lastSeenText: String {
+        guard let t = overview?.device?.lastSeen, t > 0 else { return "-" }
+        let diff = Date().timeIntervalSince1970 - Double(t)
+        if diff < 60 { return "刚刚" }
+        if diff < 3600 { return "\(Int(diff / 60)) 分钟前" }
+        if diff < 86400 { return "\(Int(diff / 3600)) 小时前" }
+        let days = Int(diff / 86400)
+        return days < 7 ? "\(days) 天前" : Fmt.time(t)
     }
 
     var deviceMenu: some View {
