@@ -45,12 +45,16 @@ struct DeviceInfoView: View {
     var body: some View {
         if let d = entry.device {
             VStack(alignment: .leading, spacing: 6) {
-                HStack {
+                HStack(spacing: 4) {
                     Label(d.online ? "在线" : "离线", systemImage: "antenna.radiowaves.left.and.right")
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(d.online ? Color.green : Color.secondary)
-                    Spacer()
-                    Circle().fill(d.online ? Color.green : Color.secondary).frame(width: 8, height: 8)
+                    Spacer(minLength: 4)
+                    Text("最后在线 \(wgLastSeenText(d.lastSeen))")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                 }
                 Text(d.name.isEmpty ? wgMaskedIMEI(d.imei) : d.name)
                     .font(family == .systemSmall ? .headline : .title3.weight(.semibold))

@@ -166,7 +166,8 @@ final class AppStore: ObservableObject {
         guard let dev = selectedDevice else { return }
         let item = SharedWidgetData.DeviceItem(
             imei: dev.imei, name: dev.name, phone: dev.phone,
-            online: dev.connected, battery: lastBattery, csq: lastCsq, netMode: lastNetMode)
+            online: dev.connected, battery: lastBattery, csq: lastCsq, netMode: lastNetMode,
+            lastSeen: dev.lastSeen)
         SharedWidgetData.saveDevice(item)
         WidgetCenter.shared.reloadAllTimelines()
     }
