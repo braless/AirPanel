@@ -5,6 +5,7 @@ struct LoginView: View {
     @State private var baseURL = ""
     @State private var username = "admin"
     @State private var password = ""
+    @State private var rememberPassword = false
     @State private var loading = false
     @State private var errorMsg: String?
 
@@ -15,11 +16,17 @@ struct LoginView: View {
                 Spacer(minLength: 40)
                 logo
                 fields
+                rememberRow
                 loginButton
                 Spacer()
                 hint
             }
             .padding(.horizontal, 24)
+        }
+        .onAppear {
+            rememberPassword = store.rememberPassword
+            if let u = store.savedUsername, !u.isEmpty { username = u }
+            if let p = store.savedPassword, !p.isEmpty { password = p }
         }
         .toolbar { KeyboardDismissToolbar() }
         .alert("登录失败", isPresented: Binding(get: { errorMsg != nil }, set: { if !$0 { errorMsg = nil } })) {
@@ -72,6 +79,14 @@ struct LoginView: View {
         Text(t).font(.system(size: 12, weight: .semibold)).foregroundColor(Theme.text.opacity(0.5))
     }
 
+    var rememberRow: some View {
+        Toggle(isOn: $rememberPassword) {
+            Text("记住密码").font(.system(size: 13)).foregroundColor(Theme.text.opacity(0.7))
+        }
+        .tint(Theme.accent)
+        .padding(.vertical, 2)
+    }
+
     var loginButton: some View {
         Button {
             Task { await login() }
@@ -111,7 +126,8 @@ struct LoginView: View {
         }
         loading = true
         do {
-            try await store.login(username: username, password: password, baseURL: baseURL)
+            try await store.login(username: username, password: password, baseURL: baseURL,
+                                  remember: rememberPassword)
         } catch {
             errorMsg = (error as? APIError)?.message ?? error.localizedDescription
         }
