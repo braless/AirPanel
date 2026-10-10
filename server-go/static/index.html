@@ -1,0 +1,908 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>AirPanel 管理面板</title>
+  <meta name="description" content="Air724UG 设备管理面板：通话记录、短信记录、任务调度与屏蔽配置">
+  <!-- PWA / iOS 添加到桌面 -->
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="AirPanel">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/icons/favicon.png">
+  <link rel="stylesheet" href="/css/style.css?v=20261008a">
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen" style="padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)">
+
+  <!-- ===================== 登录视图 ===================== -->
+  <div id="login-view" class="hidden min-h-screen flex flex-col items-center justify-center p-4">
+    <div class="w-full max-w-sm">
+      <div class="card p-8">
+        <div class="flex flex-col items-center mb-8">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg mb-4">A</div>
+          <h1 class="text-xl font-semibold text-slate-900">AirPanel 管理面板</h1>
+          <p class="text-sm text-slate-500 mt-1">请登录以管理设备</p>
+        </div>
+        <form id="login-form" class="space-y-4">
+          <div>
+            <label class="label" for="login-username">用户名</label>
+            <input id="login-username" type="text" class="input" placeholder="请输入用户名" autocomplete="username" required>
+          </div>
+          <div>
+            <label class="label" for="login-password">密码</label>
+            <input id="login-password" type="password" class="input" placeholder="请输入密码" autocomplete="current-password" required>
+          </div>
+          <p id="login-error" class="hidden text-sm text-red-600"></p>
+          <button type="submit" id="login-btn" class="btn btn-primary w-full">登 录</button>
+        </form>
+      </div>
+    </div>
+    <footer class="mt-8 text-center">
+      <a href="https://github.com/vipxkw/airpanel" target="_blank" rel="noopener"
+         class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 transition-colors">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.27-.01-1.17-.02-2.12-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.76 2.7 1.25 3.35.96.1-.75.4-1.25.72-1.54-2.55-.29-5.23-1.28-5.23-5.69 0-1.26.45-2.28 1.18-3.09-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.15 1.18.91-.25 1.89-.38 2.86-.38.97 0 1.95.13 2.86.38 2.19-1.49 3.15-1.18 3.15-1.18.62 1.59.23 2.76.11 3.05.73.81 1.18 1.83 1.18 3.09 0 4.42-2.69 5.39-5.25 5.68.41.35.77 1.05.77 2.12 0 1.53-.01 2.76-.01 3.14 0 .31.21.68.8.56C20.23 21.38 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>
+        <span>vipxkw/airpanel</span>
+      </a>
+    </footer>
+  </div>
+
+  <!-- ===================== 主视图 ===================== -->
+  <div id="main-view" class="hidden">
+    <div class="min-h-screen md:flex">
+      <!-- 移动端侧边栏遮罩 -->
+      <div id="sidebar-overlay" class="fixed inset-0 z-30 bg-slate-900/50 backdrop-blur-sm hidden md:hidden"></div>
+
+      <!-- 侧边栏（桌面常驻，移动端抽屉式） -->
+      <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 shrink-0 -translate-x-full bg-slate-900 text-slate-300 flex flex-col transition-transform duration-300 ease-in-out md:static md:translate-x-0 md:h-screen">
+        <div class="h-16 flex items-center gap-2.5 px-5 border-b border-slate-800">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold">A</div>
+          <span class="font-semibold text-white">AirPanel</span>
+        </div>
+        <nav class="flex-1 py-4 px-3 space-y-1">
+          <a href="#" data-nav="overview" class="nav-item flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-slate-800 hover:text-white">
+            <span class="text-base">📊</span> 概览
+          </a>
+          <a href="#" data-nav="devices" class="nav-item flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-slate-800 hover:text-white">
+            <span class="text-base">📡</span> 设备列表
+          </a>
+          <a href="#" data-nav="tasks" class="nav-item flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-slate-800 hover:text-white">
+            <span class="text-base">⚡</span> 任务执行
+          </a>
+          <a href="#" data-nav="schedules" class="nav-item flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-slate-800 hover:text-white">
+            <span class="text-base">⏰</span> 定时任务
+          </a>
+          <a href="#" data-nav="calls" class="nav-item flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-slate-800 hover:text-white">
+            <span class="text-base">📞</span> 通话记录
+          </a>
+          <a href="#" data-nav="sms" class="nav-item flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-slate-800 hover:text-white">
+            <span class="text-base">💬</span> 短信记录
+          </a>
+          <a href="#" data-nav="logs" class="nav-item flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-slate-800 hover:text-white">
+            <span class="text-base">📋</span> 任务记录
+          </a>
+          <a href="#" data-nav="block" class="nav-item flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-slate-800 hover:text-white">
+            <span class="text-base">🛡️</span> 屏蔽配置
+          </a>
+          <a href="#" data-nav="settings" class="nav-item flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-slate-800 hover:text-white">
+            <span class="text-base">⚙️</span> 设置
+          </a>
+        </nav>
+        <div class="p-4 border-t border-slate-800">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-semibold text-white" id="user-avatar">U</div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-white truncate" id="user-name">admin</p>
+            </div>
+            <button id="logout-btn" class="text-sm text-slate-400 hover:text-white" title="退出登录">退出</button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 内容区 -->
+      <div class="flex-1 min-w-0 flex flex-col">
+
+        <!-- 移动端顶栏 -->
+        <header class="md:hidden sticky top-0 z-20 flex items-center gap-3 h-14 px-4 bg-slate-900 text-white border-b border-slate-800">
+          <button id="menu-btn" class="w-9 h-9 -ml-2 inline-flex items-center justify-center rounded-lg text-slate-300 hover:bg-slate-800 active:scale-95 transition" aria-label="打开菜单">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <span class="font-semibold">AirPanel</span>
+          <span class="ml-auto text-xs text-slate-400" id="m-user-name"></span>
+        </header>
+
+        <main class="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
+
+        <!-- 设备概览 -->
+        <section id="page-overview" class="page hidden">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-4 sm:mb-6">
+            <div>
+              <h2 class="text-lg sm:text-xl font-semibold text-slate-900">设备概览</h2>
+              <p class="text-sm text-slate-500 mt-0.5">实时状态：信号 / 功耗 / 在线时长 / 续航估算</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <select id="overview-device" class="input" style="min-width:220px; width:auto"></select>
+              <button id="overview-refresh" class="btn btn-ghost" style="white-space:nowrap">刷新</button>
+            </div>
+          </div>
+
+          <div id="overview-empty" class="card hidden">
+            <p class="px-5 py-10 text-center text-slate-400" id="overview-empty-text">请选择设备查看概览</p>
+          </div>
+
+          <div id="overview-body" class="hidden">
+            <!-- 主指标卡片 -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+              <div class="card p-4">
+                <div class="flex items-center justify-between">
+                  <p class="text-xs text-slate-400 font-medium">信号强度</p>
+                  <span id="ov-csq-badge" class="badge-online">—</span>
+                </div>
+                <p class="mt-2 text-2xl font-semibold text-slate-900" id="ov-rssi">—</p>
+                <p class="text-xs text-slate-400 mt-1" id="ov-rsrp">RSRP —</p>
+              </div>
+              <div class="card p-4">
+                <div class="flex items-center justify-between">
+                  <p class="text-xs text-slate-400 font-medium">电池电量</p>
+                  <span id="ov-charge-badge" class="badge-online hidden">充电中</span>
+                </div>
+                <p class="mt-2 text-2xl font-semibold text-slate-900" id="ov-battery-pct">—</p>
+                <p class="text-xs text-slate-400 mt-1" id="ov-voltage">电压 —</p>
+              </div>
+              <div class="card p-4">
+                <p class="text-xs text-slate-400 font-medium">模组温度</p>
+                <p class="mt-2 text-2xl font-semibold text-slate-900" id="ov-temp">—</p>
+                <p class="text-xs text-slate-400 mt-1" id="ov-net">网络 —</p>
+              </div>
+              <div class="card p-4">
+                <p class="text-xs text-slate-400 font-medium">在线时长</p>
+                <p class="mt-2 text-2xl font-semibold text-slate-900" id="ov-online">—</p>
+                <p class="text-xs text-slate-400 mt-1" id="ov-uptime">开机 —</p>
+              </div>
+            </div>
+
+            <!-- 次指标：功耗与续航 -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+              <div class="card p-4">
+                <p class="text-xs text-slate-400 font-medium">当前电流（估算）</p>
+                <p class="mt-2 text-xl font-semibold text-slate-900" id="ov-current">—</p>
+                <p class="text-xs text-slate-400 mt-1" id="ov-current-note">基于功耗模型估算</p>
+              </div>
+              <div class="card p-4">
+                <p class="text-xs text-slate-400 font-medium">预估续航</p>
+                <p class="mt-2 text-xl font-semibold text-slate-900" id="ov-esthours">—</p>
+                <p class="text-xs text-slate-400 mt-1" id="ov-esthours-note">—</p>
+              </div>
+              <div class="card p-4">
+                <p class="text-xs text-slate-400 font-medium">电池容量</p>
+                <p class="mt-2 text-xl font-semibold text-slate-900" id="ov-mah">—</p>
+                <p class="text-xs text-slate-400 mt-1">可在下方配置</p>
+              </div>
+              <div class="card p-4">
+                <p class="text-xs text-slate-400 font-medium">设备状态</p>
+                <p class="mt-2 text-xl font-semibold text-slate-900" id="ov-status">—</p>
+                <p class="text-xs text-slate-400 mt-1" id="ov-status-note">—</p>
+              </div>
+            </div>
+
+            <!-- 设备信息网格 -->
+            <div class="card mb-4">
+              <div class="px-5 py-4 border-b border-slate-100">
+                <h3 class="text-sm font-semibold text-slate-900">设备信息</h3>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-4 p-5 text-sm" id="ov-info-grid"></div>
+            </div>
+
+            <!-- 趋势图 -->
+            <div class="card mb-4">
+              <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                <h3 class="text-sm font-semibold text-slate-900">信号 / 电压 / 温度 趋势</h3>
+                <span class="text-xs text-slate-400">最近 30 次上报</span>
+              </div>
+              <div id="overview-chart" class="p-4 overflow-x-auto"></div>
+              <div class="flex items-center gap-4 px-5 pb-4 text-xs text-slate-500">
+                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm" style="background:#3b82f6"></span>信号 RSSI (dBm)</span>
+                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm" style="background:#22c55e"></span>电压 (V)</span>
+                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm" style="background:#f97316"></span>温度 (℃)</span>
+              </div>
+            </div>
+
+            <!-- 续航估算配置 -->
+            <div class="card p-5">
+              <h3 class="text-sm font-semibold text-slate-900 mb-1">续航估算配置</h3>
+              <p class="text-xs text-slate-400 mb-4">电池容量用于电量估算；平均电流用于续航估算（0 表示自动按功耗模型估算，建议用外接电流计实测后填写）</p>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                <div>
+                  <label class="label" for="ov-battery-mah">电池容量 (mAh)</label>
+                  <input id="ov-battery-mah" type="number" min="100" step="50" value="1800" class="input">
+                </div>
+                <div>
+                  <label class="label" for="ov-current-ma">平均电流 (mA，0=自动)</label>
+                  <input id="ov-current-ma" type="number" min="0" step="1" value="0" class="input">
+                </div>
+                <div>
+                  <button id="ov-save-config" class="btn btn-primary" style="height:36px">保存配置</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 设备列表 -->
+        <section id="page-devices" class="page">
+          <div class="flex items-center justify-between mb-4 sm:mb-6">
+            <div>
+              <h2 class="text-lg sm:text-xl font-semibold text-slate-900">设备列表</h2>
+              <p class="text-sm text-slate-500 mt-0.5">通过 MQTT 接入的 Air 系列设备</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <span id="refresh-devices-time" class="text-xs text-slate-400" style="color:#94a3b8; min-width:112px; text-align:right; white-space:nowrap"></span>
+              <button id="refresh-devices" class="btn btn-ghost" style="min-width:112px; white-space:nowrap">刷新</button>
+            </div>
+          </div>
+          <div class="card overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="bg-slate-50 text-left text-xs font-medium text-slate-500 uppercase">
+                    <th class="px-4 py-3">IMEI</th>
+                    <th class="px-4 py-3">备注</th>
+                    <th class="px-4 py-3">手机号</th>
+                    <th class="px-4 py-3">状态</th>
+                    <th class="px-4 py-3">首次接入</th>
+                    <th class="px-4 py-3">最近活跃</th>
+                    <th class="px-4 py-3 text-right">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="devices-tbody" class="divide-y divide-slate-100">
+                  <tr><td colspan="7" class="px-4 py-10 text-center text-slate-400">加载中...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 任务执行（指挥台） -->
+        <section id="page-tasks" class="page hidden">
+          <div class="mb-5">
+            <h2 class="text-lg sm:text-xl font-semibold text-slate-900">任务指挥台</h2>
+            <p class="text-sm text-slate-500 mt-0.5">三步完成一次设备控制指令下发</p>
+          </div>
+
+          <!-- 步骤指示器 -->
+          <div class="flex items-center gap-2.5 mb-6 text-xs font-medium">
+            <span class="step-chip" data-step="1"><span class="step-num">1</span>选择设备</span>
+            <span class="step-line"></span>
+            <span class="step-chip" data-step="2"><span class="step-num">2</span>选择任务</span>
+            <span class="step-line"></span>
+            <span class="step-chip" data-step="3"><span class="step-num">3</span>下发执行</span>
+          </div>
+
+          <div class="grid gap-5 lg:grid-cols-5">
+            <!-- 左：任务配置 -->
+            <div class="lg:col-span-3 space-y-5">
+              <form id="task-form" class="space-y-5">
+                <!-- Step 1 设备 -->
+                <div class="card p-5 sm:p-6">
+                  <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-slate-900 flex items-center gap-2">
+                      <span class="flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold shadow-sm">1</span>
+                      选择目标设备
+                    </h3>
+                    <span class="text-xs text-slate-400" id="task-device-count"></span>
+                  </div>
+                  <div class="relative">
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z"/></svg>
+                    <select id="task-imei" class="input !pl-9" required></select>
+                  </div>
+                  <p class="text-xs text-slate-400 mt-2">选择要下发的设备，离线设备将无法执行</p>
+                </div>
+
+                <!-- Step 2 任务类型 -->
+                <div class="card p-5 sm:p-6">
+                  <h3 class="font-semibold text-slate-900 flex items-center gap-2 mb-4">
+                    <span class="flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold shadow-sm">2</span>
+                    选择任务类型
+                  </h3>
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" id="task-type-grid">
+                    <label class="task-card">
+                      <input type="radio" name="task-type" value="send_sms" checked class="task-radio">
+                      <span class="task-card-inner">
+                        <span class="text-2xl">📱</span>
+                        <span class="task-card-title">发送短信</span>
+                        <small>设备下发短信</small>
+                      </span>
+                    </label>
+                    <label class="task-card">
+                      <input type="radio" name="task-type" value="dial_call" class="task-radio">
+                      <span class="task-card-inner">
+                        <span class="text-2xl">📞</span>
+                        <span class="task-card-title">拨打电话</span>
+                        <small>设备拨打指定号码</small>
+                      </span>
+                    </label>
+                    <label class="task-card">
+                      <input type="radio" name="task-type" value="get_config" class="task-radio">
+                      <span class="task-card-inner">
+                        <span class="text-2xl">📄</span>
+                        <span class="task-card-title">读取配置</span>
+                        <small>返回 nvm_para.lua</small>
+                      </span>
+                    </label>
+                    <label class="task-card">
+                      <input type="radio" name="task-type" value="set_config" class="task-radio">
+                      <span class="task-card-inner">
+                        <span class="text-2xl">✏️</span>
+                        <span class="task-card-title">写入配置</span>
+                        <small>覆盖 nvm_para.lua</small>
+                      </span>
+                    </label>
+                    <label class="task-card">
+                      <input type="radio" name="task-type" value="__custom__" class="task-radio">
+                      <span class="task-card-inner">
+                        <span class="text-2xl">⌨️</span>
+                        <span class="task-card-title">自定义命令</span>
+                        <small>输入任意命令与参数</small>
+                      </span>
+                    </label>
+                  </div>
+
+                  <!-- 发送短信参数 -->
+                  <div id="params-send_sms" class="hidden mt-5 space-y-4 border-t border-slate-100 pt-5">
+                    <div>
+                      <label class="label" for="task-rcv-phone">接收手机号</label>
+                      <input id="task-rcv-phone" type="text" class="input" placeholder="例如 13800138000">
+                    </div>
+                    <div>
+                      <label class="label" for="task-content">短信内容</label>
+                      <textarea id="task-content" rows="2" class="input" placeholder="短信内容"></textarea>
+                    </div>
+                  </div>
+
+                  <!-- 拨打电话参数 -->
+                  <div id="params-dial_call" class="hidden mt-5 space-y-4 border-t border-slate-100 pt-5">
+                    <div>
+                      <label class="label" for="task-call-phone">被叫号码</label>
+                      <input id="task-call-phone" type="text" class="input" placeholder="例如 13800138000">
+                    </div>
+                  </div>
+
+                  <!-- 自定义命令参数 -->
+                  <div id="params-__custom__" class="hidden mt-5 space-y-4 border-t border-slate-100 pt-5">
+                    <div>
+                      <label class="label" for="task-custom-cmd">命令名称</label>
+                      <input id="task-custom-cmd" type="text" class="input font-mono text-xs" placeholder="如 ussd_query、get_status、set_gpio">
+                      <p class="text-xs text-slate-400 mt-1.5">全部可用命令见右侧 <a href="javascript:void(0)" id="task-custom-help" class="text-blue-600 underline decoration-blue-300">任务说明 · 更多命令</a></p>
+                    </div>
+                    <div>
+                      <label class="label" for="task-custom-params">命令参数 <span class="text-slate-400 font-normal">（可选 JSON，如 {"phone":"13800138000"}）</span></label>
+                      <textarea id="task-custom-params" rows="3" class="input font-mono text-xs" placeholder='{"pin": 15, "level": 1}'></textarea>
+                    </div>
+                  </div>
+
+                  <!-- 写入配置参数 -->
+                  <div id="params-set_config" class="hidden mt-5 space-y-4 border-t border-slate-100 pt-5">
+                    <div>
+                      <label class="label" for="task-config-text">配置内容（Lua 格式，将写入设备 /nvm_para.lua）</label>
+                      <textarea id="task-config-text" rows="8" class="input font-mono text-xs" placeholder="module(..., package.seeall)&#10;..."></textarea>
+                    </div>
+                  </div>
+
+                  <!-- 附加参数 -->
+                  <div class="mt-5 border-t border-slate-100 pt-5">
+                    <label class="label" for="task-extra">附加参数 <span class="text-slate-400 font-normal">（可选 JSON）</span></label>
+                    <input id="task-extra" type="text" class="input font-mono text-xs" placeholder='{"key": "value"}' value="">
+                  </div>
+
+                  <!-- 执行 -->
+                  <button type="submit" id="task-btn" class="mt-6 w-full btn btn-primary !py-3 text-base bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-0 shadow-lg shadow-blue-600/20">⚡ 下发任务</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- 右：实时控制台 -->
+            <div class="lg:col-span-2 space-y-5">
+              <div class="rounded-2xl bg-slate-900 shadow-xl overflow-hidden ring-1 ring-slate-800">
+                <div class="flex items-center gap-2 px-4 py-3 bg-slate-800/80">
+                  <span class="w-3 h-3 rounded-full bg-red-400/80"></span>
+                  <span class="w-3 h-3 rounded-full bg-amber-400/80"></span>
+                  <span class="w-3 h-3 rounded-full bg-emerald-400/80"></span>
+                  <span class="ml-2 text-xs text-slate-300 font-medium tracking-wide">任务控制台</span>
+                  <button type="button" id="console-clear" class="ml-auto text-xs text-slate-400 hover:text-white transition-colors">清空</button>
+                </div>
+                <div id="task-result" class="terminal font-mono text-xs leading-relaxed text-slate-300 p-4 h-80 overflow-auto">
+                  <p class="text-slate-500">// 等待下发任务...</p>
+                </div>
+              </div>
+
+              <div class="card p-5">
+                <h3 class="text-sm font-semibold text-slate-900 mb-2">📌 任务说明</h3>
+                <ul class="text-sm text-slate-500 space-y-1.5">
+                  <li><b>查询温度</b>：读取设备当前温度</li>
+                  <li><b>发送短信</b>：由设备下发短信，需接收手机号与内容</li>
+                  <li><b>读取配置</b>：返回设备上的 <code class="text-slate-700 font-mono text-xs">/nvm_para.lua</code> 内容</li>
+                  <li><b>写入配置</b>：将 Lua 配置写入设备并生效</li>
+                  <li><a href="javascript:void(0)" id="task-library-link" class="text-blue-600 hover:text-blue-700 underline decoration-blue-300">更多命令：点击查看</a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 定时任务（计划任务） -->
+        <section id="page-schedules" class="page hidden">
+          <div class="mb-4 sm:mb-6">
+            <h2 class="text-lg sm:text-xl font-semibold text-slate-900">定时任务</h2>
+            <p class="text-sm text-slate-500 mt-0.5">计划任务：按设定周期自动下发设备命令，设备离线时静默跳过该次执行</p>
+          </div>
+
+          <!-- 添加 / 编辑表单 -->
+          <form id="schedule-form" class="card p-5 sm:p-6 space-y-4 mb-5">
+            <input type="hidden" id="sch-edit-id" value="">
+
+            <!-- 任务类型 + 目标设备：宽屏一行（任务类型在前），窄屏自适应各自一行 -->
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label class="label" for="sch-task">任务类型</label>
+                <select id="sch-task" class="input" required></select>
+              </div>
+              <div>
+                <label class="label" for="sch-imei">目标设备</label>
+                <select id="sch-imei" class="input" required></select>
+              </div>
+            </div>
+
+            <!-- 任务名称 -->
+            <div>
+              <label class="label" for="sch-name">任务名称 <span class="text-slate-400 font-normal">（可选）</span></label>
+              <input id="sch-name" type="text" class="input" maxlength="30" placeholder="如：每日状态巡检">
+            </div>
+
+            <!-- 执行周期：类型选择与参数同一行紧凑显示 -->
+            <div>
+              <label class="label" for="sch-cycle">执行周期</label>
+              <div class="flex items-center gap-2">
+                <select id="sch-cycle" class="input !py-1.5 !px-3 text-sm shrink-0" style="width:7rem" required>
+                  <option value="weekly">每周</option>
+                  <option value="monthly">每月</option>
+                  <option value="daily" selected>每天</option>
+                  <option value="hourly">每小时</option>
+                  <option value="interval_min">每 N 分钟</option>
+                  <option value="interval_hour">每 N 小时</option>
+                </select>
+                <div id="sch-cycle-detail" class="flex items-center gap-2 text-sm text-slate-600 whitespace-nowrap"></div>
+              </div>
+            </div>
+
+            <!-- 任务参数（随任务类型变化） -->
+            <div id="sch-params"></div>
+
+            <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
+              <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                <input id="sch-enabled" type="checkbox" checked>
+                启用任务
+              </label>
+              <div class="flex items-center gap-2.5">
+                <button type="button" id="sch-cancel" class="btn btn-ghost hidden">取消编辑</button>
+                <button type="submit" id="sch-btn" class="btn btn-primary">添加任务</button>
+              </div>
+            </div>
+          </form>
+
+          <!-- 任务列表 -->
+          <div class="card overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="bg-slate-50 text-left text-xs font-medium text-slate-500 uppercase">
+                    <th class="px-4 py-3">名称</th>
+                    <th class="px-4 py-3">设备</th>
+                    <th class="px-4 py-3">任务</th>
+                    <th class="px-4 py-3">执行周期</th>
+                    <th class="px-4 py-3">上次执行</th>
+                    <th class="px-4 py-3">状态</th>
+                    <th class="px-4 py-3 text-right">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="schedules-tbody" class="divide-y divide-slate-100">
+                  <tr><td colspan="7" class="px-4 py-10 text-center text-slate-400">加载中...</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <!-- 分页（每页 5 条） -->
+            <div id="schedules-pagination" class="hidden flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-slate-100">
+              <span id="schedules-page-info" class="text-xs text-slate-400"></span>
+              <div id="schedules-page-btns" class="flex items-center gap-1"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 任务记录 -->
+        <section id="page-logs" class="page hidden">
+          <div class="mb-4 sm:mb-6 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 class="text-lg sm:text-xl font-semibold text-slate-900">任务记录</h2>
+              <p class="text-sm text-slate-500 mt-0.5">任务执行历史，每页 10 条</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="clear-tasks-7d" class="btn btn-ghost !px-3 !py-1.5 text-xs">清理 7 天前</button>
+              <button id="clear-tasks-all" class="btn btn-ghost !px-3 !py-1.5 text-xs text-red-600 hover:text-red-700 hover:border-red-300 hover:bg-red-50">删除全部</button>
+            </div>
+          </div>
+          <div class="card overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="bg-slate-50 text-left text-xs font-medium text-slate-500 uppercase">
+                    <th class="px-4 py-3">时间</th>
+                    <th class="px-4 py-3">设备</th>
+                    <th class="px-4 py-3">任务</th>
+                    <th class="px-4 py-3">状态</th>
+                    <th class="px-4 py-3">结果</th>
+                  </tr>
+                </thead>
+                <tbody id="tasks-tbody" class="divide-y divide-slate-100">
+                  <tr><td colspan="5" class="px-4 py-10 text-center text-slate-400">加载中...</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <!-- 分页 -->
+            <div id="tasks-pagination" class="hidden flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-slate-100">
+              <span id="tasks-page-info" class="text-xs text-slate-400"></span>
+              <div id="tasks-page-btns" class="flex items-center gap-1"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 通话记录 -->
+        <section id="page-calls" class="page hidden">
+          <div class="mb-4 sm:mb-6 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 class="text-lg sm:text-xl font-semibold text-slate-900">通话记录</h2>
+              <p class="text-sm text-slate-500 mt-0.5">设备上报的通话历史（含来电 / 去电），支持时间范围筛选</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="clear-calls-7d" class="btn btn-ghost !px-3 !py-1.5 text-xs">清理 7 天前</button>
+              <button id="clear-calls-all" class="btn btn-ghost !px-3 !py-1.5 text-xs text-red-600 hover:text-red-700 hover:border-red-300 hover:bg-red-50">删除全部</button>
+            </div>
+          </div>
+          <!-- 筛选 -->
+          <div class="card mb-4">
+            <div class="flex flex-wrap items-end gap-3 px-4 py-3">
+              <div>
+                <label class="label" for="calls-filter-from">开始时间</label>
+                <input type="date" id="calls-filter-from" class="input">
+              </div>
+              <div>
+                <label class="label" for="calls-filter-to">结束时间</label>
+                <input type="date" id="calls-filter-to" class="input">
+              </div>
+              <div>
+                <label class="label" for="calls-filter-imei">设备（IMEI）</label>
+                <select id="calls-filter-imei" class="input"><option value="">全部设备</option></select>
+              </div>
+              <div class="shrink-0">
+                <span class="label" style="visibility:hidden">　</span>
+                <div class="flex items-center gap-2">
+                  <button id="calls-filter-apply" type="button" class="btn btn-primary" style="width:88px;height:36px;display:inline-flex;align-items:center;justify-content:center">查询</button>
+                  <button id="calls-filter-reset" type="button" class="btn btn-ghost" style="width:88px;height:36px;display:inline-flex;align-items:center;justify-content:center">重置</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="bg-slate-50 text-left text-xs font-medium text-slate-500 uppercase">
+                    <th class="px-4 py-3">时间</th>
+                    <th class="px-4 py-3">方向</th>
+                    <th class="px-4 py-3">号码</th>
+                    <th class="px-4 py-3">状态</th>
+                    <th class="px-4 py-3">时长</th>
+                    <th class="px-4 py-3">通知</th>
+                    <th class="px-4 py-3">垃圾</th>
+                    <th class="px-4 py-3">设备</th>
+                    <th class="px-4 py-3 text-right">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="calls-tbody" class="divide-y divide-slate-100">
+                  <tr><td colspan="9" class="px-4 py-10 text-center text-slate-400">加载中...</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="calls-pagination" class="hidden flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-slate-100">
+              <span id="calls-page-info" class="text-xs text-slate-400"></span>
+              <div id="calls-page-btns" class="flex items-center gap-1"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 短信记录 -->
+        <section id="page-sms" class="page hidden">
+          <div class="mb-4 sm:mb-6 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 class="text-lg sm:text-xl font-semibold text-slate-900">短信记录</h2>
+              <p class="text-sm text-slate-500 mt-0.5">设备上报的短信历史（收 / 发），支持时间范围筛选</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="clear-sms-7d" class="btn btn-ghost !px-3 !py-1.5 text-xs">清理 7 天前</button>
+              <button id="clear-sms-all" class="btn btn-ghost !px-3 !py-1.5 text-xs text-red-600 hover:text-red-700 hover:border-red-300 hover:bg-red-50">删除全部</button>
+            </div>
+          </div>
+          <!-- 筛选 -->
+          <div class="card mb-4">
+            <div class="flex flex-wrap items-end gap-3 px-4 py-3">
+              <div>
+                <label class="label" for="sms-filter-from">开始时间</label>
+                <input type="date" id="sms-filter-from" class="input">
+              </div>
+              <div>
+                <label class="label" for="sms-filter-to">结束时间</label>
+                <input type="date" id="sms-filter-to" class="input">
+              </div>
+              <div>
+                <label class="label" for="sms-filter-imei">设备（IMEI）</label>
+                <select id="sms-filter-imei" class="input"><option value="">全部设备</option></select>
+              </div>
+              <div class="shrink-0">
+                <span class="label" style="visibility:hidden">　</span>
+                <div class="flex items-center gap-2">
+                  <button id="sms-filter-apply" type="button" class="btn btn-primary" style="width:88px;height:36px;display:inline-flex;align-items:center;justify-content:center">查询</button>
+                  <button id="sms-filter-reset" type="button" class="btn btn-ghost" style="width:88px;height:36px;display:inline-flex;align-items:center;justify-content:center">重置</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="bg-slate-50 text-left text-xs font-medium text-slate-500 uppercase">
+                    <th class="px-4 py-3">时间</th>
+                    <th class="px-4 py-3">方向</th>
+                    <th class="px-4 py-3">号码</th>
+                    <th class="px-4 py-3">内容</th>
+                    <th class="px-4 py-3">通知</th>
+                    <th class="px-4 py-3">垃圾</th>
+                    <th class="px-4 py-3">设备</th>
+                    <th class="px-4 py-3 text-right">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="sms-tbody" class="divide-y divide-slate-100">
+                  <tr><td colspan="8" class="px-4 py-10 text-center text-slate-400">加载中...</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="sms-pagination" class="hidden flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-slate-100">
+              <span id="sms-page-info" class="text-xs text-slate-400"></span>
+              <div id="sms-page-btns" class="flex items-center gap-1"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 屏蔽配置 -->
+        <section id="page-block" class="page hidden">
+          <div class="mb-4 sm:mb-6 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 class="text-lg sm:text-xl font-semibold text-slate-900">屏蔽配置</h2>
+              <p class="text-sm text-slate-500 mt-0.5">垃圾短信 / 垃圾电话本地屏蔽：命中的新短信、来电不再发送通知，记录仍留存并标记为垃圾</p>
+            </div>
+            <button id="block-reset-builtin" class="h-9 px-3.5 rounded-lg text-sm font-medium text-amber-600 bg-amber-50 border border-amber-200 hover:bg-amber-100 transition-colors active:scale-95">恢复内置默认库</button>
+          </div>
+          <div class="max-w-4xl">
+            <!-- Tab：关键字 / 号码 -->
+            <div class="flex gap-1 border-b border-slate-200">
+              <button type="button" class="block-tab-btn px-4 py-2 text-sm transition-colors" data-block-tab="keyword"
+                      style="color:#2563eb;border-bottom:2px solid #2563eb;margin-bottom:-1px;font-weight:600">关键字屏蔽</button>
+              <button type="button" class="block-tab-btn px-4 py-2 text-sm transition-colors" data-block-tab="number"
+                      style="color:#64748b;border-bottom:2px solid transparent;margin-bottom:-1px">号码屏蔽</button>
+            </div>
+
+            <!-- 添加规则 -->
+            <div class="card p-5 mt-4">
+              <div class="flex flex-wrap items-end gap-3">
+                <div style="min-width:10rem" class="flex-1">
+                  <label class="label" id="block-value-label" for="block-value">关键字（短信内容包含即命中）</label>
+                  <input id="block-value" type="text" class="input" placeholder="例如：退订、贷款、中奖">
+                </div>
+                <div id="block-mode-wrap" style="display:none;min-width:9rem">
+                  <label class="label" for="block-mode">匹配方式</label>
+                  <select id="block-mode" class="input">
+                    <option value="prefix">前缀匹配</option>
+                    <option value="exact">精确匹配</option>
+                    <option value="contains">包含匹配</option>
+                  </select>
+                </div>
+                <div style="min-width:10rem" class="flex-1">
+                  <label class="label" for="block-note">备注（可选）</label>
+                  <input id="block-note" type="text" class="input" placeholder="例如：营销短信通道">
+                </div>
+                <div class="shrink-0">
+                  <span class="label" style="visibility:hidden">　</span>
+                  <div class="flex items-center gap-2">
+                    <button id="block-add-btn" type="button" class="btn btn-primary" style="width:88px;height:36px;display:inline-flex;align-items:center;justify-content:center">添加规则</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 规则列表 -->
+            <div class="card overflow-hidden mt-4">
+              <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                  <thead>
+                    <tr class="bg-slate-50 text-left text-xs font-medium text-slate-500 uppercase">
+                      <th class="px-4 py-3">规则内容</th>
+                      <th class="px-4 py-3">来源</th>
+                      <th class="px-4 py-3">状态</th>
+                      <th class="px-4 py-3">备注</th>
+                      <th class="px-4 py-3 text-right">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody id="block-tbody" class="divide-y divide-slate-100">
+                    <tr><td colspan="5" class="px-4 py-10 text-center text-slate-400">加载中...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div id="block-pagination" class="hidden flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-slate-100">
+                <span id="block-page-info" class="text-xs text-slate-400"></span>
+                <div id="block-page-btns" class="flex items-center gap-1"></div>
+              </div>
+              <div id="block-tip" class="px-4 py-3 border-t border-slate-100 text-xs text-slate-400"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 设置 -->
+        <section id="page-settings" class="page hidden">
+          <div class="mb-4 sm:mb-6">
+            <h2 class="text-lg sm:text-xl font-semibold text-slate-900">设置</h2>
+            <p class="text-sm text-slate-500 mt-0.5">登录账号、离线通知</p>
+          </div>
+          <div class="max-w-2xl">
+            <!-- Tab 菜单 -->
+            <div class="flex gap-1 border-b border-slate-200">
+              <button type="button" class="set-tab-btn px-4 py-2 text-sm transition-colors" data-set-tab="account"
+                      style="color:#2563eb;border-bottom:2px solid #2563eb;margin-bottom:-1px;font-weight:600">登录账号</button>
+              <button type="button" class="set-tab-btn px-4 py-2 text-sm transition-colors" data-set-tab="notify"
+                      style="color:#64748b;border-bottom:2px solid transparent;margin-bottom:-1px">离线通知</button>
+            </div>
+
+            <!-- 登录账号 -->
+            <div id="set-tab-account" class="card p-6 mt-6">
+              <form id="settings-form" class="space-y-4">
+                <div>
+                  <label class="label" for="set-current-username">当前用户名</label>
+                  <input id="set-current-username" type="text" class="input bg-slate-50 text-slate-500" readonly>
+                </div>
+                <div>
+                  <label class="label" for="set-old-password">原密码</label>
+                  <input id="set-old-password" type="password" class="input" required autocomplete="current-password">
+                </div>
+                <div>
+                  <label class="label" for="set-new-username">新用户名 <span class="text-slate-400 font-normal">（留空则不修改）</span></label>
+                  <input id="set-new-username" type="text" class="input" autocomplete="username">
+                </div>
+                <div>
+                  <label class="label" for="set-new-password">新密码 <span class="text-slate-400 font-normal">（留空则不修改）</span></label>
+                  <input id="set-new-password" type="password" class="input" autocomplete="new-password">
+                </div>
+                <p id="settings-msg" class="hidden text-sm"></p>
+                <button type="submit" class="btn btn-primary w-full">保存修改</button>
+              </form>
+            </div>
+
+            <!-- 离线通知 -->
+            <div id="set-tab-notify" class="card p-6 mt-6 hidden">
+              <form id="notify-settings-form" class="space-y-4">
+                <div class="flex items-center justify-between gap-4 rounded-lg bg-slate-50 px-4 py-3">
+                  <div>
+                    <label class="font-medium text-sm text-slate-700 block" for="set-notify-enabled">启用离线通知</label>
+                    <p class="text-xs text-slate-400 mt-0.5">设备离线（心跳超时或连接断开）时通过所选渠道推送通知</p>
+                  </div>
+                  <input id="set-notify-enabled" type="checkbox" class="w-5 h-5 shrink-0" style="accent-color:#2563eb">
+                </div>
+                <div id="notify-channels-wrap">
+                  <p class="label">通知渠道</p>
+                  <div id="notify-channels-list" class="flex flex-wrap gap-2 mt-2"></div>
+                  <div id="notify-channel-configs" class="mt-4 space-y-4"></div>
+                </div>
+                <p id="notify-settings-msg" class="hidden text-sm"></p>
+                <div class="flex flex-wrap items-center gap-3">
+                  <button type="submit" class="btn btn-primary">保存设置</button>
+                  <button type="button" id="notify-test-btn" class="btn">发送测试通知</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        </main>
+
+        <!-- 页脚 -->
+        <footer class="px-4 py-5 border-t border-slate-200 bg-white/60 backdrop-blur-sm">
+          <div class="max-w-screen-2xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p class="text-xs text-slate-400">© 2026 AirPanel · 基于 Go + Tailwind CSS 构建</p>
+            <a href="https://github.com/vipxkw/airpanel" target="_blank" rel="noopener"
+               class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-900 transition-colors">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.27-.01-1.17-.02-2.12-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.76 2.7 1.25 3.35.96.1-.75.4-1.25.72-1.54-2.55-.29-5.23-1.28-5.23-5.69 0-1.26.45-2.28 1.18-3.09-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.15 1.18.91-.25 1.89-.38 2.86-.38.97 0 1.95.13 2.86.38 2.19-1.49 3.15-1.18 3.15-1.18.62 1.59.23 2.76.11 3.05.73.81 1.18 1.83 1.18 3.09 0 4.42-2.69 5.39-5.25 5.68.41.35.77 1.05.77 2.12 0 1.53-.01 2.76-.01 3.14 0 .31.21.68.8.56C20.23 21.38 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>
+              <span>vipxkw/airpanel</span>
+            </a>
+          </div>
+        </footer>
+      </div>
+    </div>
+  </div>
+
+  <!-- 提示浮层 -->
+  <div id="toast" class="hidden fixed top-5 left-1/2 -translate-x-1/2 z-50 rounded-lg px-4 py-2.5 text-sm text-white shadow-lg"></div>
+
+  <!-- 自定义确认弹窗 -->
+  <div id="confirm-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div id="confirm-overlay" class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"></div>
+    <div class="relative w-full max-w-sm card p-6 shadow-2xl">
+      <div class="flex items-start gap-3.5">
+        <div class="w-10 h-10 shrink-0 rounded-full bg-red-50 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h3 id="confirm-title" class="text-sm font-semibold text-slate-900">确认操作</h3>
+          <p id="confirm-message" class="mt-1 text-sm text-slate-500 break-words"></p>
+        </div>
+      </div>
+      <div class="mt-5 flex justify-end gap-2.5">
+        <button id="confirm-cancel" class="btn btn-ghost !px-4 !py-2 text-sm">取消</button>
+        <button id="confirm-ok" class="btn !px-4 !py-2 text-sm bg-red-600 text-white hover:bg-red-700 border-transparent">确认删除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 命令大全弹窗 -->
+  <div id="task-library-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div id="task-library-overlay" class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"></div>
+    <div class="relative w-full max-w-md card p-6 shadow-2xl flex flex-col">
+      <div class="flex items-start justify-between gap-3 shrink-0">
+        <div>
+          <h3 class="text-base font-semibold text-slate-900">命令大全</h3>
+          <p class="mt-0.5 text-xs text-slate-400">设备支持的全部远程命令，点击命令查看详细用法与参数</p>
+        </div>
+        <button id="task-library-close" class="text-slate-400 hover:text-slate-700 transition-colors shrink-0" aria-label="关闭">
+          <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div id="task-library-body" class="mt-4 overflow-auto space-y-5 pr-1"></div>
+      <div class="mt-5 pt-4 border-t border-slate-100 flex justify-end shrink-0">
+        <button id="task-library-ok" class="btn btn-primary !px-4 !py-2 text-sm">我知道了</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 命令说明弹窗 -->
+  <div id="task-help-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div id="task-help-overlay" class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"></div>
+    <div class="relative w-full max-w-md card p-6 shadow-2xl flex flex-col" style="max-height: 75vh">
+      <div class="flex items-start justify-between gap-3 shrink-0">
+        <div>
+          <h3 id="task-help-title" class="text-base font-semibold text-slate-900"></h3>
+          <p id="task-help-cmd" class="mt-0.5 font-mono text-xs text-blue-600 bg-blue-50 rounded px-2 py-0.5 inline-block"></p>
+        </div>
+        <button id="task-help-close" class="text-slate-400 hover:text-slate-700 transition-colors shrink-0" aria-label="关闭">
+          <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div id="task-help-body" class="mt-4 text-sm text-slate-600 leading-relaxed overflow-auto space-y-4"></div>
+      <div class="mt-5 pt-4 border-t border-slate-100 flex justify-end">
+        <button id="task-help-ok" class="btn btn-primary !px-4 !py-2 text-sm">我知道了</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js?v=20260830d"></script>
+  <script src="/js/app.js?v=20260830d"></script>
+</body>
+</html>
