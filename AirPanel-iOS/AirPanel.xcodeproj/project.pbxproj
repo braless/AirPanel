@@ -1,0 +1,567 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		AB2000000000000000000001 /* AirPanelApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1000000000000000000001 /* AirPanelApp.swift */; };
+		AB2000000000000000000002 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1000000000000000000003 /* Models.swift */; };
+		AB2000000000000000000003 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1000000000000000000004 /* APIClient.swift */; };
+		AB2000000000000000000004 /* AppStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1000000000000000000005 /* AppStore.swift */; };
+		AB2000000000000000000005 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1000000000000000000006 /* Components.swift */; };
+		AB2000000000000000000006 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1000000000000000000007 /* LoginView.swift */; };
+		AB2000000000000000000007 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1000000000000000000008 /* MainTabView.swift */; };
+		AB2000000000000000000008 /* OverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1000000000000000000009 /* OverviewView.swift */; };
+		AB2000000000000000000009 /* DevicesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB100000000000000000000A /* DevicesView.swift */; };
+		AB200000000000000000000A /* DeviceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB100000000000000000000B /* DeviceDetailView.swift */; };
+		AB200000000000000000000B /* RecordsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB100000000000000000000C /* RecordsView.swift */; };
+		AB200000000000000000000C /* TaskHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB100000000000000000000D /* TaskHubView.swift */; };
+		AB200000000000000000000D /* SchedulesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB100000000000000000000E /* SchedulesView.swift */; };
+		AB200000000000000000000E /* BlockRulesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB100000000000000000000F /* BlockRulesView.swift */; };
+		AB200000000000000000000F /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1000000000000000000010 /* SettingsView.swift */; };
+		AB2000000000000000000010 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AB1000000000000000000017 /* Assets.xcassets */; };
+		AC2000000000000000000001 /* WidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1000000000000000000001 /* WidgetBundle.swift */; };
+		AC2000000000000000000002 /* SharedWidgetData.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1000000000000000000002 /* SharedWidgetData.swift */; };
+		AC2000000000000000000003 /* DeviceInfoWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1000000000000000000003 /* DeviceInfoWidget.swift */; };
+		AC2000000000000000000004 /* SMSWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1000000000000000000004 /* SMSWidget.swift */; };
+		AC2000000000000000000005 /* CallsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1000000000000000000005 /* CallsWidget.swift */; };
+		AC2000000000000000000006 /* QuickCommandWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1000000000000000000006 /* QuickCommandWidget.swift */; };
+		AC2000000000000000000007 /* AirPanelWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = AC1000000000000000000008 /* AirPanelWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AC2000000000000000000008 /* SharedWidgetData.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1000000000000000000002 /* SharedWidgetData.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		AB1000000000000000000001 /* AirPanelApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirPanelApp.swift; sourceTree = "<group>"; };
+		AB1000000000000000000002 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AB1000000000000000000003 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		AB1000000000000000000004 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		AB1000000000000000000005 /* AppStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStore.swift; sourceTree = "<group>"; };
+		AB1000000000000000000006 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		AB1000000000000000000007 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		AB1000000000000000000008 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		AB1000000000000000000009 /* OverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewView.swift; sourceTree = "<group>"; };
+		AB100000000000000000000A /* DevicesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevicesView.swift; sourceTree = "<group>"; };
+		AB100000000000000000000B /* DeviceDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceDetailView.swift; sourceTree = "<group>"; };
+		AB100000000000000000000C /* RecordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordsView.swift; sourceTree = "<group>"; };
+		AB100000000000000000000D /* TaskHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskHubView.swift; sourceTree = "<group>"; };
+		AB100000000000000000000E /* SchedulesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchedulesView.swift; sourceTree = "<group>"; };
+		AB100000000000000000000F /* BlockRulesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlockRulesView.swift; sourceTree = "<group>"; };
+		AB1000000000000000000010 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		AB1000000000000000000017 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AB1000000000000000000018 /* AirPanel.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AirPanel.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AC1000000000000000000001 /* WidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetBundle.swift; sourceTree = "<group>"; };
+		AC1000000000000000000002 /* SharedWidgetData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedWidgetData.swift; sourceTree = "<group>"; };
+		AC1000000000000000000003 /* DeviceInfoWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceInfoWidget.swift; sourceTree = "<group>"; };
+		AC1000000000000000000004 /* SMSWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMSWidget.swift; sourceTree = "<group>"; };
+		AC1000000000000000000005 /* CallsWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallsWidget.swift; sourceTree = "<group>"; };
+		AC1000000000000000000006 /* QuickCommandWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCommandWidget.swift; sourceTree = "<group>"; };
+		AC1000000000000000000007 /* WidgetInfo.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = WidgetInfo.plist; sourceTree = "<group>"; };
+		AC1000000000000000000008 /* AirPanelWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AirPanelWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		AC1000000000000000000009 /* AirPanelWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AirPanelWidget.entitlements; sourceTree = "<group>"; };
+		AC100000000000000000000A /* AirPanel.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AirPanel.entitlements; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		AB6000000000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AC6000000000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		AB3000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				AB3000000000000000000002 /* AirPanel */,
+				AB3000000000000000000007 /* AirPanelWidget */,
+				AB3000000000000000000006 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AB3000000000000000000002 /* AirPanel */ = {
+			isa = PBXGroup;
+			children = (
+				AB1000000000000000000001 /* AirPanelApp.swift */,
+				AB1000000000000000000002 /* Info.plist */,
+				AB3000000000000000000003 /* Models */,
+				AB3000000000000000000004 /* Services */,
+				AB3000000000000000000005 /* Views */,
+				AB1000000000000000000017 /* Assets.xcassets */,
+				AC100000000000000000000A /* AirPanel.entitlements */,
+			);
+			path = AirPanel;
+			sourceTree = "<group>";
+		};
+		AB3000000000000000000003 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				AB1000000000000000000003 /* Models.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		AB3000000000000000000004 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				AB1000000000000000000004 /* APIClient.swift */,
+				AB1000000000000000000005 /* AppStore.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		AB3000000000000000000005 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				AB1000000000000000000006 /* Components.swift */,
+				AB1000000000000000000007 /* LoginView.swift */,
+				AB1000000000000000000008 /* MainTabView.swift */,
+				AB1000000000000000000009 /* OverviewView.swift */,
+				AB100000000000000000000A /* DevicesView.swift */,
+				AB100000000000000000000B /* DeviceDetailView.swift */,
+				AB100000000000000000000C /* RecordsView.swift */,
+				AB100000000000000000000D /* TaskHubView.swift */,
+				AB100000000000000000000E /* SchedulesView.swift */,
+				AB100000000000000000000F /* BlockRulesView.swift */,
+				AB1000000000000000000010 /* SettingsView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		AB3000000000000000000007 /* AirPanelWidget */ = {
+			isa = PBXGroup;
+			children = (
+				AC1000000000000000000001 /* WidgetBundle.swift */,
+				AC1000000000000000000002 /* SharedWidgetData.swift */,
+				AC1000000000000000000003 /* DeviceInfoWidget.swift */,
+				AC1000000000000000000004 /* SMSWidget.swift */,
+				AC1000000000000000000005 /* CallsWidget.swift */,
+				AC1000000000000000000006 /* QuickCommandWidget.swift */,
+				AC1000000000000000000007 /* WidgetInfo.plist */,
+				AC1000000000000000000009 /* AirPanelWidget.entitlements */,
+			);
+			path = AirPanelWidget;
+			sourceTree = "<group>";
+		};
+		AB3000000000000000000006 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AB1000000000000000000018 /* AirPanel.app */,
+				AC1000000000000000000008 /* AirPanelWidget.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		AB4000000000000000000001 /* AirPanel */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AB8000000000000000000002 /* Build configuration list for PBXNativeTarget "AirPanel" */;
+			buildPhases = (
+				AB6000000000000000000001 /* Sources */,
+				AB6000000000000000000002 /* Frameworks */,
+				AB6000000000000000000003 /* Resources */,
+				AC6000000000000000000004 /* Embed App Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AC5000000000000000000002 /* PBXTargetDependency */,
+			);
+			name = AirPanel;
+			productName = AirPanel;
+			productReference = AB1000000000000000000018 /* AirPanel.app */;
+			productType = "com.apple.product-type.application";
+		};
+		AC4000000000000000000001 /* AirPanelWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AC8000000000000000000001 /* Build configuration list for PBXNativeTarget "AirPanelWidget" */;
+			buildPhases = (
+				AC6000000000000000000001 /* Sources */,
+				AC6000000000000000000002 /* Frameworks */,
+				AC6000000000000000000003 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = AirPanelWidget;
+			productName = AirPanelWidget;
+			productReference = AC1000000000000000000008 /* AirPanelWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AB5000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastUpgradeCheck = 2650;
+			};
+			buildConfigurationList = AB8000000000000000000001 /* Build configuration list for PBXProject "AirPanel" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = AB3000000000000000000001;
+			productRefGroup = AB3000000000000000000006 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				AB4000000000000000000001 /* AirPanel */,
+				AC4000000000000000000001 /* AirPanelWidget */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		AB6000000000000000000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AB2000000000000000000010 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AC6000000000000000000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		AB6000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AB2000000000000000000001 /* AirPanelApp.swift in Sources */,
+				AB2000000000000000000002 /* Models.swift in Sources */,
+				AB2000000000000000000003 /* APIClient.swift in Sources */,
+				AB2000000000000000000004 /* AppStore.swift in Sources */,
+				AB2000000000000000000005 /* Components.swift in Sources */,
+				AB2000000000000000000006 /* LoginView.swift in Sources */,
+				AB2000000000000000000007 /* MainTabView.swift in Sources */,
+				AB2000000000000000000008 /* OverviewView.swift in Sources */,
+				AB2000000000000000000009 /* DevicesView.swift in Sources */,
+				AB200000000000000000000A /* DeviceDetailView.swift in Sources */,
+				AB200000000000000000000B /* RecordsView.swift in Sources */,
+				AB200000000000000000000C /* TaskHubView.swift in Sources */,
+				AB200000000000000000000D /* SchedulesView.swift in Sources */,
+				AB200000000000000000000E /* BlockRulesView.swift in Sources */,
+				AB200000000000000000000F /* SettingsView.swift in Sources */,
+				AC2000000000000000000008 /* SharedWidgetData.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AC6000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AC2000000000000000000001 /* WidgetBundle.swift in Sources */,
+				AC2000000000000000000002 /* SharedWidgetData.swift in Sources */,
+				AC2000000000000000000003 /* DeviceInfoWidget.swift in Sources */,
+				AC2000000000000000000004 /* SMSWidget.swift in Sources */,
+				AC2000000000000000000005 /* CallsWidget.swift in Sources */,
+				AC2000000000000000000006 /* QuickCommandWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		AB7000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		AB7000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		AB7000000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				CODE_SIGN_ENTITLEMENTS = "AirPanel/AirPanel.entitlements";
+				INFOPLIST_FILE = "AirPanel/Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.airpanel.client;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		AB7000000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				CODE_SIGN_ENTITLEMENTS = "AirPanel/AirPanel.entitlements";
+				INFOPLIST_FILE = "AirPanel/Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.airpanel.client;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		AC7000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = "AirPanelWidget/AirPanelWidget.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "AirPanelWidget/WidgetInfo.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.airpanel.client.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		AC7000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = "AirPanelWidget/AirPanelWidget.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "AirPanelWidget/WidgetInfo.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.airpanel.client.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin PBXContainerItemProxy section */
+		AC5000000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AB5000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AC4000000000000000000001;
+			remoteInfo = AirPanelWidget;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		AC6000000000000000000004 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				AC2000000000000000000007 /* AirPanelWidget.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		AC5000000000000000000002 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AC4000000000000000000001 /* AirPanelWidget */;
+			targetProxy = AC5000000000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCConfigurationList section */
+		AB8000000000000000000001 /* Build configuration list for PBXProject "AirPanel" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AB7000000000000000000001 /* Debug */,
+				AB7000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AB8000000000000000000002 /* Build configuration list for PBXNativeTarget "AirPanel" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AB7000000000000000000003 /* Debug */,
+				AB7000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AC8000000000000000000001 /* Build configuration list for PBXNativeTarget "AirPanelWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AC7000000000000000000001 /* Debug */,
+				AC7000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = AB5000000000000000000001 /* Project object */;
+}
