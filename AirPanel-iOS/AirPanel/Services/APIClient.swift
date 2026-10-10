@@ -293,3 +293,10 @@ struct APIError: LocalizedError {
     let message: String
     var errorDescription: String? { message }
 }
+
+/// 是否为「任务/网络被取消」错误（下拉刷新被 SwiftUI 取消时静默保留现状，不当作失败）
+func isCancelError(_ e: Error) -> Bool {
+    if e is CancellationError { return true }
+    if let u = e as? URLError, u.code == .cancelled { return true }
+    return false
+}

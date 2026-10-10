@@ -233,6 +233,7 @@ struct OverviewView: View {
             }
             state = .loaded
         } catch {
+            if isCancelError(error) { return }
             state = .failed((error as? APIError)?.message ?? error.localizedDescription)
         }
     }
