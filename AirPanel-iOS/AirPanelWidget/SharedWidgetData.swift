@@ -34,9 +34,27 @@ enum SharedWidgetData {
     static let kSms = "shared.sms"
     static let kCalls = "shared.calls"
     static let kUpdated = "shared.updated"
+    static let kBaseURL = "shared.baseURL"
+    static let kToken = "shared.token"
 
     static func suite() -> UserDefaults? {
         UserDefaults(suiteName: groupID)
+    }
+
+    /// App 登录后写入「服务器地址 + 令牌」，供小组件直连使用（不保存密码）
+    static func saveConfig(baseURL: String, token: String) {
+        suite()?.set(baseURL, forKey: kBaseURL)
+        suite()?.set(token, forKey: kToken)
+    }
+    static func clearConfig() {
+        suite()?.removeObject(forKey: kBaseURL)
+        suite()?.removeObject(forKey: kToken)
+    }
+    /// 小组件读取的直连配置；未登录 / 共享区不可用时返回 nil
+    static func widgetConfig() -> (baseURL: String, token: String)? {
+        guard let b = suite()?.string(forKey: kBaseURL), !b.isEmpty,
+              let t = suite()?.string(forKey: kToken), !t.isEmpty else { return nil }
+        return (b, t)
     }
 
     static func device() -> DeviceItem? {
@@ -80,12 +98,9 @@ func wgMaskedIMEI(_ s: String) -> String {
 }
 
 // MARK: - Widget 端网络直连
-/// 小组件直接连服务端拉数据（不依赖 App Group / 签名），App Group 缓存仅作兜底。
+/// 小组件用 App 登录后写入共享区的「服务器地址 + 令牌」直连拉数据（不保存密码）。
 enum WidgetAPI {
-    /// 内置服务器与账号（自用；可在 App 内修改服务器后由 App 同步覆盖）
-    static var server = "http://142.248.137.59:9527"
-    static let username = "admin"
-    static let password = "oaife@123456"
+    private struct Cfg { let baseURL: String; let token: String }
 
     // 响应模型（仅取所需字段，多余字段自动忽略）
     private struct WDevice: Codable { let imei: String; let phone: String; let name: String; let connected: Bool }
@@ -96,21 +111,25 @@ enum WidgetAPI {
     private struct WCall: Codable { let number: String?; let direction: String?; let startedAt: Int64?; let spam: Int? }
     private struct WSms: Codable { let sms: [WSmsItem] }
     private struct WSmsItem: Codable { let number: String?; let content: String?; let createdAt: Int64?; let spam: Int? }
-    private struct WLogin: Codable { let token: String?; let message: String? }
 
-    private static func makeURL(_ path: String) -> URL? {
-        var base = server
-        if !base.hasSuffix("/") { base += "/" }
-        return URL(string: base + path)
+    private static func cfg() -> Cfg? {
+        guard let c = SharedWidgetData.widgetConfig() else { return nil }
+        return Cfg(baseURL: c.baseURL, token: c.token)
     }
 
-    private static func request(_ method: String, _ path: String, token: String = "", body: Data? = nil) async throws -> Data {
-        guard let url = makeURL(path) else { throw WidgetAPIError("URL 无效") }
+    private static func makeURL(_ path: String, _ base: String) -> URL? {
+        var b = base
+        if !b.hasSuffix("/") { b += "/" }
+        return URL(string: b + path)
+    }
+
+    private static func request(_ method: String, _ path: String, _ c: Cfg, body: Data? = nil) async throws -> Data {
+        guard let url = makeURL(path, c.baseURL) else { throw WidgetAPIError("URL 无效") }
         var req = URLRequest(url: url)
         req.timeoutInterval = 8
         req.httpMethod = method
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        if !token.isEmpty { req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+        req.setValue("Bearer \(c.token)", forHTTPHeaderField: "Authorization")
         if let body = body { req.httpBody = body }
         let (data, resp) = try await URLSession.shared.data(for: req)
         guard let http = resp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
@@ -119,24 +138,16 @@ enum WidgetAPI {
         return data
     }
 
-    private static func get<T: Decodable>(_ t: T.Type, _ path: String, token: String) async throws -> T {
-        try JSONDecoder().decode(t, from: await request("GET", path, token: token))
-    }
-
-    private static func login() async throws -> String {
-        let body = try JSONEncoder().encode(["username": username, "password": password])
-        let data = try await request("POST", "/api/login", body: body)
-        let r = try JSONDecoder().decode(WLogin.self, from: data)
-        guard let t = r.token, !t.isEmpty else { throw WidgetAPIError("登录失败") }
-        return t
+    private static func get<T: Decodable>(_ t: T.Type, _ path: String, _ c: Cfg) async throws -> T {
+        try JSONDecoder().decode(t, from: await request("GET", path, c))
     }
 
     static func fetchDevice() async -> SharedWidgetData.DeviceItem? {
+        guard let c = cfg() else { return nil }
         do {
-            let token = try await login()
-            let devs = try await get([WDevice].self, "/api/userPool", token: token)
+            let devs = try await get([WDevice].self, "/api/userPool", c)
             guard let d = devs.first else { return nil }
-            let ov = try? await get(WOverview.self, "/api/device/overview?imei=\(d.imei)", token: token)
+            let ov = try? await get(WOverview.self, "/api/device/overview?imei=\(d.imei)", c)
             return SharedWidgetData.DeviceItem(imei: d.imei, name: d.name, phone: d.phone,
                                               online: d.connected, battery: ov?.battery?.percent ?? -1,
                                               csq: ov?.latest?.csq ?? -1, netMode: ov?.latest?.netMode ?? "")
@@ -144,9 +155,9 @@ enum WidgetAPI {
     }
 
     static func fetchCalls() async -> [SharedWidgetData.CallItem] {
+        guard let c = cfg() else { return [] }
         do {
-            let token = try await login()
-            let r = try await get(WCalls.self, "/api/calls?page=1", token: token)
+            let r = try await get(WCalls.self, "/api/calls?page=1", c)
             return r.calls.prefix(6).map {
                 SharedWidgetData.CallItem(number: $0.number ?? "", direction: $0.direction ?? "",
                                           time: $0.startedAt ?? 0, spam: ($0.spam ?? 0) > 0)
@@ -155,9 +166,9 @@ enum WidgetAPI {
     }
 
     static func fetchSms() async -> [SharedWidgetData.SmsItem] {
+        guard let c = cfg() else { return [] }
         do {
-            let token = try await login()
-            let r = try await get(WSms.self, "/api/sms?page=1", token: token)
+            let r = try await get(WSms.self, "/api/sms?page=1", c)
             return r.sms.prefix(6).map {
                 SharedWidgetData.SmsItem(number: $0.number ?? "", content: $0.content ?? "",
                                          time: $0.createdAt ?? 0, spam: ($0.spam ?? 0) > 0)

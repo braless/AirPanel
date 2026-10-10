@@ -49,7 +49,7 @@ final class AppStore: ObservableObject {
     private static let kSavedPwd = "airpanel.savedPwd"
 
     init() {
-        baseURLText = defaults.string(forKey: Self.kBase) ?? "http://142.248.137.59:9527"
+        baseURLText = defaults.string(forKey: Self.kBase) ?? ""
         let t = defaults.string(forKey: Self.kToken) ?? ""
         token = t
         loggedIn = !t.isEmpty
@@ -94,6 +94,8 @@ final class AppStore: ObservableObject {
         defaults.set(normalized, forKey: Self.kBase)
         defaults.set(tk, forKey: Self.kToken)
         defaults.set(remember, forKey: Self.kRemember)
+        // 写入共享区供桌面小组件直连（仅存地址 + 令牌，不存密码）
+        SharedWidgetData.saveConfig(baseURL: normalized, token: tk)
         if remember {
             defaults.set(username, forKey: Self.kSavedUser)
             defaults.set(password, forKey: Self.kSavedPwd)
@@ -112,6 +114,7 @@ final class AppStore: ObservableObject {
         devices = []
         selectedIMEI = nil
         defaults.removeObject(forKey: Self.kToken)
+        SharedWidgetData.clearConfig()
     }
 
     /// 拉取设备列表并尽量保持当前选中
