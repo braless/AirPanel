@@ -3,7 +3,7 @@ import Foundation
 /// 主 App 与桌面小组件之间共享的数据（App Group UserDefaults）
 /// 主 App 在登录 / 拉取设备 / 加载记录后写入；小组件进程读取展示。
 enum SharedWidgetData {
-    static let groupID = "group.com.airpanel.client"
+    static let groupID = "group.0b7900bd78d571ad.1"   // 与用户描述文件 App Group 白名单一致
     static let suiteName = "airpanel.widget"   // UserDefaults suite
 
     struct DeviceItem: Codable {
