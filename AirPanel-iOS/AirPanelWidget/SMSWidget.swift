@@ -14,8 +14,12 @@ struct SmsProvider: TimelineProvider {
         completion(SmsEntry(date: Date(), items: SharedWidgetData.sms()))
     }
     func getTimeline(in context: Context, completion: @escaping (Timeline<SmsEntry>) -> Void) {
-        let e = SmsEntry(date: Date(), items: SharedWidgetData.sms())
-        completion(Timeline(entries: [e], policy: .after(Date().addingTimeInterval(900))))
+        Task {
+            let fresh = await WidgetAPI.fetchSms()
+            let items = fresh.isEmpty ? SharedWidgetData.sms() : fresh
+            completion(Timeline(entries: [SmsEntry(date: Date(), items: items)],
+                                policy: .after(Date().addingTimeInterval(900))))
+        }
     }
 }
 

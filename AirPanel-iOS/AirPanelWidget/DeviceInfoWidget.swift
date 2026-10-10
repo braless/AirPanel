@@ -14,8 +14,11 @@ struct DeviceProvider: TimelineProvider {
         completion(DeviceEntry(date: Date(), device: SharedWidgetData.device()))
     }
     func getTimeline(in context: Context, completion: @escaping (Timeline<DeviceEntry>) -> Void) {
-        let e = DeviceEntry(date: Date(), device: SharedWidgetData.device())
-        completion(Timeline(entries: [e], policy: .after(Date().addingTimeInterval(1800))))
+        Task {
+            let fresh = await WidgetAPI.fetchDevice() ?? SharedWidgetData.device()
+            let e = DeviceEntry(date: Date(), device: fresh)
+            completion(Timeline(entries: [e], policy: .after(Date().addingTimeInterval(900))))
+        }
     }
 }
 
