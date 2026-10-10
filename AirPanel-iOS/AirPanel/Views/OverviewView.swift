@@ -222,6 +222,7 @@ struct OverviewView: View {
             state = .idle
             return
         }
+        let prev = state
         state = .loading
         do {
             overview = try await store.api.getOverview(imei: imei)
@@ -233,7 +234,7 @@ struct OverviewView: View {
             }
             state = .loaded
         } catch {
-            if isCancelError(error) { return }
+            if isCancelError(error) { state = prev; return }
             state = .failed((error as? APIError)?.message ?? error.localizedDescription)
         }
     }

@@ -236,6 +236,7 @@ struct RecordsView: View {
     @MainActor
     func reload() async {
         callPage = 1; smsPage = 1
+        let prev = state
         state = .loading
         do {
             if tab == .calls {
@@ -259,7 +260,7 @@ struct RecordsView: View {
             }
             state = .loaded
         } catch {
-            if isCancelError(error) { return }
+            if isCancelError(error) { state = prev; return }
             state = .failed((error as? APIError)?.message ?? error.localizedDescription)
         }
     }
