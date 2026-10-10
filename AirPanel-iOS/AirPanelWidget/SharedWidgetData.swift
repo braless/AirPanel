@@ -14,6 +14,7 @@ enum SharedWidgetData {
         var battery: Int      // 0~100，未知为 -1
         var csq: Int          // 信号 0~31，未知为 -1
         var netMode: String   // 网络模式
+        var lastSeen: Int64?  // 最后在线时间戳（秒），未知为 nil
     }
 
     struct SmsItem: Codable {
@@ -97,13 +98,23 @@ func wgMaskedIMEI(_ s: String) -> String {
     return String(s.prefix(6)) + "****" + String(s.suffix(2))
 }
 
+/// 最后在线时间的相对展示
+func wgLastSeenText(_ ts: Int64?) -> String {
+    guard let ts, ts > 0 else { return "-" }
+    let s = Date().timeIntervalSince1970 - TimeInterval(ts)
+    if s < 60 { return "刚刚" }
+    if s < 3600 { return "\(Int(s / 60))分钟前" }
+    if s < 86400 { return "\(Int(s / 3600))小时前" }
+    return "\(Int(s / 86400))天前"
+}
+
 // MARK: - Widget 端网络直连
 /// 小组件用 App 登录后写入共享区的「服务器地址 + 令牌」直连拉数据（不保存密码）。
 enum WidgetAPI {
     private struct Cfg { let baseURL: String; let token: String }
 
     // 响应模型（仅取所需字段，多余字段自动忽略）
-    private struct WDevice: Codable { let imei: String; let phone: String; let name: String; let connected: Bool }
+    private struct WDevice: Codable { let imei: String; let phone: String; let name: String; let connected: Bool; let lastSeen: Int64? }
     private struct WOverview: Codable { let battery: WBat?; let latest: WLate? }
     private struct WBat: Codable { let percent: Int? }
     private struct WLate: Codable { let csq: Int?; let netMode: String? }
@@ -150,7 +161,8 @@ enum WidgetAPI {
             let ov = try? await get(WOverview.self, "/api/device/overview?imei=\(d.imei)", c)
             return SharedWidgetData.DeviceItem(imei: d.imei, name: d.name, phone: d.phone,
                                               online: d.connected, battery: ov?.battery?.percent ?? -1,
-                                              csq: ov?.latest?.csq ?? -1, netMode: ov?.latest?.netMode ?? "")
+                                              csq: ov?.latest?.csq ?? -1, netMode: ov?.latest?.netMode ?? "",
+                                              lastSeen: d.lastSeen)
         } catch { return nil }
     }
 
