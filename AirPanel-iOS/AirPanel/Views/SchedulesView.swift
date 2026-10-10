@@ -119,6 +119,7 @@ struct SchedulesView: View {
             schedules = r.schedules; total = r.total
             errorMsg = nil
         } catch {
+            if isCancelError(error) { return }
             errorMsg = (error as? APIError)?.message ?? error.localizedDescription
         }
         loading = false

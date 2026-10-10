@@ -259,6 +259,7 @@ struct RecordsView: View {
             }
             state = .loaded
         } catch {
+            if isCancelError(error) { return }
             state = .failed((error as? APIError)?.message ?? error.localizedDescription)
         }
     }
@@ -275,6 +276,7 @@ struct RecordsView: View {
                 sms.append(contentsOf: r.sms); smsPage = next
             }
         } catch {
+            if isCancelError(error) { return }
             state = .failed((error as? APIError)?.message ?? error.localizedDescription)
         }
     }
