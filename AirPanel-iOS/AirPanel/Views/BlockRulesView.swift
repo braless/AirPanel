@@ -113,7 +113,7 @@ struct BlockRulesView: View {
             let r = try await store.api.blockRules(type: kind == .keyword ? "keyword" : "number")
             rules = r.rules
         } catch {
-            if isCancelError(error) { return }
+            if isCancelError(error) { loading = false; return }
             errorMsg = (error as? APIError)?.message ?? error.localizedDescription
         }
         loading = false
