@@ -27,6 +27,9 @@ var (
 	invalidTokens = map[string]int64{} // token -> 过期时间(ms)
 )
 
+// 登录 Token 有效期：2 个月（60 天）
+const tokenExpireDuration = 60 * 24 * time.Hour
+
 // API 服务
 type API struct {
 	app *App
@@ -146,7 +149,7 @@ func (api *API) handleLogin(w http.ResponseWriter, r *http.Request) {
 	claims := jwt.MapClaims{
 		"username": body.Username,
 		"version":  cfg.TokenVersion,
-		"exp":      time.Now().Add(24 * time.Hour).Unix(),
+		"exp":      time.Now().Add(tokenExpireDuration).Unix(),
 	}
 	tk := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenStr, err := tk.SignedString([]byte(cfg.JWTSecret))
@@ -161,7 +164,7 @@ func (api *API) handleLogout(w http.ResponseWriter, r *http.Request) {
 	token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
 	if token != "" {
 		authMu.Lock()
-		invalidTokens[token] = time.Now().Add(24 * time.Hour).UnixMilli()
+		invalidTokens[token] = time.Now().Add(tokenExpireDuration).UnixMilli()
 		authMu.Unlock()
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"message": "退出登录成功"})
