@@ -77,19 +77,6 @@ struct SettingsView: View {
                     }
                     .padding(.vertical, 8)
                 }
-                Divider().overlay(Theme.stroke)
-                HStack {
-                    Text("发送测试通知").font(.system(size: 14)).foregroundColor(Theme.text)
-                    Spacer()
-                    Button {
-                        Task { await testNotify() }
-                    } label: {
-                        Text("测试").font(.system(size: 13, weight: .semibold)).foregroundColor(Theme.text)
-                            .padding(.horizontal, 14).padding(.vertical, 7)
-                            .background(Theme.accent.opacity(0.28), in: Capsule())
-                    }.buttonStyle(.plain)
-                }
-                .padding(.vertical, 8)
             }
         }
     }
