@@ -15,8 +15,8 @@ struct CallsProvider: TimelineProvider {
     }
     func getTimeline(in context: Context, completion: @escaping (Timeline<CallsEntry>) -> Void) {
         Task {
-            let fresh = await WidgetAPI.fetchCalls()
-            let items = fresh.isEmpty ? SharedWidgetData.calls() : fresh
+            let cached = SharedWidgetData.calls()
+            let items = cached.isEmpty ? await WidgetAPI.fetchCalls() : cached
             completion(Timeline(entries: [CallsEntry(date: Date(), items: items)],
                                 policy: .after(Date().addingTimeInterval(900))))
         }

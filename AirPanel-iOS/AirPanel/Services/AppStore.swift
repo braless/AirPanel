@@ -56,7 +56,24 @@ final class AppStore: ObservableObject {
         appearance = Appearance(rawValue: defaults.string(forKey: Self.kAppearance) ?? "") ?? .auto
         rememberPassword = defaults.bool(forKey: Self.kRemember)
         if loggedIn {
-            Task { await refreshDevices() }
+            Task { await refreshDevices(); await loadRecordsForWidget() }
+        }
+    }
+
+    /// 拉取最近短信与来电写入小组件共享区（登录后 / 打开时调用，避免依赖 Widget 自身网络）
+    func loadRecordsForWidget() async {
+        guard loggedIn else { return }
+        if let c = try? await api.calls(page: 1) {
+            saveCallsForWidget(c.calls.prefix(8).map {
+                SharedWidgetData.CallItem(number: $0.number, direction: $0.direction,
+                                          time: $0.startedAt, spam: $0.spam > 0)
+            })
+        }
+        if let s = try? await api.sms(page: 1) {
+            saveSmsForWidget(s.sms.prefix(8).map {
+                SharedWidgetData.SmsItem(number: $0.number, content: $0.content,
+                                         time: $0.createdAt, spam: $0.spam > 0)
+            })
         }
     }
 
@@ -104,6 +121,7 @@ final class AppStore: ObservableObject {
             defaults.removeObject(forKey: Self.kSavedPwd)
         }
         await refreshDevices()
+        await loadRecordsForWidget()
     }
 
     func logout() async {
