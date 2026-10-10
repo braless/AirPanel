@@ -38,11 +38,15 @@ final class AppStore: ObservableObject {
     @Published var lastCsq: Int = -1
     @Published var lastNetMode: String = ""
     @Published var lastCharging: Bool = false
+    @Published var rememberPassword: Bool = false
 
     private let defaults = UserDefaults.standard
     private static let kBase = "airpanel.baseURL"
     private static let kToken = "airpanel.token"
     private static let kAppearance = "airpanel.appearance"
+    private static let kRemember = "airpanel.remember"
+    private static let kSavedUser = "airpanel.savedUser"
+    private static let kSavedPwd = "airpanel.savedPwd"
 
     init() {
         baseURLText = defaults.string(forKey: Self.kBase) ?? "http://142.248.137.59:9527"
@@ -50,10 +54,15 @@ final class AppStore: ObservableObject {
         token = t
         loggedIn = !t.isEmpty
         appearance = Appearance(rawValue: defaults.string(forKey: Self.kAppearance) ?? "") ?? .auto
+        rememberPassword = defaults.bool(forKey: Self.kRemember)
         if loggedIn {
             Task { await refreshDevices() }
         }
     }
+
+    /// 记住的账号 / 密码（仅在开启“记住密码”时存在）
+    var savedUsername: String? { defaults.string(forKey: Self.kSavedUser) }
+    var savedPassword: String? { defaults.string(forKey: Self.kSavedPwd) }
 
     /// 切换外观模式并持久化
     func setAppearance(_ a: Appearance) {
@@ -72,8 +81,8 @@ final class AppStore: ObservableObject {
         return devices.first { $0.imei == imei } ?? devices.first
     }
 
-    /// 登录并保存令牌 / 服务器地址
-    func login(username: String, password: String, baseURL: String) async throws {
+    /// 登录并保存令牌 / 服务器地址；remember 为真则记住账号密码
+    func login(username: String, password: String, baseURL: String, remember: Bool) async throws {
         let normalized = baseURL.hasSuffix("/") ? String(baseURL.dropLast()) : baseURL
         let api = APIClient(baseURL: URL(string: normalized) ?? URL(string: "http://localhost")!,
                             token: "")
@@ -81,8 +90,17 @@ final class AppStore: ObservableObject {
         self.baseURLText = normalized
         self.token = tk
         self.loggedIn = true
+        self.rememberPassword = remember
         defaults.set(normalized, forKey: Self.kBase)
         defaults.set(tk, forKey: Self.kToken)
+        defaults.set(remember, forKey: Self.kRemember)
+        if remember {
+            defaults.set(username, forKey: Self.kSavedUser)
+            defaults.set(password, forKey: Self.kSavedPwd)
+        } else {
+            defaults.removeObject(forKey: Self.kSavedUser)
+            defaults.removeObject(forKey: Self.kSavedPwd)
+        }
         await refreshDevices()
     }
 
