@@ -846,6 +846,8 @@
                       style="color:#64748b;border-bottom:2px solid transparent;margin-bottom:-1px">离线通知</button>
               <button type="button" class="set-tab-btn px-4 py-2 text-sm transition-colors" data-set-tab="led"
                       style="color:#64748b;border-bottom:2px solid transparent;margin-bottom:-1px">灯光控制</button>
+              <button type="button" class="set-tab-btn px-4 py-2 text-sm transition-colors" data-set-tab="powersave"
+                      style="color:#64748b;border-bottom:2px solid transparent;margin-bottom:-1px">省电模式</button>
             </div>
 
             <!-- 登录账号 -->
@@ -977,6 +979,65 @@
                 </div>
 
                 <p id="led-settings-msg" class="hidden text-sm"></p>
+                <button type="submit" class="btn btn-primary">保存设置</button>
+              </form>
+            </div>
+
+            <!-- 省电模式 -->
+            <div id="set-tab-powersave" class="card p-6 mt-6 hidden">
+              <form id="powersave-form" class="space-y-6">
+                <div class="flex items-center justify-between gap-4 rounded-lg bg-slate-50 px-4 py-3">
+                  <div>
+                    <label class="font-medium text-sm text-slate-700" for="powersave-enable">启用省电模式</label>
+                    <p class="text-xs text-slate-400 mt-0.5">在设定时段进入低功耗，降低待机功耗</p>
+                  </div>
+                  <input id="powersave-enable" type="checkbox" class="w-5 h-5 shrink-0" style="accent-color:#2563eb">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="label" for="powersave-start">开始小时</label>
+                    <select id="powersave-start" class="input"></select>
+                  </div>
+                  <div>
+                    <label class="label" for="powersave-end">结束小时</label>
+                    <select id="powersave-end" class="input"></select>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="label">省电档位</label>
+                  <div class="space-y-2">
+                    <label class="flex items-start gap-3 rounded-lg bg-slate-50 px-4 py-3 cursor-pointer">
+                      <input type="radio" name="powersave-deep" value="false" class="mt-1" style="accent-color:#2563eb">
+                      <span><span class="font-medium text-sm text-slate-700">半在线（推荐）</span><br><span class="text-xs text-slate-400 mt-0.5">保持 MQTT 在线，仅停周期任务/关灯/拉长心跳，接收短信来电不丢失</span></span>
+                    </label>
+                    <label class="flex items-start gap-3 rounded-lg bg-slate-50 px-4 py-3 cursor-pointer">
+                      <input type="radio" name="powersave-deep" value="true" class="mt-1" style="accent-color:#2563eb">
+                      <span><span class="font-medium text-sm text-slate-700">彻底离线深睡</span><br><span class="text-xs text-slate-400 mt-0.5">进入飞行模式断网，射频全关最省电，但夜间失联，短信存 SIM 卡醒来补收，来电会丢失</span></span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="label" for="powersave-heartbeat">省电心跳间隔（毫秒）</label>
+                    <input id="powersave-heartbeat" type="number" min="60000" step="60000" class="input" value="600000">
+                    <p class="text-xs text-slate-400 mt-1">省电期间应用心跳间隔，拉长降低唤醒频率</p>
+                  </div>
+                  <div>
+                    <label class="label" for="powersave-telemetry">省电遥测间隔（毫秒）</label>
+                    <input id="powersave-telemetry" type="number" min="0" step="10000" class="input" value="0">
+                    <p class="text-xs text-slate-400 mt-1">0 表示省电时暂停遥测上报</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="label" for="powersave-device">目标设备</label>
+                  <select id="powersave-device" class="input"></select>
+                </div>
+
+                <p id="powersave-msg" class="hidden text-sm"></p>
                 <button type="submit" class="btn btn-primary">保存设置</button>
               </form>
             </div>

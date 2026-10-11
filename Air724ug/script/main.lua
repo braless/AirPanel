@@ -36,6 +36,7 @@ require "usbmsc"
 require "websocket"
 
 local util_mqtt = require "util_mqtt"
+local util_powersave = require "util_powersave"
 -- 配置
 local GOTIFY_POLL_INTERVAL = 20 * 1000 -- 轮询间隔 20 秒
 -- 输出音频通道选项, 0:听筒 1:耳机 2:喇叭
@@ -60,8 +61,8 @@ audiocore.setpa(audiocore.CLASS_D)
 -- 设置睡眠等待时间
 -- ril.request("AT+WAKETIM=0")
 
--- 定时查询温度
-sys.timerLoopStart(util_temperature.get, 1000 * 60)
+-- 定时查询温度（省电模式下自动暂停）
+util_powersave.trackTimer("temperature", function() return sys.timerLoopStart(util_temperature.get, 1000 * 60) end)
 -- 定时查询 信号强度 基站信息
 net.startQueryAll(1000 * 60, 1000 * 60 * 10)
 
@@ -276,7 +277,10 @@ local function poll_gotify_messages()
             log.warn("Gotify Polling", "消息无效或 JSON 解析失败")
         end
     end)
-    sys.timerStart(poll_gotify_messages, GOTIFY_POLL_INTERVAL) -- 设置下一次轮询
+    -- 省电模式下暂停 Gotify 轮询（降低外设唤醒），退出省电后由下一轮检查恢复
+    if not util_powersave.inPowerSave() then
+        sys.timerStart(poll_gotify_messages, GOTIFY_POLL_INTERVAL) -- 设置下一次轮询
+    end
 end
 
 -- 根据优先级启动 WebSocket 或轮询
@@ -324,7 +328,8 @@ sys.taskInit(function()
 
     -- 开机同步时间
     util_ntp.sync()
-    sys.timerLoopStart(util_ntp.sync, 1000 * 30)
+    -- 周期同步时间（省电模式下自动暂停）
+    util_powersave.trackTimer("ntp", function() return sys.timerLoopStart(util_ntp.sync, 1000 * 30) end)
     -- 检查配置是否有效
     if not GOTIFY_WS_URL or not GOTIFY_POLL_URL then
         log.error("Gotify", "无法启动监听，因配置无效")
@@ -340,6 +345,8 @@ sys.subscribe("SIM_IND", function(msg)
         util_mobile.pinVerify()
     end
 end)
+-- 启动省电模式调度（到点自动进入/退出省电）
+util_powersave.start()
 -- 系统初始化
 sys.init(0, 0)
 sys.run()
