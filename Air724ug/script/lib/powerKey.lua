@@ -16,6 +16,15 @@ shortcb：短按键处理函数
 ]]
 local sta,longprd,longcb,shortcb = "IDLE",3000
 
+-- 矩阵按键（非电源键，如 K2/K3）回调，由外部注册（如灯效切换），不触发电源键逻辑
+local matrixCb = nil
+
+--- 注册矩阵按键回调
+-- @function cb 收到矩阵键消息时调用 cb(row, col, pressed)
+function setMatrixCb(cb)
+    matrixCb = cb
+end
+
 local function longtimercb()
     log.info("keypad.longtimercb")
     sta = "LONGPRESSED"	
@@ -23,6 +32,11 @@ end
 
 local function keyMsg(msg)
     log.info("keyMsg",msg.key_matrix_row,msg.key_matrix_col,msg.pressed)
+    -- 矩阵按键（row ~= 255）：转交外部回调处理，不占用电源键短按/长按逻辑
+    if msg.key_matrix_row ~= 255 then
+        if matrixCb then matrixCb(msg.key_matrix_row, msg.key_matrix_col, msg.pressed) end
+        return
+    end
     if msg.pressed then
         sta = "PRESSED"
         sys.timerStart(longtimercb,longprd)
@@ -54,4 +68,5 @@ function setup(longPrd,longCb,shortCb)
 end
 
 rtos.on(rtos.MSG_KEYPAD,keyMsg)
-rtos.init_module(rtos.MOD_KEYPAD,0,0,0)
+-- 使能矩阵按键（row=255 电源键 + 外部矩阵键 K2/K3 等），外部键经 setMatrixCb 分流处理
+rtos.init_module(rtos.MOD_KEYPAD,1,0xFF,0xFF)

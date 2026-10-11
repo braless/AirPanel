@@ -22,6 +22,8 @@ local is_usb_lighting = false  -- USB 插入黄灯
 local usb_light_timer_id = nil
 local network_ok = false      -- 网络/MQTT 是否就绪
 local temp_color = nil        -- 临时单色（由 set_led color 动作设置），nil 表示未启用
+-- 事件反馈灯效（来短信/来电话，由服务端 set_led feedback 触发）
+local fb_color, fb_blink, fb_until = nil, false, 0
 local CONFIG_FILE = "/led_mode.config"
 
 -- ============ 基础点亮（每次点亮前先熄灭三脚，防止混色残留） ============
@@ -110,17 +112,27 @@ end
 local function render()
     -- 1. 蓝灯闪烁（按键反馈 / 新短信）
     if is_blue_blinking then blue() sys.wait(100) return end
-    -- 2. USB 插入黄灯提醒
+    -- 2. 事件反馈灯效（来短信/来电话，服务端配置下发）
+    if fb_color and rtos.tick() < fb_until then
+        if fb_blink then
+            COLOR_FN[fb_color]() sys.wait(200)
+            off() sys.wait(200)
+        else
+            COLOR_FN[fb_color]() sys.wait(100)
+        end
+        return
+    end
+    -- 3. USB 插入黄灯提醒
     if is_usb_lighting then yellow() sys.wait(100) return end
-    -- 3. 无网络强制红灯告警
+    -- 4. 无网络强制红灯告警
     if not network_ok then red() sys.wait(500) return end
-    -- 4. 手动关灯
+    -- 5. 手动关灯
     if is_light_off then off() sys.wait(200) return end
-    -- 5. 临时单色（服务端 set_led color 动作）
+    -- 6. 临时单色（服务端 set_led color 动作）
     if temp_color and COLOR_FN[temp_color] then
         COLOR_FN[temp_color]() sys.wait(200) return
     end
-    -- 6. 按模式渲染
+    -- 7. 按模式渲染
     if     current_mode == 1 then yellow()    sys.wait(200)
     elseif current_mode == 2 then neon_breath()
     elseif current_mode == 3 then cyan()      sys.wait(200)
@@ -184,6 +196,17 @@ end
 -- 清除临时色（恢复模式渲染）
 function clear_color()
     temp_color = nil
+end
+
+-- 事件反馈灯效（来短信/来电话，服务端 set_led feedback 触发）
+-- color: 颜色名；blink: 是否闪烁；ms: 持续时间(默认5000)，到期自动恢复模式渲染
+function feedback(color, blink, ms)
+    if not color or not COLOR_FN[color] then return nil end
+    fb_color = color
+    fb_blink = blink and true or false
+    fb_until = rtos.tick() + ((ms and ms > 0) and ms or 5000)
+    log.info("LED", "事件灯光:", color, "闪烁:", fb_blink, "时长ms:", fb_until - rtos.tick())
+    return color
 end
 
 -- 查询状态（供 set_led 返回）

@@ -844,6 +844,8 @@
                       style="color:#2563eb;border-bottom:2px solid #2563eb;margin-bottom:-1px;font-weight:600">登录账号</button>
               <button type="button" class="set-tab-btn px-4 py-2 text-sm transition-colors" data-set-tab="notify"
                       style="color:#64748b;border-bottom:2px solid transparent;margin-bottom:-1px">离线通知</button>
+              <button type="button" class="set-tab-btn px-4 py-2 text-sm transition-colors" data-set-tab="led"
+                      style="color:#64748b;border-bottom:2px solid transparent;margin-bottom:-1px">灯光控制</button>
             </div>
 
             <!-- 登录账号 -->
@@ -890,6 +892,92 @@
                   <button type="submit" class="btn btn-primary">保存设置</button>
                   <button type="button" id="notify-test-btn" class="btn">发送测试通知</button>
                 </div>
+              </form>
+            </div>
+
+            <!-- 灯光控制 -->
+            <div id="set-tab-led" class="card p-6 mt-6 hidden">
+              <form id="led-settings-form" class="space-y-6">
+                <!-- 来短信灯光 -->
+                <div>
+                  <h3 class="font-semibold text-slate-900 mb-1">来短信灯光</h3>
+                  <p class="text-xs text-slate-400 mb-3">设备收到新短信时，RGB 氛围灯按此反馈（需设备在线且已烧录新固件）</p>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="flex items-center justify-between gap-4 rounded-lg bg-slate-50 px-4 py-3 sm:col-span-2">
+                      <div>
+                        <label class="font-medium text-sm text-slate-700" for="led-sms-enabled">启用来短信灯光</label>
+                        <p class="text-xs text-slate-400 mt-0.5">关闭则来短信不触发灯光反馈</p>
+                      </div>
+                      <input id="led-sms-enabled" type="checkbox" class="w-5 h-5 shrink-0" style="accent-color:#2563eb">
+                    </div>
+                    <div>
+                      <label class="label" for="led-sms-color">灯光颜色</label>
+                      <select id="led-sms-color" class="input">
+                        <option value="blue">🔵 蓝</option>
+                        <option value="green">🟢 绿</option>
+                        <option value="red">🔴 红</option>
+                        <option value="yellow">🟡 黄</option>
+                        <option value="purple">🟣 紫</option>
+                        <option value="cyan">🩵 青</option>
+                        <option value="white">⚪ 白</option>
+                        <option value="off">熄灭</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="label" for="led-sms-duration">持续时长（毫秒）</label>
+                      <input id="led-sms-duration" type="number" min="500" max="300000" step="500" class="input" value="5000">
+                    </div>
+                    <div class="flex items-center justify-between gap-4 rounded-lg bg-slate-50 px-4 py-3 sm:col-span-2">
+                      <div>
+                        <label class="font-medium text-sm text-slate-700" for="led-sms-blink">闪烁提示</label>
+                        <p class="text-xs text-slate-400 mt-0.5">勾选后灯光交替闪烁，更醒目</p>
+                      </div>
+                      <input id="led-sms-blink" type="checkbox" class="w-5 h-5 shrink-0" style="accent-color:#2563eb">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 来电话灯光 -->
+                <div class="border-t border-slate-100 pt-5">
+                  <h3 class="font-semibold text-slate-900 mb-1">来电话灯光</h3>
+                  <p class="text-xs text-slate-400 mb-3">设备有来电（含未接/拒接）时，RGB 氛围灯按此反馈</p>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="flex items-center justify-between gap-4 rounded-lg bg-slate-50 px-4 py-3 sm:col-span-2">
+                      <div>
+                        <label class="font-medium text-sm text-slate-700" for="led-call-enabled">启用来电话灯光</label>
+                        <p class="text-xs text-slate-400 mt-0.5">关闭则来电不触发灯光反馈</p>
+                      </div>
+                      <input id="led-call-enabled" type="checkbox" class="w-5 h-5 shrink-0" style="accent-color:#2563eb">
+                    </div>
+                    <div>
+                      <label class="label" for="led-call-color">灯光颜色</label>
+                      <select id="led-call-color" class="input">
+                        <option value="red">🔴 红</option>
+                        <option value="green">🟢 绿</option>
+                        <option value="blue">🔵 蓝</option>
+                        <option value="yellow">🟡 黄</option>
+                        <option value="purple">🟣 紫</option>
+                        <option value="cyan">🩵 青</option>
+                        <option value="white">⚪ 白</option>
+                        <option value="off">熄灭</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="label" for="led-call-duration">持续时长（毫秒）</label>
+                      <input id="led-call-duration" type="number" min="500" max="300000" step="500" class="input" value="5000">
+                    </div>
+                    <div class="flex items-center justify-between gap-4 rounded-lg bg-slate-50 px-4 py-3 sm:col-span-2">
+                      <div>
+                        <label class="font-medium text-sm text-slate-700" for="led-call-blink">闪烁提示</label>
+                        <p class="text-xs text-slate-400 mt-0.5">勾选后灯光交替闪烁，更醒目</p>
+                      </div>
+                      <input id="led-call-blink" type="checkbox" class="w-5 h-5 shrink-0" style="accent-color:#2563eb">
+                    </div>
+                  </div>
+                </div>
+
+                <p id="led-settings-msg" class="hidden text-sm"></p>
+                <button type="submit" class="btn btn-primary">保存设置</button>
               </form>
             </div>
           </div>

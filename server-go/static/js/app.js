@@ -1824,6 +1824,66 @@
       .map((cb) => cb.dataset.channel);
   }
 
+  // ---------------- 灯光控制设置 ----------------
+
+  // 加载灯光控制设置（来短信/来电话灯光）
+  async function loadLedSettings() {
+    const wrap = $('#led-settings-form');
+    if (!wrap) return;
+    try {
+      if (!notifySettings) notifySettings = await API.getSettings();
+      const sms = notifySettings.smsLed || {};
+      const call = notifySettings.callLed || {};
+      $('#led-sms-enabled').checked = !!sms.enabled;
+      $('#led-sms-color').value = sms.color || 'blue';
+      $('#led-sms-blink').checked = !!sms.blink;
+      $('#led-sms-duration').value = sms.duration || 5000;
+      $('#led-call-enabled').checked = !!call.enabled;
+      $('#led-call-color').value = call.color || 'red';
+      $('#led-call-blink').checked = !!call.blink;
+      $('#led-call-duration').value = call.duration || 5000;
+    } catch (err) {
+      toast(err.message, false);
+    }
+  }
+
+  // 保存灯光控制设置
+  async function handleLedSettings(e) {
+    e.preventDefault();
+    const msg = $('#led-settings-msg');
+    msg.className = 'hidden';
+    const smsLed = {
+      enabled: $('#led-sms-enabled').checked,
+      color: $('#led-sms-color').value,
+      blink: $('#led-sms-blink').checked,
+      duration: parseInt($('#led-sms-duration').value, 10) || 5000,
+    };
+    const callLed = {
+      enabled: $('#led-call-enabled').checked,
+      color: $('#led-call-color').value,
+      blink: $('#led-call-blink').checked,
+      duration: parseInt($('#led-call-duration').value, 10) || 5000,
+    };
+    try {
+      // 保存时带上现有通知设置，避免被覆盖
+      const payload = {
+        notifyEnabled: notifySettings ? !!notifySettings.notifyEnabled : false,
+        notifyChannels: notifySettings && notifySettings.notifyChannels ? notifySettings.notifyChannels : [],
+        notifyConfig: notifySettings && notifySettings.notifyConfig ? notifySettings.notifyConfig : {},
+        smsLed: smsLed,
+        callLed: callLed,
+      };
+      await API.saveSettings(payload);
+      notifySettings = Object.assign({}, notifySettings, { smsLed: smsLed, callLed: callLed });
+      msg.textContent = '设置已保存';
+      msg.className = 'text-sm text-emerald-600';
+      toast('灯光设置已保存');
+    } catch (err) {
+      msg.textContent = err.message;
+      msg.className = 'text-sm text-red-600';
+    }
+  }
+
   // 收集当前勾选渠道的配置表单值
   function collectNotifyConfig(channels) {
     const config = {};
@@ -1870,6 +1930,7 @@
     $('#notify-settings-form').addEventListener('submit', handleNotifySettings);
     $('#notify-test-btn').addEventListener('click', sendTestNotify);
     $('#notify-channels-list').addEventListener('change', onNotifyChannelChange);
+    $('#led-settings-form').addEventListener('submit', handleLedSettings);
     // 设置页 Tab 切换
     $$('.set-tab-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -1883,6 +1944,7 @@
         $$('[id^="set-tab-"]').forEach((el) => {
           el.classList.toggle('hidden', !el.id.endsWith(tab));
         });
+        if (tab === 'led') loadLedSettings();
       });
     });
     $('#clear-tasks-7d').addEventListener('click', () => clearTasks(7));

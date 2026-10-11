@@ -342,6 +342,11 @@ local function handleTask(imei, json_data)
                         local c = led_rgb.set_color(json_data.color)
                         if c then result = { success = true, color = c }
                         else error = "参数 color 无效（支持 off/red/green/blue/yellow/purple/cyan/white）" end
+                    elseif action == "feedback" then
+                        -- 事件反馈灯效（来短信/来电话）：color + blink + duration，到期自动恢复
+                        local c = led_rgb.feedback(json_data.color, json_data.blink, tonumber(json_data.duration))
+                        if c then result = { success = true, feedback = c }
+                        else error = "参数 color 无效（支持 off/red/green/blue/yellow/purple/cyan/white）" end
                     elseif action == "status" then
                         result = led_rgb.status()
                     else

@@ -358,6 +358,10 @@ func (a *App) handleDevicePublish(clientID, topic, payload string) {
 			log.Printf("通话记录已保存 - IMEI: %s, 号码: %s, 方向: %s, 状态: %s, 垃圾: %v, 命中规则: %s",
 				imei, msg.Number, msg.Direction, msg.Status, spam, spamRule)
 		}
+		// 来电话事件灯光反馈（Web 设置页配置，设备在线时下发）
+		if msg.Direction == "incoming" {
+			a.triggerEventLED(imei, a.getSettings().CallEventLED)
+		}
 
 	case strings.HasPrefix(topic, topicPrefixDevice) && strings.HasSuffix(topic, "/sms_record"):
 		var msg smsRecordMsg
@@ -375,6 +379,10 @@ func (a *App) handleDevicePublish(clientID, topic, payload string) {
 		} else {
 			log.Printf("短信记录已保存 - IMEI: %s, 号码: %s, 方向: %s, 垃圾: %v, 命中规则: %s",
 				imei, msg.Number, msg.Direction, spam, spamRule)
+		}
+		// 来短信事件灯光反馈（Web 设置页配置，设备在线时下发）
+		if msg.Direction == "in" {
+			a.triggerEventLED(imei, a.getSettings().SMSEventLED)
 		}
 
 	case strings.HasPrefix(topic, topicPrefixDevice) && strings.HasSuffix(topic, "/telemetry"):
@@ -425,6 +433,23 @@ func (a *App) handleDevicePublish(clientID, topic, payload string) {
 	default:
 		log.Printf("未知设备消息 topic=%s", topic)
 	}
+}
+
+// triggerEventLED 事件灯光反馈：按 Web 设置页配置，向在线设备下发 set_led feedback（异步，不阻塞上报处理）
+func (a *App) triggerEventLED(imei string, cfg EventLED) {
+	if !cfg.Enabled || cfg.Color == "" || cfg.Color == "off" {
+		return
+	}
+	duration := cfg.Duration
+	if duration <= 0 {
+		duration = 5000
+	}
+	params := map[string]any{"action": "feedback", "color": cfg.Color, "blink": cfg.Blink, "duration": duration}
+	go func() {
+		if _, err := a.ExecuteTask(imei, "set_led", params); err != nil {
+			log.Printf("下发事件灯光失败 imei=%s: %v", imei, err)
+		}
+	}()
 }
 
 // refreshBlockRules 从数据库重新加载启用的屏蔽规则（服务启动与规则变更时调用）

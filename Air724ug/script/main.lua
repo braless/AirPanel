@@ -74,6 +74,21 @@ netLed.setup(false)
 led_rgb.start()
 if not nvm.get("LED_ENABLE") then led_rgb.light_off() end
 
+-- 矩阵按键（板载 K2/K3，与闲鱼作者版映射一致）：K2 下一灯效 / K3 上一灯效
+-- 电源键(row=255)仍由 powerKey 菜单系统处理，此处只接管矩阵键
+if powerKey and powerKey.setMatrixCb then
+    powerKey.setMatrixCb(function(row, col, pressed)
+        if not pressed then return end
+        if (row == 1 and col == 255) or (row == 0 and col == 1) then
+            log.info("KEYPAD", "K2 按下 -> 切换下一灯效")
+            led_rgb.next_mode()
+        elseif (row == 1 and col == 0) or (row == 0 and col == 0) or (row == 2 and col == 0) then
+            log.info("KEYPAD", "K3 按下 -> 切换上一灯效")
+            led_rgb.prev_mode()
+        end
+    end)
+end
+
 -- 开机查询本机号码
 sim.setQueryNumber(true)
 sys.timerStart(ril.request, 3000, "AT+CNUM")
