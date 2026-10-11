@@ -235,6 +235,8 @@ func (api *API) handleSaveSettings(w http.ResponseWriter, r *http.Request) {
 		NotifyEnabled  bool                         `json:"notifyEnabled"`
 		NotifyChannels []string                     `json:"notifyChannels"`
 		NotifyConfig   map[string]map[string]string `json:"notifyConfig"`
+		SMSEventLED    EventLED                     `json:"smsLed"`
+		CallEventLED   EventLED                     `json:"callLed"`
 	}
 	if err := decodeJSON(r, &body); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"message": "请求体格式错误"})
@@ -250,6 +252,8 @@ func (api *API) handleSaveSettings(w http.ResponseWriter, r *http.Request) {
 		body.NotifyConfig = map[string]map[string]string{}
 	}
 	s.NotifyConfig = body.NotifyConfig
+	s.SMSEventLED = body.SMSEventLED
+	s.CallEventLED = body.CallEventLED
 
 	if err := api.app.saveSettings(s); err != nil {
 		log.Printf("保存设置失败: %v", err)

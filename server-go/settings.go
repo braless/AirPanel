@@ -10,13 +10,23 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Settings 面板设置（账号 / 离线通知）
+// EventLED 事件灯光配置（来短信/来电话时设备灯光反馈）
+type EventLED struct {
+	Enabled  bool   `json:"enabled"`
+	Color    string `json:"color"`    // off/red/green/blue/yellow/purple/cyan/white
+	Blink    bool   `json:"blink"`    // 是否闪烁
+	Duration int    `json:"duration"` // 持续毫秒，默认 5000
+}
+
+// Settings 面板设置（账号 / 离线通知 / 事件灯光）
 type Settings struct {
 	Username       string                       `json:"username"`
 	Password       string                       `json:"-"` // bcrypt 哈希，不返回给前端
 	NotifyEnabled  bool                         `json:"notifyEnabled"`  // 是否启用离线通知
 	NotifyChannels []string                     `json:"notifyChannels"` // 启用的通知渠道
 	NotifyConfig   map[string]map[string]string `json:"notifyConfig"`   // 各渠道配置项
+	SMSEventLED    EventLED                     `json:"smsLed"`         // 来短信灯光
+	CallEventLED   EventLED                     `json:"callLed"`        // 来电话灯光
 }
 
 // settings 表的键名
@@ -26,6 +36,8 @@ const (
 	settingNotifyEnabled  = "notify_enabled"
 	settingNotifyChannels = "notify_channels"
 	settingNotifyConfig   = "notify_config"
+	settingSMSEventLED    = "sms_led"
+	settingCallEventLED   = "call_led"
 )
 
 // defaultOfflineTimeout 固定离线判定超时（秒）= 5 分钟，不支持远程修改。
@@ -65,6 +77,18 @@ func (d *DB) loadSettings() (*Settings, error) {
 	if s.NotifyConfig == nil {
 		s.NotifyConfig = map[string]map[string]string{}
 	}
+	if v := all[settingSMSEventLED]; v != "" {
+		_ = json.Unmarshal([]byte(v), &s.SMSEventLED)
+	}
+	if v := all[settingCallEventLED]; v != "" {
+		_ = json.Unmarshal([]byte(v), &s.CallEventLED)
+	}
+	if s.SMSEventLED.Duration == 0 {
+		s.SMSEventLED.Duration = 5000
+	}
+	if s.CallEventLED.Duration == 0 {
+		s.CallEventLED.Duration = 5000
+	}
 	return s, nil
 }
 
@@ -84,12 +108,16 @@ func (d *DB) saveSettings(s *Settings) error {
 	if len(cf) == 0 {
 		cf = []byte("{}")
 	}
+	sled, _ := json.Marshal(s.SMSEventLED)
+	cled, _ := json.Marshal(s.CallEventLED)
 	pairs := [][2]string{
 		{settingUsername, s.Username},
 		{settingPassword, s.Password},
 		{settingNotifyEnabled, boolToStr(s.NotifyEnabled)},
 		{settingNotifyChannels, string(ch)},
 		{settingNotifyConfig, string(cf)},
+		{settingSMSEventLED, string(sled)},
+		{settingCallEventLED, string(cled)},
 	}
 	for _, kv := range pairs {
 		if err := d.setSetting(kv[0], kv[1]); err != nil {
