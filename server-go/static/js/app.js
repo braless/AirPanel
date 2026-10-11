@@ -1931,8 +1931,20 @@
     else if (devices.length === 1) sel.value = devices[0].imei;
   }
 
+  // 填充开始/结束小时下拉（0-23）
+  function fillHourSelects() {
+    const s = $('#powersave-start');
+    const e = $('#powersave-end');
+    if (!s || !e) return;
+    const opts = [];
+    for (let h = 0; h < 24; h++) opts.push(`<option value="${h}">${h} 点</option>`);
+    if (s.options.length === 0) s.innerHTML = opts.join('');
+    if (e.options.length === 0) e.innerHTML = opts.join('');
+  }
+
   // 读取设备省电配置
   async function loadPowersaveSettings() {
+    fillHourSelects();
     const sel = $('#powersave-device');
     if (!sel) return;
     fillPowersaveDevice();
