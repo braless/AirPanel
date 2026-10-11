@@ -197,12 +197,23 @@ local options = {
         end,
     },
     {
-        name = "状态指示灯",
+        name = "氛围灯开关",
         func = function()
             local state = not nvm.get("LED_ENABLE")
-            pmd.ldoset(state and 1 or 0, pmd.LDO_VLCD)
             nvm.set("LED_ENABLE", state)
-            tts("指示灯 " .. (state and "开" or "关"))
+            if state then led_rgb.light_on() else led_rgb.light_off() end
+            tts("氛围灯 " .. (state and "开" or "关"))
+        end,
+    },
+    {
+        name = function()
+            local s = led_rgb.status()
+            return "灯效模式 " .. (s and s.mode or 1) .. "/6"
+        end,
+        func = function()
+            led_rgb.next_mode()
+            local s = led_rgb.status()
+            tts("灯效模式 " .. (s and s.mode or 1))
         end,
     },
     {

@@ -426,6 +426,7 @@
     get_config: '读取配置',
     set_config: '写入配置',
     edit_config: '编辑配置',
+    set_led: '灯光控制',
   };
 
   // 命令详细说明（任务说明弹窗内容）
@@ -469,6 +470,17 @@
       params: [],
       result: '读取时返回 nvm_para.lua 全文；保存时返回 <code class="font-mono">{"success": true}</code>，立即生效。',
       note: '选择本类型后自动读取最新配置到编辑器，修改完成后点击右侧"保存配置"即可写回设备。设备离线时无法读取/保存。',
+    },
+    set_led: {
+      title: '灯光控制',
+      desc: '远程控制设备的 RGB 三色氛围灯（GPIO24/25/26）。可开关灯、循环切换 6 种灯效模式、指定模式或指定颜色。',
+      params: [
+        ['action', '动作：toggle(开关)/on(开灯)/off(关灯)/next(下一灯效)/prev(上一灯效)/set_mode(指定模式)/color(指定颜色)/status(查询状态)'],
+        ['mode', '当 action=set_mode 时必填，1~6 对应 6 种灯效模式'],
+        ['color', '当 action=color 时必填：off/red/green/blue/yellow/purple/cyan/white'],
+      ],
+      result: '成功返回灯效状态对象（含 mode/on/temp）；未知 action 返回错误。',
+      note: '设备需在线（MQTT 已连接）才能收到指令；灯效模式带断电记忆，重启后保持。',
     },
     get_status: {
       title: '查询状态',
@@ -648,10 +660,12 @@
     const checked = document.querySelector('input[name="task-type"]:checked');
     if (!checked) return;
     const type = checked.value;
-    ['params-send_sms', 'params-dial_call', 'params-set_config', 'params-__custom__'].forEach((id) => {
+    ['params-send_sms', 'params-dial_call', 'params-set_config', 'params-set_led', 'params-__custom__'].forEach((id) => {
       const el = $('#' + id);
       if (el) el.classList.toggle('hidden', id !== 'params-' + type);
     });
+    // 灯光动作联动：仅 set_led 时调用一次（按当前动作显示/隐藏模式与颜色）
+    if (type === 'set_led') onLedActionChange();
     // 配置编辑器：仅"编辑配置"任务类型时显示，并自动读取最新配置
     const editor = $('#config-editor');
     if (editor) {
@@ -715,6 +729,15 @@
     }
   }
 
+  // 灯光动作联动：set_mode 显示模式选择，color 显示颜色选择，其余隐藏
+  function onLedActionChange() {
+    const action = $('#task-led-action').value;
+    const modeWrap = $('#led-mode-wrap');
+    const colorWrap = $('#led-color-wrap');
+    if (modeWrap) modeWrap.classList.toggle('hidden', action !== 'set_mode');
+    if (colorWrap) colorWrap.classList.toggle('hidden', action !== 'color');
+  }
+
   // 终端控制台输出
   function consoleLine(box, text, cls) {
     const div = document.createElement('div');
@@ -767,6 +790,11 @@
       if (!text.trim()) { toast('请先读取或填写配置内容', false); return; }
       payload.task = 'set_config';
       payload.configText = text;
+    } else if (type === 'set_led') {
+      const action = $('#task-led-action').value;
+      payload.action = action;
+      if (action === 'set_mode') payload.mode = $('#task-led-mode').value;
+      else if (action === 'color') payload.color = $('#task-led-color').value;
     }
 
     const extra = $('#task-extra').value.trim();
@@ -1998,6 +2026,7 @@
     $('#task-library-overlay').addEventListener('click', closeTaskLibrary);
     $('#config-save').addEventListener('click', saveConfig);
     $('#config-reload').addEventListener('click', loadConfigForEdit);
+    $('#task-led-action').addEventListener('change', onLedActionChange);
     // 命令大全内点击分组标题 -> 切换手风琴展开（关闭其他组）
     $('#task-library-body').addEventListener('click', (ev) => {
       const group = ev.target.closest('.task-lib-group');
