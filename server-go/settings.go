@@ -44,6 +44,10 @@ const (
 // 设备心跳默认 2 分钟，允许连续漏 2 次心跳才判离线，避免网络抖动误报。
 const defaultOfflineTimeout = 300
 
+// powersaveOfflineTimeout 省电模式（半在线）下应用心跳已拉长（默认 10 分钟），
+// 离线判定阈值相应放宽（秒）= 30 分钟，避免省电期间被误判离线
+const powersaveOfflineTimeout = 1800
+
 func boolToStr(b bool) string {
 	if b {
 		return "1"

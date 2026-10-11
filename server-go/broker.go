@@ -41,6 +41,7 @@ type DeviceState struct {
 	Connected   bool
 	LastSeen    int64
 	ConnectedAt int64 // 本次上线时刻（离线→在线转变时设置），用于在线时长
+	PowerSave   bool   // 设备是否处于省电模式（半在线时应用心跳已拉长，据此放宽离线阈值）
 }
 
 // TaskRecord 任务执行记录
@@ -61,6 +62,11 @@ type TaskRecord struct {
 type onlineMsg struct {
 	Phone string `json:"phone"`
 	IMEI  string `json:"imei"`
+}
+
+// powersaveMsg 设备省电状态消息
+type powersaveMsg struct {
+	Active bool `json:"active"`
 }
 
 // resultMsg 设备任务结果消息
@@ -211,6 +217,25 @@ func (a *App) patrolLoop() {
 	}
 }
 
+// setPowerSave 更新设备省电状态（同时刷新 lastSeen，作为一次有效上报）
+func (a *App) setPowerSave(imei string, active bool) {
+	if imei == "" {
+		return
+	}
+	now := time.Now().Unix()
+	a.mu.Lock()
+	st, ok := a.devices[imei]
+	if !ok {
+		st = &DeviceState{}
+		a.devices[imei] = st
+	}
+	st.PowerSave = active
+	st.LastSeen = now
+	conn := st.Connected
+	a.mu.Unlock()
+	_ = a.db.upsertDevice(imei, "", conn, now)
+}
+
 // checkOffline 检查设备心跳超时：超过 offlineTimeout 未收到任何上报的设备判定为离线
 // （TCP/WS 连接可能在网络抖动时静默断开，OnDisconnect 不触发，此处兜底）
 func (a *App) checkOffline() {
@@ -222,8 +247,17 @@ func (a *App) checkOffline() {
 	var offline []Device
 	a.mu.Lock()
 	for imei, st := range a.devices {
-		if st.Connected && now-st.LastSeen > timeout {
+		if !st.Connected {
+			continue
+		}
+		// 半在线省电设备应用心跳已拉长（最长 10 分钟），放宽离线阈值避免误判
+		limit := timeout
+		if st.PowerSave {
+			limit = powersaveOfflineTimeout
+		}
+		if now-st.LastSeen > limit {
 			st.Connected = false // 提前置离线，防止重复触发
+			st.PowerSave = false
 			offline = append(offline, Device{IMEI: imei, Phone: st.Phone, LastSeen: st.LastSeen})
 		}
 	}
@@ -330,6 +364,16 @@ func (a *App) handleDevicePublish(clientID, topic, payload string) {
 		} else {
 			log.Printf("设备心跳 - IMEI: %s", imei)
 		}
+
+	case strings.HasPrefix(topic, topicPrefixDevice) && strings.HasSuffix(topic, "/powersave"):
+		var msg powersaveMsg
+		if err := json.Unmarshal([]byte(payload), &msg); err != nil {
+			log.Printf("解析省电状态失败: %v, payload: %s", err, payload)
+			return
+		}
+		imei := strings.TrimPrefix(strings.TrimSuffix(topic, "/powersave"), topicPrefixDevice)
+		a.setPowerSave(imei, msg.Active)
+		log.Printf("设备省电状态更新 - IMEI: %s, 省电: %v", imei, msg.Active)
 
 	case strings.HasPrefix(topic, topicPrefixDevice) && strings.HasSuffix(topic, "/result"):
 		var msg resultMsg
@@ -592,6 +636,7 @@ func (a *App) markDeviceOffline(imei string) {
 	if st, ok := a.devices[imei]; ok {
 		wasOnline = st.Connected
 		st.Connected = false
+		st.PowerSave = false // 断开时清除省电标记
 		phone = st.Phone
 		lastSeen = st.LastSeen
 		shouldMarkOffline = true
