@@ -552,7 +552,18 @@ local function startMQTT()
     end)
 end
 
+-- 上报设备省电状态（服务端据此放宽离线阈值，避免半在线心跳拉长被误判离线）
+local function reportPowerSave(active)
+    local imei = misc.getImei()
+    if not imei or imei == "" then
+        return false
+    end
+    report("device/" .. imei .. "/powersave", json.encode({ active = active == true }))
+    return true
+end
+
 return {
     start = startMQTT,
     report = report, -- 通用上报接口（供 util_record 等模块发布通话/短信记录）
+    reportPowerSave = reportPowerSave, -- 上报省电状态（进入/退出省电时调用）
 }

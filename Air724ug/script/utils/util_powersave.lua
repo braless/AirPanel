@@ -10,6 +10,7 @@ module(..., package.seeall)
 
 local sys = require "sys"
 local config = require "config"
+local util_mqtt = require "util_mqtt"
 
 -- 省电时暂停的定时器注册表：name -> { create=创建函数, id=当前定时器ID(nil 表示已暂停) }
 local registry = {}
@@ -73,6 +74,9 @@ local function enter()
     deep = config.POWERSAVE_DEEP == true
     log.info("POWERSAVE", "进入省电模式", deep and "深睡(离线)" or "半在线")
 
+    -- 上报省电状态：服务端据此放宽半在线离线阈值（避免心跳拉长被误判离线）
+    pcall(function() util_mqtt.reportPowerSave(true) end)
+
     -- 暂停温度/NTP 等周期任务（外设随之掉电）
     pauseTimers()
 
@@ -101,6 +105,9 @@ end
 -- 退出省电
 local function exit()
     log.info("POWERSAVE", "退出省电模式")
+
+    -- 上报退出省电：服务端恢复该设备常规离线阈值
+    pcall(function() util_mqtt.reportPowerSave(false) end)
 
     if deep then
         -- 先恢复网络再恢复看门狗
