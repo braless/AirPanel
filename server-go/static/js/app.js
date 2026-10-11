@@ -1959,7 +1959,8 @@
       else if (result && result.config) text = result.config;
       else if (result) text = JSON.stringify(result);
       const cfg = parseLuaConfig(text);
-      $('#powersave-enable').checked = cfg.POWERSAVE_ENABLE !== false;
+      // 仅在设备配置显式 POWERSAVE_ENABLE=true 时勾选；未配置/默认 false 显示未勾选，与实际一致
+      $('#powersave-enable').checked = cfg.POWERSAVE_ENABLE === true;
       $('#powersave-start').value = cfg.POWERSAVE_START_HOUR || 1;
       $('#powersave-end').value = cfg.POWERSAVE_END_HOUR || 8;
       const deep = cfg.POWERSAVE_DEEP === true;
