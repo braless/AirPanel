@@ -314,6 +314,40 @@ local function handleTask(imei, json_data)
                     pins.setup(pin, level)
                     result = "GPIO" .. pin .. " 已输出 " .. level
                 end
+            elseif json_data.task == "set_led" then
+                -- RGB 氛围灯控制（配合前端"灯光控制"任务）
+                -- action: toggle/on/off/next/prev/set_mode/color/status
+                local action = json_data.action
+                if not action then
+                    error = "缺少必要参数: action"
+                else
+                    local led_rgb = require "led_rgb"
+                    if action == "toggle" then
+                        result = { success = true, on = led_rgb.toggle() }
+                    elseif action == "on" then
+                        led_rgb.light_on()
+                        result = { success = true, on = true }
+                    elseif action == "off" then
+                        led_rgb.light_off()
+                        result = { success = true, on = false }
+                    elseif action == "next" then
+                        result = { success = true, mode = led_rgb.next_mode() }
+                    elseif action == "prev" then
+                        result = { success = true, mode = led_rgb.prev_mode() }
+                    elseif action == "set_mode" then
+                        local m = led_rgb.set_mode(json_data.mode)
+                        if m then result = { success = true, mode = m }
+                        else error = "参数 mode 必须为 1-6 的数字" end
+                    elseif action == "color" then
+                        local c = led_rgb.set_color(json_data.color)
+                        if c then result = { success = true, color = c }
+                        else error = "参数 color 无效（支持 off/red/green/blue/yellow/purple/cyan/white）" end
+                    elseif action == "status" then
+                        result = led_rgb.status()
+                    else
+                        error = "未知 action: " .. tostring(action)
+                    end
+                end
             else
                 error = "未知的任务类型: " .. (json_data.task or "nil")
             end

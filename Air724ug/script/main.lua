@@ -14,6 +14,7 @@ require "http"
 require "misc"
 require "net"
 require "netLed"
+require "led_rgb"
 require "ntp"
 require "powerKey"
 require "record"
@@ -67,13 +68,11 @@ net.startQueryAll(1000 * 60, 1000 * 60 * 10)
 -- RNDIS
 ril.request("AT+RNDISCALL=" .. (nvm.get("RNDIS_ENABLE") and 1 or 0) .. ",0")
 
--- NET 指示灯, LTE 指示灯
-if nvm.get("LED_ENABLE") then
-    pmd.ldoset(2, pmd.LDO_VLCD)
-end
-netLed.setup(true, pio.P0_1, pio.P0_4)
-netLed.updateBlinkTime("SCK", 50, 50)
-netLed.updateBlinkTime("GPRS", 200, 2000)
+-- RGB 三色氛围灯（GPIO24/25/26，网络状态/USB/短信反馈由 led_rgb 内部处理）
+-- 网络状态指示由 RGB 接管，停用传统 netLed（GPIO1/GPIO4）
+netLed.setup(false)
+led_rgb.start()
+if not nvm.get("LED_ENABLE") then led_rgb.light_off() end
 
 -- 开机查询本机号码
 sim.setQueryNumber(true)
