@@ -425,6 +425,7 @@
     dial_call: '拨打电话',
     get_config: '读取配置',
     set_config: '写入配置',
+    edit_config: '编辑配置',
   };
 
   // 命令详细说明（任务说明弹窗内容）
@@ -461,6 +462,13 @@
       ],
       result: '成功返回 <code class="font-mono">{"success": true}</code>；语法错误时返回解析失败原因（此时不会写入文件）。',
       note: '覆盖式写入！建议先执行"读取配置"拿到当前内容再修改提交，避免遗漏参数。写入失败（如断电）可能导致文件丢失，需重刷脚本恢复。',
+    },
+    edit_config: {
+      title: '编辑配置',
+      desc: '一键读取设备当前 <code class="font-mono">/nvm_para.lua</code> 配置到右侧编辑器，在"当前内容"基础上修改后保存。相比"读取配置 + 写入配置"两步操作更便捷，避免覆盖遗漏。',
+      params: [],
+      result: '读取时返回 nvm_para.lua 全文；保存时返回 <code class="font-mono">{"success": true}</code>，立即生效。',
+      note: '选择本类型后自动读取最新配置到编辑器，修改完成后点击右侧"保存配置"即可写回设备。设备离线时无法读取/保存。',
     },
     get_status: {
       title: '查询状态',
@@ -644,6 +652,67 @@
       const el = $('#' + id);
       if (el) el.classList.toggle('hidden', id !== 'params-' + type);
     });
+    // 配置编辑器：仅"编辑配置"任务类型时显示，并自动读取最新配置
+    const editor = $('#config-editor');
+    if (editor) {
+      if (type === 'edit_config') {
+        editor.classList.remove('hidden');
+        loadConfigForEdit();
+      } else {
+        editor.classList.add('hidden');
+      }
+    }
+  }
+
+  // 读取设备最新配置到编辑器（"编辑配置"任务类型专用）
+  async function loadConfigForEdit() {
+    const imei = $('#task-imei').value;
+    const st = $('#config-editor-status');
+    const ta = $('#config-edit-text');
+    if (!st || !ta) return;
+    if (!imei) { st.textContent = '请先在左侧选择设备'; return; }
+    st.textContent = '⏳ 正在读取设备配置...';
+    try {
+      const data = await API.executeTask({ imei, task: 'get_config' });
+      const result = data.result;
+      let text = '';
+      if (typeof result === 'string') text = result;
+      else if (result && result.content) text = result.content;
+      else if (result && result.config) text = result.config;
+      else if (result) text = JSON.stringify(result, null, 2);
+      ta.value = text;
+      st.textContent = `✔ 已读取当前配置（${(text.length / 1024).toFixed(1)} KB）`;
+      const box = $('#task-result');
+      consoleLine(box, `▶ 已读取配置 → ${imei}`, 'text-sky-400');
+    } catch (err) {
+      ta.value = '';
+      st.textContent = '✘ 读取失败：' + err.message;
+    }
+  }
+
+  // 保存编辑后的配置（写入设备）
+  async function saveConfig() {
+    const imei = $('#task-imei').value;
+    const ta = $('#config-edit-text');
+    const st = $('#config-editor-status');
+    const text = ta ? ta.value : '';
+    if (!st || !ta) return;
+    if (!imei) { st.textContent = '请先在左侧选择设备'; return; }
+    if (!text.trim()) { st.textContent = '配置内容为空，无法保存'; return; }
+    st.textContent = '⏳ 正在保存配置...';
+    try {
+      const data = await API.executeTask({ imei, task: 'set_config', configText: text });
+      const result = data.result;
+      const pretty = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+      st.textContent = '✔ 保存成功：' + (pretty.length > 60 ? pretty.slice(0, 60) + '…' : pretty);
+      const box = $('#task-result');
+      consoleLine(box, `▶ 保存配置 → ${imei}`, 'text-sky-400');
+      consoleLine(box, pretty, 'text-emerald-200 whitespace-pre-wrap break-all');
+      toast('配置已保存');
+    } catch (err) {
+      st.textContent = '✘ 保存失败：' + err.message;
+      toast('配置保存失败', false);
+    }
   }
 
   // 终端控制台输出
@@ -692,6 +761,11 @@
     } else if (type === 'set_config') {
       const text = $('#task-config-text').value;
       if (!text.trim()) { toast('请填写配置内容', false); return; }
+      payload.configText = text;
+    } else if (type === 'edit_config') {
+      const text = $('#config-edit-text').value;
+      if (!text.trim()) { toast('请先读取或填写配置内容', false); return; }
+      payload.task = 'set_config';
       payload.configText = text;
     }
 
@@ -1922,6 +1996,8 @@
     $('#task-library-close').addEventListener('click', closeTaskLibrary);
     $('#task-library-ok').addEventListener('click', closeTaskLibrary);
     $('#task-library-overlay').addEventListener('click', closeTaskLibrary);
+    $('#config-save').addEventListener('click', saveConfig);
+    $('#config-reload').addEventListener('click', loadConfigForEdit);
     // 命令大全内点击分组标题 -> 切换手风琴展开（关闭其他组）
     $('#task-library-body').addEventListener('click', (ev) => {
       const group = ev.target.closest('.task-lib-group');
