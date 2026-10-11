@@ -25,6 +25,8 @@ local temp_color = nil        -- 临时单色（由 set_led color 动作设置�
 -- 事件反馈灯效（来短信/来电话，由服务端 set_led feedback 触发）
 local fb_color, fb_blink, fb_until = nil, false, 0
 local CONFIG_FILE = "/led_mode.config"
+-- 关灯状态持久化标记：远程/菜单关灯后落盘，重启保持关闭（避免重启后灯又亮起）
+local OFF_FLAG_FILE = "/led_off.config"
 
 -- ============ 基础点亮（每次点亮前先熄灭三脚，防止混色残留） ============
 local function pin_off_all()
@@ -143,16 +145,31 @@ local function render()
 end
 
 -- ============ 控制接口（供按键 / 服务端 set_led 调用） ============
--- 开关灯
+-- 开关灯（状态落盘持久化，重启后保持）
 function toggle()
-    is_light_off = not is_light_off
-    if not is_light_off then blue_feedback(800) end
-    log.info("LED", "开关灯:", is_light_off and "关" or "开")
+    if is_light_off then
+        light_on()
+    else
+        light_off()
+    end
     return not is_light_off
 end
 
-function light_on()  if is_light_off then is_light_off = false blue_feedback(800) end return true end
-function light_off() is_light_off = true return false end
+function light_on()
+    if is_light_off then
+        is_light_off = false
+        os.remove(OFF_FLAG_FILE)
+        blue_feedback(800)
+    end
+    return true
+end
+
+function light_off()
+    is_light_off = true
+    local f = io.open(OFF_FLAG_FILE, "w")
+    if f then f:write("1"); f:close() end
+    return false
+end
 
 -- 切换灯效模式
 function next_mode()
@@ -223,6 +240,12 @@ sys.subscribe("SMS_ADD", function() blue_feedback(1200) end)
 -- ============ 启动（渲染协程 + 开机动画） ============
 function start()
     current_mode = load_mode()
+    -- 读取持久化的关灯标记：远程/菜单关灯后重启保持关闭，避免灯又亮起
+    local f = io.open(OFF_FLAG_FILE, "r")
+    if f then
+        is_light_off = true
+        f:close()
+    end
     -- 开启 GPIO 供电电压域（GPIO24-28 属 LDO_VMMC）
     pmd.ldoset(2, pmd.LDO_VMMC)
     -- 默认先视为无网，等待网络事件置位
