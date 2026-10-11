@@ -1884,6 +1884,115 @@
     }
   }
 
+  // ---------------- 省电模式设置 ----------------
+
+  // 解析 Lua 配置文本中的顶层键值
+  function parseLuaConfig(text) {
+    const out = {};
+    const re = /^(\w+)\s*=\s*(.+?)\s*$/gm;
+    let m;
+    while ((m = re.exec(text))) {
+      let v = m[2].trim();
+      if (v.startsWith('"')) { out[m[1]] = v.replace(/^"|"$/g, ''); }
+      else if (v === 'true' || v === 'false') { out[m[1]] = v === 'true'; }
+      else if (!isNaN(Number(v))) { out[m[1]] = Number(v); }
+      else { out[m[1]] = v; }
+    }
+    return out;
+  }
+
+  // 把键值写回 Lua 配置文本；键不存在则追加到文件末尾
+  function patchLuaConfig(text, kv) {
+    let out = text;
+    for (const k in kv) {
+      const v = kv[k];
+      let valStr;
+      if (typeof v === 'number') valStr = String(v);
+      else if (typeof v === 'boolean') valStr = v ? 'true' : 'false';
+      else valStr = '"' + v + '"';
+      const re = new RegExp('^(\\s*)(' + k + '\\s*=\\s*)[^\\n]*', 'm');
+      const before = out;
+      out = out.replace(re, (_, lead, pre) => lead + pre + valStr);
+      if (out === before) {
+        out = out.replace(/\s*$/, '\n') + k + ' = ' + valStr + '\n';
+      }
+    }
+    return out;
+  }
+
+  // 填充省电设备下拉
+  function fillPowersaveDevice() {
+    const sel = $('#powersave-device');
+    if (!sel) return;
+    const prev = sel.value;
+    sel.innerHTML = devices.map((d) =>
+      `<option value="${esc(d.imei)}">${d.name ? esc(d.name) + ' · ' : ''}${esc(d.imei)}</option>`).join('');
+    if (prev) sel.value = prev;
+    else if (devices.length === 1) sel.value = devices[0].imei;
+  }
+
+  // 读取设备省电配置
+  async function loadPowersaveSettings() {
+    const sel = $('#powersave-device');
+    if (!sel) return;
+    fillPowersaveDevice();
+    const imei = sel.value;
+    if (!imei) { toast('请先添加设备', false); return; }
+    try {
+      const data = await API.executeTask({ imei, task: 'get_config' });
+      const result = data.result;
+      let text = '';
+      if (typeof result === 'string') text = result;
+      else if (result && result.content) text = result.content;
+      else if (result && result.config) text = result.config;
+      else if (result) text = JSON.stringify(result);
+      const cfg = parseLuaConfig(text);
+      $('#powersave-enable').checked = cfg.POWERSAVE_ENABLE !== false;
+      $('#powersave-start').value = cfg.POWERSAVE_START_HOUR || 1;
+      $('#powersave-end').value = cfg.POWERSAVE_END_HOUR || 8;
+      const deep = cfg.POWERSAVE_DEEP === true;
+      $$('input[name="powersave-deep"]').forEach((r) => { r.checked = (r.value === 'true') === deep; });
+      $('#powersave-heartbeat').value = cfg.POWERSAVE_HEARTBEAT || 600000;
+      $('#powersave-telemetry').value = cfg.POWERSAVE_TELEMETRY || 0;
+      $('#powersave-msg').className = 'hidden';
+    } catch (err) { toast(err.message, false); }
+  }
+
+  // 保存省电配置
+  async function handlePowersaveSettings(e) {
+    e.preventDefault();
+    const msg = $('#powersave-msg');
+    msg.className = 'hidden';
+    const imei = $('#powersave-device').value;
+    if (!imei) { msg.textContent = '请选择目标设备'; msg.className = 'text-sm text-red-600'; return; }
+    const deepRadio = $$('input[name="powersave-deep"]:checked')[0];
+    const kv = {
+      POWERSAVE_ENABLE: $('#powersave-enable').checked,
+      POWERSAVE_START_HOUR: parseInt($('#powersave-start').value, 10) || 1,
+      POWERSAVE_END_HOUR: parseInt($('#powersave-end').value, 10) || 8,
+      POWERSAVE_DEEP: deepRadio ? deepRadio.value === 'true' : false,
+      POWERSAVE_HEARTBEAT: parseInt($('#powersave-heartbeat').value, 10) || 600000,
+      POWERSAVE_TELEMETRY: parseInt($('#powersave-telemetry').value, 10) || 0,
+    };
+    try {
+      const data = await API.executeTask({ imei, task: 'get_config' });
+      const result = data.result;
+      let text = '';
+      if (typeof result === 'string') text = result;
+      else if (result && result.content) text = result.content;
+      else if (result && result.config) text = result.config;
+      else if (result) text = JSON.stringify(result);
+      const patched = patchLuaConfig(text, kv);
+      await API.executeTask({ imei, task: 'set_config', configText: patched });
+      msg.textContent = '省电配置已保存并下发设备';
+      msg.className = 'text-sm text-emerald-600';
+      toast('省电配置已保存');
+    } catch (err) {
+      msg.textContent = err.message;
+      msg.className = 'text-sm text-red-600';
+    }
+  }
+
   // 收集当前勾选渠道的配置表单值
   function collectNotifyConfig(channels) {
     const config = {};
@@ -1931,6 +2040,7 @@
     $('#notify-test-btn').addEventListener('click', sendTestNotify);
     $('#notify-channels-list').addEventListener('change', onNotifyChannelChange);
     $('#led-settings-form').addEventListener('submit', handleLedSettings);
+    $('#powersave-form').addEventListener('submit', handlePowersaveSettings);
     // 设置页 Tab 切换
     $$('.set-tab-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -1945,6 +2055,7 @@
           el.classList.toggle('hidden', !el.id.endsWith(tab));
         });
         if (tab === 'led') loadLedSettings();
+        if (tab === 'powersave') loadPowersaveSettings();
       });
     });
     $('#clear-tasks-7d').addEventListener('click', () => clearTasks(7));
