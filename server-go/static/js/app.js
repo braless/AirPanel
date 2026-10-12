@@ -92,6 +92,51 @@
     }
   }
 
+  // 格式化时长（秒 -> X天X小时X分钟）
+  function fmtDuration(sec) {
+    sec = Math.max(0, Math.floor(sec));
+    const d = Math.floor(sec / 86400);
+    const h = Math.floor((sec % 86400) / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    let r = '';
+    if (d) r += d + '天';
+    if (h) r += h + '小时';
+    if (m || (!d && !h)) r += m + '分钟';
+    return r || '0分钟';
+  }
+
+  // 顶部 Logo hover 显示"已运行时长"浮层
+  function bindBrandUptime() {
+    const logo = $('#brand-logo');
+    if (!logo) return;
+    const tip = document.createElement('div');
+    tip.id = 'uptime-tip';
+    tip.classList.add('hidden');
+    document.body.appendChild(tip);
+    let uptimeSec = 0;
+    let lastFetch = 0;
+    logo.addEventListener('mouseenter', async () => {
+      if (Date.now() - lastFetch > 15000) {
+        lastFetch = Date.now();
+        try {
+          const d = await (await fetch('/api/health', { cache: 'no-store' })).json();
+          uptimeSec = d.uptimeSec || 0;
+        } catch (_) { /* 保留上次值 */ }
+      }
+      tip.textContent = '已运行时长：' + fmtDuration(uptimeSec);
+      tip.classList.remove('hidden');
+    });
+    logo.addEventListener('mousemove', (e) => {
+      if (tip.classList.contains('hidden')) return;
+      let x = e.clientX + 12, y = e.clientY + 12;
+      if (x + tip.offsetWidth > window.innerWidth - 8) x = e.clientX - tip.offsetWidth - 12;
+      if (y + tip.offsetHeight > window.innerHeight - 8) y = Math.max(8, e.clientY - tip.offsetHeight - 12);
+      tip.style.left = x + 'px';
+      tip.style.top = y + 'px';
+    });
+    logo.addEventListener('mouseleave', () => tip.classList.add('hidden'));
+  }
+
   function showLogin() {
     toggleSidebar(false);
     $('#main-view').classList.add('hidden');
@@ -2356,6 +2401,7 @@
     $('#login-form').addEventListener('submit', handleLogin);
     $('#logout-btn').addEventListener('click', handleLogout);
     $('#restart-btn').addEventListener('click', handleServerRestart);
+    bindBrandUptime(); // 顶部 Logo hover 显示已运行时长
     $('#ui-logo').addEventListener('input', updateUiPreview);
     $('#ui-save-btn').addEventListener('click', saveUiSettings);
     $('#ui-reset-btn').addEventListener('click', resetUiSettings);
