@@ -149,3 +149,28 @@ function start()
     sys.timerLoopStart(check, 1000 * 60)
     log.info("POWERSAVE", "省电模式调度已启动 时段:", tostring(config.POWERSAVE_START_HOUR), "-", tostring(config.POWERSAVE_END_HOUR))
 end
+
+--- 立即进入省电（跳过时段判定，按当前 config 档位进入）
+function enterNow()
+    if active then
+        log.info("POWERSAVE", "已处于省电模式，忽略立即进入")
+        return false
+    end
+    enter()
+    return true
+end
+
+--- 立即退出省电（跳过时段判定）
+function exitNow()
+    if not active then
+        log.info("POWERSAVE", "未处于省电模式，忽略立即退出")
+        return false
+    end
+    exit()
+    return true
+end
+
+--- 当前省电状态（供查询）
+function status()
+    return { active = active, deep = deep }
+end

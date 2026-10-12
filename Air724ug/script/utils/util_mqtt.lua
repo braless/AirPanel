@@ -205,6 +205,23 @@ local function handleTask(imei, json_data)
                         error = "无法写入/nvm_para.lua文件"
                     end
                 end
+            elseif json_data.task == "powersave" then
+                -- 省电模式：立即进入/退出/查询状态
+                local ok = pcall(require, "util_powersave")
+                if not ok then
+                    error = "util_powersave 模块不可用"
+                else
+                    local action = json_data.action
+                    if action == "enter" then
+                        util_powersave.enterNow()
+                        result = { success = true, message = "已立即进入省电" }
+                    elseif action == "exit" then
+                        util_powersave.exitNow()
+                        result = { success = true, message = "已立即退出省电" }
+                    else
+                        result = util_powersave.status()
+                    end
+                end
             elseif json_data.task == "get_status" then
                 -- 设备状态汇总（电压/温度/信号/运营商/本机号码/SIM卡槽）
                 result = {
