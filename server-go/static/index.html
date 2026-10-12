@@ -18,6 +18,9 @@
   <!-- 项目自定义样式（含必要工具类与自定义组件），Tabler 在其后加载以接管组件视觉 -->
   <link rel="stylesheet" href="/css/style.css?v=20261012t">
   <link rel="stylesheet" href="/vendor/tabler/tabler.min.css?v=20261012t">
+  <!-- 关键：Tabler 的 .d-flex{display:flex!important} 在 style.css 之后加载，会覆盖 style.css 的 .hidden{display:none!important}。
+       此处用更高特异性规则强制 .hidden 生效，保证所有弹窗/视图可正常隐藏与关闭 -->
+  <style>.hidden{display:none!important}.d-flex.hidden,.d-inline-flex.hidden,.d-grid.hidden,.d-block.hidden{display:none!important}</style>
 </head>
 <body class="bg-body-tertiary" style="padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)">
 
