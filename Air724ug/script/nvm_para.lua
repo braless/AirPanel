@@ -168,8 +168,8 @@ SMS_TTS = 0
 
 -- 电话接通后 TTS 语音内容, 在播放完后开始录音, 如果注释掉或者为空则播放 audio_pickup_record.amr 或 audio_pickup_hangup.amr 文件
 -- TTS_TEXT = "您好，请在语音结束后留言，稍后将发送到机主，结束请挂机。"
--- 自定义前置 mp3：在播放 TTS_TEXT 之前先播放该 mp3 文件（需烧录到 /lua 目录，如 "/lua/audio_greeting.mp3"），留空则直接播放 TTS
--- TTS_BEFORE_MP3 = ""
+-- 自定义前置 mp3：在播放 TTS_TEXT 之前先播放该 mp3 文件（位于 script/audio 目录，烧录到设备 /lua/audio 下），留空则直接播放 TTS
+-- TTS_BEFORE_MP3 = "/lua/audio/audio_greeting.mp3"
 
 -- 来电动作, 0:无操作, 1:自动接听(默认), 2:挂断, 3:自动接听后挂断, 4:等待30秒后自动接听
 -- 无操作 / 等待30秒后自动接听, 可以长按 POWERKEY 来手动接听挂断电话
