@@ -106,6 +106,14 @@ func (d *DB) init() error {
 			created_at INTEGER DEFAULT 0,
 			updated_at INTEGER DEFAULT 0
 		)`,
+		`CREATE TABLE IF NOT EXISTS device_logs (
+			id          INTEGER PRIMARY KEY AUTOINCREMENT,
+			imei        TEXT DEFAULT '',             -- 设备 IMEI
+			topic       TEXT DEFAULT '',             -- 上报主题（device/{imei}/{type}）
+			log_type    TEXT DEFAULT '',             -- 上报类型: online / telemetry / call_record / sms_record / result / powersave / notify_result
+			payload     TEXT DEFAULT '',             -- 原始上报 JSON
+			created_at  INTEGER DEFAULT 0            -- 服务端接收时间（Unix 秒）
+		)`,
 		`CREATE TABLE IF NOT EXISTS telemetry (
 			id          INTEGER PRIMARY KEY AUTOINCREMENT,
 			imei        TEXT DEFAULT '',
@@ -1070,4 +1078,124 @@ func (d *DB) resetBuiltinRules() error {
 		return err
 	}
 	return d.seedBuiltinRules()
+}
+
+// ---------------- 设备日志（日志中心） ----------------
+
+// DeviceLog 设备上报日志（日志中心数据源）
+type DeviceLog struct {
+	ID         int64  `json:"id"`
+	IMEI       string `json:"imei"`
+	DeviceName string `json:"deviceName,omitempty"` // 关联设备备注名
+	Topic      string `json:"topic"`
+	LogType    string `json:"logType"` // online / telemetry / call_record / sms_record / result / powersave / notify_result
+	Payload    string `json:"payload"` // 原始上报 JSON
+	CreatedAt  int64  `json:"createdAt"`
+}
+
+// addDeviceLog 写入一条设备上报日志
+func (d *DB) addDeviceLog(rec DeviceLog) error {
+	_, err := d.sql.Exec(
+		`INSERT INTO device_logs (imei, topic, log_type, payload, created_at)
+		 VALUES (?, ?, ?, ?, ?)`,
+		rec.IMEI, rec.Topic, rec.LogType, rec.Payload, rec.CreatedAt)
+	return err
+}
+
+// deviceLogs 分页查询设备日志，支持时间范围/设备/类型/关键字筛选
+func (d *DB) deviceLogs(page, pageSize int, from, to int64, imei, logType, keyword string) ([]DeviceLog, error) {
+	if page < 1 {
+		page = 1
+	}
+	where := ""
+	args := []any{}
+	if from > 0 {
+		where += " AND l.created_at >= ?"
+		args = append(args, from)
+	}
+	if to > 0 {
+		where += " AND l.created_at <= ?"
+		args = append(args, to)
+	}
+	if imei != "" {
+		where += " AND l.imei = ?"
+		args = append(args, imei)
+	}
+	if logType != "" {
+		where += " AND l.log_type = ?"
+		args = append(args, logType)
+	}
+	if keyword != "" {
+		where += " AND (l.payload LIKE ? OR l.topic LIKE ?)"
+		kw := "%" + keyword + "%"
+		args = append(args, kw, kw)
+	}
+	rows, err := d.sql.Query(
+		`SELECT l.id, l.imei, l.topic, l.log_type, l.payload, l.created_at, d.name
+		 FROM device_logs l LEFT JOIN devices d ON d.imei = l.imei
+		 WHERE 1=1`+where+`
+		 ORDER BY l.id DESC LIMIT ? OFFSET ?`,
+		append(args, pageSize, (page-1)*pageSize)...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out = make([]DeviceLog, 0)
+	for rows.Next() {
+		var rec DeviceLog
+		if err := rows.Scan(&rec.ID, &rec.IMEI, &rec.Topic, &rec.LogType, &rec.Payload,
+			&rec.CreatedAt, &rec.DeviceName); err != nil {
+			return nil, err
+		}
+		out = append(out, rec)
+	}
+	return out, rows.Err()
+}
+
+// countDeviceLogs 统计设备日志总数（含筛选）
+func (d *DB) countDeviceLogs(from, to int64, imei, logType, keyword string) (int64, error) {
+	where := ""
+	args := []any{}
+	if from > 0 {
+		where += " AND created_at >= ?"
+		args = append(args, from)
+	}
+	if to > 0 {
+		where += " AND created_at <= ?"
+		args = append(args, to)
+	}
+	if imei != "" {
+		where += " AND imei = ?"
+		args = append(args, imei)
+	}
+	if logType != "" {
+		where += " AND log_type = ?"
+		args = append(args, logType)
+	}
+	if keyword != "" {
+		where += " AND (payload LIKE ? OR topic LIKE ?)"
+		kw := "%" + keyword + "%"
+		args = append(args, kw, kw)
+	}
+	var n int64
+	err := d.sql.QueryRow(`SELECT COUNT(*) FROM device_logs WHERE 1=1`+where, args...).Scan(&n)
+	return n, err
+}
+
+// clearDeviceLogs 清理设备日志。days>0 删除距今超过 days 天；days<=0 删除全部。返回删除条数。
+func (d *DB) clearDeviceLogs(days int) (int64, error) {
+	if days > 0 {
+		cutoff := time.Now().Add(-time.Duration(days) * 24 * time.Hour).Unix()
+		res, err := d.sql.Exec(`DELETE FROM device_logs WHERE created_at < ?`, cutoff)
+		if err != nil {
+			return 0, err
+		}
+		return res.RowsAffected()
+	}
+	res, err := d.sql.Exec(`DELETE FROM device_logs`)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
 }

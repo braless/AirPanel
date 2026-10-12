@@ -164,6 +164,7 @@
     if (name === 'schedules') { renderSchDeviceSelect(); renderSchTaskSelect(); onSchCycleChange(); onSchTaskChange(); loadSchedules(); }
     if (name === 'calls') { fillRecordImeiFilter('#calls-filter-imei'); loadCalls(); }
     if (name === 'sms') { fillRecordImeiFilter('#sms-filter-imei'); loadSms(); }
+    if (name === 'logcenter') { fillRecordImeiFilter('#log-filter-imei'); loadLogs(); }
     if (name === 'logs') loadTasks();
     if (name === 'block') loadBlockRules();
     if (name === 'settings') {
@@ -970,6 +971,7 @@
 
   let callsPage = 1;
   let smsPage = 1;
+  let logPage = 1;
 
   // 把 YYYY-MM-DD 转换为当天 0 点 / 23:59:59 的 Unix 秒
   function dateToTs(value, endOfDay) {
@@ -1138,6 +1140,83 @@
       ? '<span class="text-slate-300" style="width:1.5rem;text-align:center;line-height:2rem">…</span>'
       : `<button type="button" data-sms-page="${p}" class="${btnCls} ${p === page ? 'bg-blue-600 text-white' : 'text-slate-600'}" style="min-width:2rem">${p}</button>`).join('');
     html += `<button type="button" data-sms-page="${page + 1}" class="${btnCls} text-slate-600" ${btnStyle(page >= totalPages)} ${page >= totalPages ? 'disabled' : ''}>›</button>`;
+    btns.innerHTML = html;
+  }
+
+  // ------- 日志中心 -------
+  const LOG_TYPE_LABEL = {
+    online: '上线 / 心跳',
+    telemetry: '遥测',
+    call_record: '通话记录',
+    sms_record: '短信记录',
+    result: '任务结果',
+    powersave: '省电状态',
+    notify_result: '通知结果',
+  };
+
+  async function loadLogs(page) {
+    if (typeof page === 'number') logPage = page;
+    const filter = {
+      from: dateToTs($('#log-filter-from').value, false),
+      to: dateToTs($('#log-filter-to').value, true),
+      imei: $('#log-filter-imei').value,
+      type: $('#log-filter-type').value,
+      keyword: $('#log-filter-keyword').value.trim(),
+    };
+    try {
+      const data = await API.logs(logPage, filter);
+      logPage = data.page || logPage;
+      const list = data.logs || [];
+      const tbody = $('#log-tbody');
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-10 text-center text-slate-400">暂无日志</td></tr>';
+        renderLogPagination(0, 1);
+        return;
+      }
+      tbody.innerHTML = list.map((l) => {
+        const typeLabel = LOG_TYPE_LABEL[l.logType] || l.logType || '—';
+        const deviceLabel = l.deviceName || l.imei;
+        let payload = l.payload || '';
+        try { payload = JSON.stringify(JSON.parse(payload), null, 2); } catch (e) { /* 保留原文 */ }
+        return `
+        <tr class="hover:bg-slate-50 align-top">
+          <td class="px-4 py-3 text-slate-500 whitespace-nowrap">${fmtTime(l.createdAt)}</td>
+          <td class="px-4 py-3 whitespace-nowrap"><span class="badge-online">${esc(typeLabel)}</span></td>
+          <td class="px-4 py-3 text-slate-500">${esc(deviceLabel)}${l.deviceName ? `<span class="block text-xs font-mono text-slate-400 mt-0.5">${esc(l.imei)}</span>` : ''}</td>
+          <td class="px-4 py-3 text-slate-600">
+            <div class="text-xs font-mono text-slate-400">${esc(l.topic)}</div>
+            <pre class="text-xs whitespace-pre-wrap break-all mt-1 text-slate-700" style="max-height:12rem;overflow:auto">${esc(payload)}</pre>
+          </td>
+        </tr>`;
+      }).join('');
+      renderLogPagination(data.total || 0, logPage);
+    } catch (err) {
+      $('#log-tbody').innerHTML = `<tr><td colspan="4" class="px-4 py-10 text-center text-red-500">${esc(err.message)}</td></tr>`;
+      renderLogPagination(0, 1);
+    }
+  }
+
+  function renderLogPagination(total, page) {
+    const wrap = $('#log-pagination');
+    const info = $('#log-page-info');
+    const btns = $('#log-page-btns');
+    const pageSize = 10;
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    if (total <= 0) { wrap.classList.add('hidden'); return; }
+    wrap.classList.remove('hidden');
+    info.textContent = `共 ${total} 条记录 · 第 ${page} / ${totalPages} 页`;
+    const list = [];
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || Math.abs(i - page) <= 1) list.push(i);
+      else if (list[list.length - 1] !== '…') list.push('…');
+    }
+    const btnCls = 'h-8 px-2 rounded-lg text-sm transition-colors';
+    const btnStyle = (dis) => `style="min-width:2rem${dis ? ';opacity:.4;cursor:not-allowed' : ''}"`;
+    let html = `<button type="button" data-log-page="${page - 1}" class="${btnCls} text-slate-600" ${btnStyle(page <= 1)} ${page <= 1 ? 'disabled' : ''}>‹</button>`;
+    html += list.map((p) => p === '…'
+      ? '<span class="text-slate-300" style="width:1.5rem;text-align:center;line-height:2rem">…</span>'
+      : `<button type="button" data-log-page="${p}" class="${btnCls} ${p === page ? 'bg-blue-600 text-white' : 'text-slate-600'}" style="min-width:2rem">${p}</button>`).join('');
+    html += `<button type="button" data-log-page="${page + 1}" class="${btnCls} text-slate-600" ${btnStyle(page >= totalPages)} ${page >= totalPages ? 'disabled' : ''}>›</button>`;
     btns.innerHTML = html;
   }
 
@@ -2306,6 +2385,42 @@
       toast(data.message || '删除成功');
       smsPage = 1;
       loadSms(1);
+    });
+
+    // 日志中心筛选
+    $('#log-filter-apply').addEventListener('click', () => { logPage = 1; loadLogs(1); });
+    $('#log-filter-reset').addEventListener('click', () => {
+      $('#log-filter-from').value = '';
+      $('#log-filter-to').value = '';
+      $('#log-filter-imei').value = '';
+      $('#log-filter-type').value = '';
+      $('#log-filter-keyword').value = '';
+      logPage = 1;
+      loadLogs(1);
+    });
+    // 日志中心分页（事件委托）
+    $('#log-page-btns').addEventListener('click', (ev) => {
+      const btn = ev.target.closest('button[data-log-page]');
+      if (!btn || btn.disabled) return;
+      const p = parseInt(btn.dataset.logPage, 10);
+      if (p >= 1) loadLogs(p);
+    });
+    // 日志中心清理
+    $('#clear-logs-7d').addEventListener('click', async () => {
+      const ok = await showConfirm('确定清理 7 天前的设备日志吗？');
+      if (!ok) return;
+      const data = await API.clearLogs({ days: 7 });
+      toast(data.message || '清理成功');
+      logPage = 1;
+      loadLogs(1);
+    });
+    $('#clear-logs-all').addEventListener('click', async () => {
+      const ok = await showConfirm('确定删除全部设备日志吗？此操作不可恢复。');
+      if (!ok) return;
+      const data = await API.clearLogs({ days: 0 });
+      toast(data.message || '删除成功');
+      logPage = 1;
+      loadLogs(1);
     });
 
     // 屏蔽配置：tab 切换 / 添加 / 列表操作 / 恢复默认

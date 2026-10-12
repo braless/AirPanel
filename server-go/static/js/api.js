@@ -114,6 +114,14 @@ const API = {
   deleteSms(id) {
     return this.request('POST', '/sms/delete', { id });
   },
+  // 设备日志（日志中心）
+  logs(page, params) {
+    const q = '?page=' + encodeURIComponent(page) + buildRecordFilter(params);
+    return this.request('GET', '/logs' + q);
+  },
+  clearLogs(payload) {
+    return this.request('POST', '/logs/clear', payload);
+  },
   // 屏蔽规则（关键字 / 号码）。opts: { type?, page?, size? }，缺省分页参数时返回全部
   blockRules(opts) {
     const params = new URLSearchParams();
@@ -139,12 +147,14 @@ const API = {
   },
 };
 
-// 构建记录筛选参数（时间范围 / 设备），params: {from, to, imei}，均为 Unix 秒或空
+// 构建记录筛选参数（时间范围 / 设备 / 类型 / 关键字），params: {from, to, imei, type, keyword}，均为 Unix 秒或空
 function buildRecordFilter(params) {
   params = params || {};
   let q = '';
   if (params.from) q += '&from=' + encodeURIComponent(params.from);
   if (params.to) q += '&to=' + encodeURIComponent(params.to);
   if (params.imei) q += '&imei=' + encodeURIComponent(params.imei);
+  if (params.type) q += '&type=' + encodeURIComponent(params.type);
+  if (params.keyword) q += '&keyword=' + encodeURIComponent(params.keyword);
   return q;
 }
