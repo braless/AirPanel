@@ -139,10 +139,19 @@ local notify = {
             return
         end
 
-        -- 主标题：优先使用调用方传入的发件人/来电号码 title；
-        -- 否则使用 BARK_TITLE（支持 {msg} 占位符），再否则使用默认标题
+        -- 设备事件识别：消息以 # 开头（如 #BOOT_软件重启(3) 等），采用独立标题/内容/图标
+        local isEvent = msg:find("^#", 1) == 1
+
+        -- 主标题：设备事件固定用 BARK_EVENT_TITLE（默认"设备事件"），若调用方显式传 title 则优先；
+        -- 否则优先使用调用方传入的发件人/来电号码 title；
+        -- 再否则使用 BARK_TITLE（支持 {msg} 占位符），最后使用默认标题
         local bark_title
-        if title and title ~= "" then
+        if isEvent then
+            bark_title = config.BARK_EVENT_TITLE or "设备事件"
+            if title and title ~= "" then
+                bark_title = title
+            end
+        elseif title and title ~= "" then
             bark_title = title
         else
             bark_title = "来自 Air724UG 的通知"
@@ -152,17 +161,21 @@ local notify = {
             bark_title = bark_title:gsub("%{msg%}", function() return msg end)
         end
 
-        -- 通知内容：BARK_CONTENT，支持 {msg} 占位符；留空则使用原始通知消息
+        -- 通知内容：设备事件取事件信息（去掉 # 类型前缀，如 #BOOT_软件重启(3)→软件重启(3)）；
+        -- 否则用 BARK_CONTENT（支持 {msg} 占位符），留空则使用原始通知消息
         local content = msg
-        if config.BARK_CONTENT and config.BARK_CONTENT ~= "" then
+        if isEvent then
+            content = msg:gsub("^#%a+_", ""):gsub("^#", "")
+        elseif config.BARK_CONTENT and config.BARK_CONTENT ~= "" then
             content = config.BARK_CONTENT:gsub("%{msg%}", function() return msg end)
         end
 
         local header = { ["Content-Type"] = "application/x-www-form-urlencoded" }
         local body = { title = bark_title, body = content }
-        -- 图标：BARK_ICON（图标 URL），留空则使用 Bark 默认图标
-        if config.BARK_ICON and config.BARK_ICON ~= "" then
-            body.icon = config.BARK_ICON
+        -- 图标：设备事件用 BARK_EVENT_ICON（独立于普通通知图标），否则用 BARK_ICON（图标 URL），留空则使用 Bark 默认图标
+        local eventIcon = isEvent and config.BARK_EVENT_ICON or config.BARK_ICON
+        if eventIcon and eventIcon ~= "" then
+            body.icon = eventIcon
         end
         -- 分组：BARK_GROUP（Bark 消息分组，iOS 上按此归组），默认 "汉中移动"
         local bark_group = "汉中移动"

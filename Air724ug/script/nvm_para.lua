@@ -41,6 +41,10 @@ NOTIFY_TYPE = { "message-pusher" }
 -- BARK_GROUP = "汉中移动"
 -- bark 推送声音 (Bark 内置声音名, 默认 "glass")
 -- BARK_SOUND = "glass"
+-- bark 设备事件标题 (设备事件如 #BOOT_软件重启(3) 等以 # 开头的消息, 标题固定为该值, 默认 "设备事件")
+-- BARK_EVENT_TITLE = "设备事件"
+-- bark 设备事件图标 (独立于普通通知图标的 URL, 用于设备事件推送)
+-- BARK_EVENT_ICON = ""
 
 -- dingtalk 通知配置, https://open.dingtalk.com/document/robots/custom-robot-access
 -- 自定义关键词方式可填写 ":" "#" "号码"
