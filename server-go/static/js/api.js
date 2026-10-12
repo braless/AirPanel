@@ -34,6 +34,9 @@ const API = {
   logout() {
     return this.request('POST', '/logout');
   },
+  restart() {
+    return this.request('POST', '/restart');
+  },
   userPool() {
     return this.request('GET', '/userPool');
   },

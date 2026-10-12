@@ -65,6 +65,33 @@
     showLogin();
   }
 
+  // 重启服务端：确认后调用 /api/restart，提示后等待服务恢复并自动刷新
+  async function handleServerRestart() {
+    const ok = await showConfirm('确定重启服务端吗？设备将短暂断线并自动重连，页面稍后自动刷新。');
+    if (!ok) return;
+    const btn = $('#restart-btn');
+    const oldText = btn.textContent;
+    btn.disabled = true; btn.textContent = '重启中...';
+    try {
+      await API.restart();
+      toast('正在重启服务端，稍后自动刷新...');
+      // 轮询 /api/health，服务恢复后刷新页面
+      let waited = 0;
+      const poll = async () => {
+        try {
+          const r = await fetch('/api/health', { cache: 'no-store' });
+          if (r.ok) { location.reload(); return; }
+        } catch (_) { /* 服务未就绪 */ }
+        if (waited < 60) { waited += 2; setTimeout(poll, 2000); }
+        else { btn.disabled = false; btn.textContent = oldText; toast('重启超时，请手动刷新', false); }
+      };
+      setTimeout(poll, 3000);
+    } catch (err) {
+      btn.disabled = false; btn.textContent = oldText;
+      toast(err.message, false);
+    }
+  }
+
   function showLogin() {
     toggleSidebar(false);
     $('#main-view').classList.add('hidden');
@@ -2328,6 +2355,7 @@
   function bindEvents() {
     $('#login-form').addEventListener('submit', handleLogin);
     $('#logout-btn').addEventListener('click', handleLogout);
+    $('#restart-btn').addEventListener('click', handleServerRestart);
     $('#ui-logo').addEventListener('input', updateUiPreview);
     $('#ui-save-btn').addEventListener('click', saveUiSettings);
     $('#ui-reset-btn').addEventListener('click', resetUiSettings);
