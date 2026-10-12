@@ -194,7 +194,9 @@ SMS_CONTROL_WHITELIST_NUMBERS = {}
 SMS_TTS = 0
 
 -- 电话接通后 TTS 语音内容, 在播放完后开始录音, 如果注释掉或者为空则播放 audio_pickup_record.amr 或 audio_pickup_hangup.amr 文件
-TTS_TEXT = "您好,本号码已启用托管,您的来电已被记录，如核实后需要机主会联系您! 感谢来电!"
+TTS_TEXT = "您好,本号码已启用托管,您的来电已被记录，机主核实后会联系您! 感谢您的来电! 再见"
+-- 自定义前置 mp3：在播放 TTS_TEXT 之前先播放该 mp3 文件（需烧录到 /lua 目录，如 "/lua/audio_greeting.mp3"），留空则直接播放 TTS
+TTS_BEFORE_MP3 = ""
 
 -- 来电动作, 0:无操作, 1:自动接听(默认), 2:挂断, 3:自动接听后挂断, 4:等待30秒后自动接听
 -- 无操作 / 等待30秒后自动接听, 可以长按 POWERKEY 来手动接听挂断电话
