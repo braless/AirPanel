@@ -76,11 +76,68 @@
     $('#login-view').classList.add('hidden');
     $('#main-view').classList.remove('hidden');
     const uname = localStorage.getItem('panel_username') || 'admin';
-    $('#user-name').textContent = uname;
-    $('#user-avatar').textContent = (uname.charAt(0) || 'U').toUpperCase();
     $('#m-user-name').textContent = uname;
+    applyBrandUI();
+    loadUiSettings();
     loadDevices();
     switchPage('devices');
+  }
+
+  // ---------------- 界面自定义（标题/头像 Logo） ----------------
+  function applyBrandUI() {
+    const title = localStorage.getItem('brand_title') || 'AirPanel';
+    const logo = localStorage.getItem('brand_logo') || '';
+    $('#brand-title').textContent = title;
+    $('#m-brand-title').textContent = title;
+    document.title = title + ' 管理面板';
+    const el = $('#brand-logo');
+    el.classList.remove('overflow-hidden', 'p-0');
+    if (/^https?:\/\//i.test(logo)) {
+      el.classList.add('overflow-hidden');
+      el.innerHTML = '<img src="' + logo + '" alt="logo" class="w-full h-full object-cover">';
+    } else {
+      el.textContent = logo || 'A';
+    }
+  }
+
+  function loadUiSettings() {
+    $('#ui-title').value = localStorage.getItem('brand_title') || 'AirPanel';
+    $('#ui-logo').value = localStorage.getItem('brand_logo') || '';
+    updateUiPreview();
+  }
+
+  function updateUiPreview() {
+    const v = $('#ui-logo').value.trim();
+    const p = $('#ui-logo-preview');
+    p.classList.remove('overflow-hidden', 'p-0');
+    if (/^https?:\/\//i.test(v)) {
+      p.classList.add('overflow-hidden');
+      p.innerHTML = '<img src="' + v + '" alt="logo" class="w-full h-full object-cover">';
+    } else {
+      p.textContent = v || 'A';
+    }
+  }
+
+  function saveUiSettings() {
+    const title = $('#ui-title').value.trim() || 'AirPanel';
+    const logo = $('#ui-logo').value.trim();
+    localStorage.setItem('brand_title', title);
+    localStorage.setItem('brand_logo', logo);
+    applyBrandUI();
+    $('#ui-msg').textContent = '已保存';
+    $('#ui-msg').className = 'text-sm text-emerald-600';
+    toast('界面设置已保存');
+  }
+
+  function resetUiSettings() {
+    localStorage.removeItem('brand_title');
+    localStorage.removeItem('brand_logo');
+    $('#ui-title').value = 'AirPanel';
+    $('#ui-logo').value = '';
+    updateUiPreview();
+    applyBrandUI();
+    $('#ui-msg').textContent = '已恢复默认';
+    $('#ui-msg').className = 'text-sm text-emerald-600';
   }
 
   // ---------------- 导航 ----------------
@@ -2107,6 +2164,9 @@
   function bindEvents() {
     $('#login-form').addEventListener('submit', handleLogin);
     $('#logout-btn').addEventListener('click', handleLogout);
+    $('#ui-logo').addEventListener('input', updateUiPreview);
+    $('#ui-save-btn').addEventListener('click', saveUiSettings);
+    $('#ui-reset-btn').addEventListener('click', resetUiSettings);
     $('#refresh-devices').addEventListener('click', loadDevices);
     $('#task-form').addEventListener('submit', handleTaskSubmit);
     $$('input[name="task-type"]').forEach((r) => r.addEventListener('change', onTaskTypeChange));
