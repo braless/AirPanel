@@ -30,3 +30,7 @@ AirPanel-iOS/*.log
 AirPanel-iOS/.DS_Store
 AirPanel-iOS/**/xcuserdata/
 AirPanel-iOS/**/xcuserstate
+
+# 服务器部署脚本与临时输出（含连接参数，禁止入库）
+server-go/deploy_panel.py
+server-go/deploy_out.txt
