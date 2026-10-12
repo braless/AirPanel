@@ -235,16 +235,17 @@ local function tts()
     end
 
     if config.TTS_TEXT and config.TTS_TEXT ~= "" then
-        -- 播放 TTS；若配置了自定义前置 mp3（TTS_BEFORE_MP3）且文件存在，则先播放 mp3，播放结束后再播放 TTS
+        -- 播放 TTS；若配置了自定义前置音频（TTS_BEFORE_MP3，推荐 AMR 文件）且存在，则先播放，播完再播放 TTS
+        -- 用 util_audio.audioStream（与来电提示音 pickup_record.amr 同款 volte 通话通道播放），保证来电场景可播
         local function playTts()
             audio.setTTSSpeed(60)
             audio.play(7, "TTS", config.TTS_TEXT, 7, ttsCallback)
         end
-        local mp3 = config.TTS_BEFORE_MP3 or ""
-        local fh = io.open(mp3, "rb")
+        local pre = config.TTS_BEFORE_MP3 or ""
+        local fh = io.open(pre, "rb")
         if fh then
             fh:close()
-            audio.play(7, "FILE", mp3, 7, playTts)
+            util_audio.audioStream(pre, playTts)
         else
             playTts()
         end
