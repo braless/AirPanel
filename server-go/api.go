@@ -9,10 +9,13 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"os"
+	"os/exec"
 	"path"
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -78,6 +81,8 @@ func (api *API) routes() http.Handler {
 	mux.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 	})
+	// 重启服务端（调用 /root/airpanel/start.sh 完成停止+启动+验证）
+	mux.HandleFunc("/api/restart", api.authenticate(api.handleRestart))
 
 	// MQTT over WebSocket：与面板共享同一端口（nginx 把 /websocket 反代到本端口）
 	mux.Handle("/websocket", api.app.MQTTWebSocketHandler())
@@ -86,6 +91,25 @@ func (api *API) routes() http.Handler {
 	mux.HandleFunc("/", api.handleStatic)
 
 	return mux
+}
+
+// handleRestart 重启服务端：立即响应，后台调用 /root/airpanel/start.sh
+// （start.sh 会先 pkill 当前进程再启动新进程并验证），随后本进程退出。
+func (api *API) handleRestart(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{"message": "正在重启服务端，请稍候..."})
+	go func() {
+		// 确保 HTTP 响应已发送
+		time.Sleep(800 * time.Millisecond)
+		cmd := exec.Command("bash", "/root/airpanel/start.sh")
+		cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+		if err := cmd.Start(); err != nil {
+			log.Printf("[restart] 触发重启失败: %v", err)
+			return
+		}
+		// start.sh 会 pkill -9 杀掉当前进程，os.Exit 作为兜底
+		time.Sleep(300 * time.Millisecond)
+		os.Exit(0)
+	}()
 }
 
 // ---------------- 认证 ----------------
