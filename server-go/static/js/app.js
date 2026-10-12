@@ -1979,14 +1979,7 @@
     const imei = $('#powersave-device').value;
     if (!imei) { msg.textContent = '请选择目标设备'; msg.className = 'text-sm text-red-600'; return; }
     const deepRadio = $$('input[name="powersave-deep"]:checked')[0];
-    const kv = {
-      POWERSAVE_ENABLE: $('#powersave-enable').checked,
-      POWERSAVE_START_HOUR: parseInt($('#powersave-start').value, 10) || 1,
-      POWERSAVE_END_HOUR: parseInt($('#powersave-end').value, 10) || 8,
-      POWERSAVE_DEEP: deepRadio ? deepRadio.value === 'true' : false,
-      POWERSAVE_HEARTBEAT: parseInt($('#powersave-heartbeat').value, 10) || 600000,
-      POWERSAVE_TELEMETRY: parseInt($('#powersave-telemetry').value, 10) || 0,
-    };
+    const kv = collectPowersaveKv();
     try {
       const data = await API.executeTask({ imei, task: 'get_config' });
       const result = data.result;
@@ -2003,6 +1996,76 @@
     } catch (err) {
       msg.textContent = err.message;
       msg.className = 'text-sm text-red-600';
+    }
+  }
+
+  // 收集省电表单的配置键值
+  function collectPowersaveKv() {
+    const deepRadio = $$('input[name="powersave-deep"]:checked')[0];
+    return {
+      POWERSAVE_ENABLE: $('#powersave-enable').checked,
+      POWERSAVE_START_HOUR: parseInt($('#powersave-start').value, 10) || 1,
+      POWERSAVE_END_HOUR: parseInt($('#powersave-end').value, 10) || 8,
+      POWERSAVE_DEEP: deepRadio ? deepRadio.value === 'true' : false,
+      POWERSAVE_HEARTBEAT: parseInt($('#powersave-heartbeat').value, 10) || 600000,
+      POWERSAVE_TELEMETRY: parseInt($('#powersave-telemetry').value, 10) || 0,
+    };
+  }
+
+  // 读取 get_config 结果中的配置文本
+  function powersaveCfgText(data) {
+    const result = data.result;
+    if (typeof result === 'string') return result;
+    if (result && result.content) return result.content;
+    if (result && result.config) return result.config;
+    if (result) return JSON.stringify(result);
+    return '';
+  }
+
+  // 立即进入省电：先保存当前表单配置（含档位），再下发立即进入
+  async function powersaveEnterNow() {
+    const msg = $('#powersave-msg');
+    const imei = $('#powersave-device').value;
+    if (!imei) { toast('请先选择目标设备', false); return; }
+    const btn = $('#powersave-enter-btn');
+    const oldText = btn.textContent;
+    btn.disabled = true; btn.textContent = '进入中...';
+    try {
+      const kv = collectPowersaveKv();
+      kv.POWERSAVE_ENABLE = true; // 立即进入即视为启用省电
+      const data = await API.executeTask({ imei, task: 'get_config' });
+      const patched = patchLuaConfig(powersaveCfgText(data), kv);
+      await API.executeTask({ imei, task: 'set_config', configText: patched });
+      const res = await API.executeTask({ imei, task: 'powersave', action: 'enter' });
+      const info = res && res.result && res.result.message ? res.result.message : '已立即进入省电';
+      if (msg) { msg.textContent = info; msg.className = 'text-sm text-emerald-600'; }
+      toast(info);
+    } catch (err) {
+      if (msg) { msg.textContent = err.message; msg.className = 'text-sm text-red-600'; }
+      toast(err.message, false);
+    } finally {
+      btn.disabled = false; btn.textContent = oldText;
+    }
+  }
+
+  // 立即退出省电
+  async function powersaveExitNow() {
+    const msg = $('#powersave-msg');
+    const imei = $('#powersave-device').value;
+    if (!imei) { toast('请先选择目标设备', false); return; }
+    const btn = $('#powersave-exit-btn');
+    const oldText = btn.textContent;
+    btn.disabled = true; btn.textContent = '退出中...';
+    try {
+      const res = await API.executeTask({ imei, task: 'powersave', action: 'exit' });
+      const info = res && res.result && res.result.message ? res.result.message : '已立即退出省电';
+      if (msg) { msg.textContent = info; msg.className = 'text-sm text-emerald-600'; }
+      toast(info);
+    } catch (err) {
+      if (msg) { msg.textContent = err.message; msg.className = 'text-sm text-red-600'; }
+      toast(err.message, false);
+    } finally {
+      btn.disabled = false; btn.textContent = oldText;
     }
   }
 
@@ -2054,6 +2117,8 @@
     $('#notify-channels-list').addEventListener('change', onNotifyChannelChange);
     $('#led-settings-form').addEventListener('submit', handleLedSettings);
     $('#powersave-form').addEventListener('submit', handlePowersaveSettings);
+    $('#powersave-enter-btn').addEventListener('click', powersaveEnterNow);
+    $('#powersave-exit-btn').addEventListener('click', powersaveExitNow);
     // 设置页 Tab 切换
     $$('.set-tab-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
