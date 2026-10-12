@@ -1063,12 +1063,12 @@
             <div id="set-tab-powersave" class="card p-6 mt-6 hidden">
               <form id="powersave-form" class="space-y-6">
                 <div class="flex items-center justify-between gap-4 rounded-lg bg-slate-50 px-4 py-3">
-                  <label class="flex items-center gap-3 cursor-pointer min-w-0">
-                    <span class="font-medium text-sm text-slate-700">启用省电模式</span>
-                    <input id="powersave-enable" type="checkbox" class="w-5 h-5 shrink-0" style="accent-color:#2563eb">
-                  </label>
+                  <span class="font-medium text-sm text-slate-700">省电开关</span>
                   <div class="flex items-center gap-3 shrink-0">
-                    <button type="button" id="powersave-exit-btn" class="btn btn-success shrink-0">立即退出</button>
+                    <button type="button" id="powersave-toggle-btn" class="btn shrink-0"
+                      style="min-width:8.5rem;color:#fff;background:#16a34a" data-state="off">使用省电模式</button>
+                    <button type="button" id="powersave-exit-btn" class="btn shrink-0"
+                      style="background:#dc2626;color:#fff">立即退出</button>
                   </div>
                 </div>
                 <p class="text-xs text-slate-400 mt-1">在设定时段进入低功耗，降低待机功耗</p>
