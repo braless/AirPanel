@@ -205,6 +205,23 @@ func (a *App) Start() {
 	}()
 	// 离线巡检：定期扫描设备，超过设置时限未上报则判定离线并通知
 	go a.patrolLoop()
+	// 日志自动清理：周期删除 7 天前的设备日志（日志中心）
+	go a.logCleanupLoop()
+}
+
+// logCleanupLoop 设备日志自动清理：默认保留 7 天，周期删除更早的旧日志
+func (a *App) logCleanupLoop() {
+	time.Sleep(30 * time.Second)
+	ticker := time.NewTicker(6 * time.Hour)
+	defer ticker.Stop()
+	for range ticker.C {
+		n, err := a.db.clearDeviceLogs(7)
+		if err != nil {
+			log.Printf("清理设备日志失败: %v", err)
+		} else if n > 0 {
+			log.Printf("已自动清理 %d 条 7 天前的设备日志", n)
+		}
+	}
 }
 
 // patrolLoop 离线巡检协程（每 30 秒一次）
@@ -339,8 +356,24 @@ func (h *AppHook) OnPublished(cl *mqtt.Client, pk packets.Packet) {
 	h.app.handleDevicePublish(cl.ID, pk.TopicName, string(pk.Payload))
 }
 
-// handleDevicePublish 解析设备发布的消息
+// handleDevicePublish 解析设备发布的消息，并把每次上报写入日志中心（device_logs）
 func (a *App) handleDevicePublish(clientID, topic, payload string) {
+	// 日志中心：记录设备上报的所有日志信息（任何 device/{imei}/{type} 上报都留存）
+	if strings.HasPrefix(topic, topicPrefixDevice) {
+		raw := strings.TrimPrefix(topic, topicPrefixDevice) // "imei/type"
+		logType := raw
+		imei := raw
+		if idx := strings.LastIndexByte(raw, '/'); idx >= 0 {
+			logType = raw[idx+1:]
+			imei = raw[:idx]
+		}
+		if err := a.db.addDeviceLog(DeviceLog{
+			IMEI: imei, Topic: topic, LogType: logType, Payload: payload, CreatedAt: time.Now().Unix(),
+		}); err != nil {
+			log.Printf("写入设备日志失败: %v", err)
+		}
+	}
+
 	switch {
 	case strings.HasPrefix(topic, topicPrefixDevice) && strings.HasSuffix(topic, "/online"):
 		var msg onlineMsg

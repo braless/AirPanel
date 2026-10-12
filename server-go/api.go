@@ -5,6 +5,7 @@ import (
 	"embed"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"log"
 	"net/http"
@@ -67,6 +68,8 @@ func (api *API) routes() http.Handler {
 	mux.HandleFunc("/api/sms", api.authenticate(api.handleSmsRecords))
 	mux.HandleFunc("/api/sms/clear", api.authenticate(api.handleClearSmsRecords))
 	mux.HandleFunc("/api/sms/delete", api.authenticate(api.handleDeleteSmsRecord))
+	mux.HandleFunc("/api/logs", api.authenticate(api.handleLogs))
+	mux.HandleFunc("/api/logs/clear", api.authenticate(api.handleClearLogs))
 	mux.HandleFunc("/api/block-rules", api.authenticate(api.handleBlockRules))
 	mux.HandleFunc("/api/block-rules/add", api.authenticate(api.handleAddBlockRule))
 	mux.HandleFunc("/api/block-rules/update", api.authenticate(api.handleUpdateBlockRule))
@@ -786,7 +789,60 @@ func (api *API) handleDeleteSmsRecord(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"message": "删除成功", "deleted": n})
 }
 
-// handleBlockRules GET 返回屏蔽规则列表。query: type=keyword|number（可选）；page/size 提供时分页返回 {rules,total}
+// handleLogs GET 分页返回设备上报日志。query: page/pageSize/from/to/imei/type/keyword
+func (api *API) handleLogs(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"message": "方法不允许"})
+		return
+	}
+	page, pageSize, from, to, imei := parseRecordFilter(r)
+	logType := r.URL.Query().Get("type")
+	keyword := r.URL.Query().Get("keyword")
+	list, err := api.app.db.deviceLogs(page, pageSize, from, to, imei, logType, keyword)
+	if err != nil {
+		log.Printf("查询设备日志失败: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"message": "查询设备日志失败"})
+		return
+	}
+	total, err := api.app.db.countDeviceLogs(from, to, imei, logType, keyword)
+	if err != nil {
+		log.Printf("统计设备日志失败: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"message": "查询设备日志失败"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"logs":     list,
+		"total":    total,
+		"page":     page,
+		"pageSize": pageSize,
+	})
+}
+
+// handleClearLogs POST 清理设备日志。body: {"days": 7} 删除 7 天前的；days<=0 删除全部。
+func (api *API) handleClearLogs(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"message": "方法不允许"})
+		return
+	}
+	var body struct {
+		Days int `json:"days"`
+	}
+	if err := decodeJSON(r, &body); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"message": "请求体格式错误"})
+		return
+	}
+	n, err := api.app.db.clearDeviceLogs(body.Days)
+	if err != nil {
+		log.Printf("清理设备日志失败: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"message": "清理失败"})
+		return
+	}
+	msg := "已删除全部设备日志"
+	if body.Days > 0 {
+		msg = fmt.Sprintf("已清理 %d 条 %d 天前的设备日志", n, body.Days)
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"message": msg, "deleted": n})
+}
 func (api *API) handleBlockRules(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"message": "方法不允许"})
