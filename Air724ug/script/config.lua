@@ -195,8 +195,9 @@ SMS_TTS = 0
 
 -- 电话接通后 TTS 语音内容, 在播放完后开始录音, 如果注释掉或者为空则播放 audio_pickup_record.amr 或 audio_pickup_hangup.amr 文件
 TTS_TEXT = "您好,本号码已启用托管,您的来电已被记录，机主核实后会联系您! 感谢您的来电! 再见"
--- 自定义前置 mp3：在播放 TTS_TEXT 之前先播放该 mp3 文件（位于 script/audio 目录，Luatools 烧录时平铺到设备 /lua 根目录），留空则直接播放 TTS
-TTS_BEFORE_MP3 = "/lua/audio_greeting.mp3"
+-- 自定义前置音频：在播放 TTS_TEXT 之前先播放该音频文件（位于 script/audio 目录，Luatools 平铺到设备 /lua 根目录），留空则直接播放 TTS
+-- 注意：Air724UG 的 mp3 解码要求码率 >=64kbps（体积大），来电场景请使用 AMR 文件（如 /lua/audio_greeting.amr），走 audioStream 播放最稳定
+TTS_BEFORE_MP3 = "/lua/audio_greeting.amr"
 
 -- 来电动作, 0:无操作, 1:自动接听(默认), 2:挂断, 3:自动接听后挂断, 4:等待30秒后自动接听
 -- 无操作 / 等待30秒后自动接听, 可以长按 POWERKEY 来手动接听挂断电话
