@@ -1178,14 +1178,18 @@
         const deviceLabel = l.deviceName || l.imei;
         let payload = l.payload || '';
         try { payload = JSON.stringify(JSON.parse(payload), null, 2); } catch (e) { /* 保留原文 */ }
+        const oneLine = payload.replace(/\s+/g, ' ').trim();
         return `
         <tr class="hover:bg-slate-50 align-top">
           <td class="px-4 py-3 text-slate-500 whitespace-nowrap">${fmtTime(l.createdAt)}</td>
           <td class="px-4 py-3 whitespace-nowrap"><span class="badge-online">${esc(typeLabel)}</span></td>
-          <td class="px-4 py-3 text-slate-500">${esc(deviceLabel)}${l.deviceName ? `<span class="block text-xs font-mono text-slate-400 mt-0.5">${esc(l.imei)}</span>` : ''}</td>
-          <td class="px-4 py-3 text-slate-600">
-            <div class="text-xs font-mono text-slate-400">${esc(l.topic)}</div>
-            <pre class="text-xs whitespace-pre-wrap break-all mt-1 text-slate-700" style="max-height:12rem;overflow:auto">${esc(payload)}</pre>
+          <td class="px-4 py-3 text-slate-500 whitespace-nowrap">${esc(deviceLabel)}${l.deviceName ? `<span class="text-xs font-mono text-slate-400"> ${esc(l.imei)}</span>` : ''}</td>
+          <td class="px-4 py-3">
+            <div class="log-cell" data-log-json="${esc(payload)}" data-log-topic="${esc(l.topic)}">
+              <span class="log-topic">${esc(l.topic)}</span>
+              <span class="log-preview">${esc(oneLine)}</span>
+              <button type="button" class="log-copy-btn" data-log-copy="${esc(payload)}" title="复制日志信息">📋</button>
+            </div>
           </td>
         </tr>`;
       }).join('');
@@ -1218,6 +1222,77 @@
       : `<button type="button" data-log-page="${p}" class="${btnCls} ${p === page ? 'bg-blue-600 text-white' : 'text-slate-600'}" style="min-width:2rem">${p}</button>`).join('');
     html += `<button type="button" data-log-page="${page + 1}" class="${btnCls} text-slate-600" ${btnStyle(page >= totalPages)} ${page >= totalPages ? 'disabled' : ''}>›</button>`;
     btns.innerHTML = html;
+  }
+
+  // ------- 日志中心：悬浮预览完整 JSON + 复制 -------
+  let logTipEl = null;
+  function ensureLogTip() {
+    if (logTipEl) return logTipEl;
+    logTipEl = document.createElement('div');
+    logTipEl.id = 'log-tooltip';
+    logTipEl.classList.add('hidden');
+    document.body.appendChild(logTipEl);
+    return logTipEl;
+  }
+
+  // 绑定日志中心悬浮预览（事件委托，避免每次渲染重复绑定）
+  function bindLogTooltip() {
+    const tbody = $('#log-tbody');
+    const tip = ensureLogTip();
+    if (!tbody || tbody.dataset.tipBound) return;
+    tbody.dataset.tipBound = '1';
+
+    tbody.addEventListener('mouseover', (ev) => {
+      const cell = ev.target.closest('[data-log-json]');
+      if (!cell) { tip.classList.add('hidden'); return; }
+      const raw = cell.dataset.logJson || '';
+      let pretty = raw;
+      try { pretty = JSON.stringify(JSON.parse(raw), null, 2); } catch (e) { /* 保留原文 */ }
+      tip.innerHTML = `<div class="lt-head">${esc(cell.dataset.logTopic || '')}</div><pre class="lt-body">${esc(pretty)}</pre>`;
+      tip.classList.remove('hidden');
+    });
+
+    tbody.addEventListener('mousemove', (ev) => {
+      if (tip.classList.contains('hidden')) return;
+      const pad = 14;
+      let x = ev.clientX + pad, y = ev.clientY + pad;
+      const tw = tip.offsetWidth, th = tip.offsetHeight;
+      if (x + tw > window.innerWidth - 8) x = ev.clientX - tw - pad;
+      if (y + th > window.innerHeight - 8) y = Math.max(8, ev.clientY - th - pad);
+      tip.style.left = x + 'px';
+      tip.style.top = y + 'px';
+    });
+
+    tbody.addEventListener('mouseleave', () => tip.classList.add('hidden'));
+
+    // 复制日志信息
+    tbody.addEventListener('click', (ev) => {
+      const btn = ev.target.closest('[data-log-copy]');
+      if (!btn) return;
+      const text = btn.dataset.logCopy || '';
+      copyTextToClipboard(text, '已复制日志信息');
+    });
+  }
+
+  // 复制文本到剪贴板（优先异步 Clipboard API，降级 execCommand）
+  function copyTextToClipboard(text, okMsg) {
+    const done = () => toast(okMsg || '已复制');
+    const fail = (e) => toast('复制失败', false);
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done, fail));
+    } else {
+      fallbackCopy(text, done, fail);
+    }
+  }
+  function fallbackCopy(text, done, fail) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); done(); } catch (e) { fail(e); }
+    document.body.removeChild(ta);
   }
 
   // ------- 删除单条记录 -------
@@ -2420,6 +2495,8 @@
       const p = parseInt(btn.dataset.logPage, 10);
       if (p >= 1) loadLogs(p);
     });
+    // 日志中心悬浮预览 + 复制
+    bindLogTooltip();
     // 日志中心清理
     $('#clear-logs-7d').addEventListener('click', async () => {
       const ok = await showConfirm('确定清理 7 天前的设备日志吗？');
