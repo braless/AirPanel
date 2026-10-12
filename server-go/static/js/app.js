@@ -2225,12 +2225,14 @@
     if (e.options.length === 0) e.innerHTML = opts.join('');
   }
 
-  // 设置"使用省电模式"开关按钮状态（绿=关闭，橙=开启），data-state: off/on
+  // 设置"省电模式"开关按钮状态（绿=关闭，黄=开启），data-state: off/on
+  // 设置"省电模式"开关按钮状态（关闭=绿，开启=黄），data-state: off/on
   function setPowerSaveToggle(en) {
     const btn = $('#powersave-toggle-btn');
     if (!btn) return;
     btn.dataset.state = en ? 'on' : 'off';
-    btn.style.background = en ? '#ea580c' : '#16a34a';
+    btn.style.background = en ? '#f59e0b' : '#16a34a';
+    btn.style.color = en ? '#1f2937' : '#fff';
   }
 
   // 读取设备省电配置
@@ -2417,7 +2419,7 @@
     $('#powersave-form').addEventListener('submit', handlePowersaveSettings);
     $('#powersave-enter-btn').addEventListener('click', powersaveEnterNow);
     $('#powersave-exit-btn').addEventListener('click', powersaveExitNow);
-    // "使用省电模式"开关按钮：点击切换启用/停用并变色（保存由"保存设置"提交）
+    // "省电模式"开关按钮：点击切换启用/停用并变色（保存由"保存设置"提交）
     $('#powersave-toggle-btn').addEventListener('click', () => {
       const cur = $('#powersave-toggle-btn').dataset.state === 'on';
       setPowerSaveToggle(!cur);
