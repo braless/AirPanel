@@ -402,7 +402,8 @@ local notify = {
 --- 构建设备信息字符串, 用于追加到通知消息中
 -- @return (string) 设备信息
 local function buildDeviceInfo()
-    local msg = "\n"
+    -- 各字段自带 \n 分隔，不再额外以换行占位开头，使追加的设备信息紧贴事件内容
+    local msg = ""
 
     -- 本机号码
     local number = util_mobile.getNumber()
