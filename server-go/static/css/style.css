@@ -30,3 +30,10 @@ tbody tr{transition:background-color .12s ease}
 .block-tab-btn{color:#64748b}
 /* 状态徽章动画（通知状态变化时的柔和过渡） */
 .notify-badge,.spam-badge{transition:opacity .2s ease}
+/* 概览页：设备信息与趋势图并列 */
+.ov-grid{display:grid;grid-template-columns:1fr;gap:1rem;margin-bottom:1rem}
+@media (min-width:1024px){.ov-grid{grid-template-columns:1fr 1fr}}
+/* 成功（绿色）按钮 */
+.btn-success{background-color:#16a34a;color:#fff}
+.btn-success:hover{background-color:#15803d}
+.btn-success:focus{--tw-ring-color:rgb(34 197 94/.5);outline:2px solid transparent;outline-offset:2px}
