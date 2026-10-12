@@ -34,6 +34,9 @@ var (
 // 登录 Token 有效期：2 个月（60 天）
 const tokenExpireDuration = 60 * 24 * time.Hour
 
+// 进程启动时间，用于计算服务运行时长
+var serverStartTime = time.Now()
+
 // API 服务
 type API struct {
 	app *App
@@ -79,7 +82,7 @@ func (api *API) routes() http.Handler {
 	mux.HandleFunc("/api/block-rules/delete", api.authenticate(api.handleDeleteBlockRule))
 	mux.HandleFunc("/api/block-rules/reset", api.authenticate(api.handleResetBlockRules))
 	mux.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+		writeJSON(w, http.StatusOK, map[string]any{"ok": true, "uptimeSec": int64(time.Since(serverStartTime).Seconds())})
 	})
 	// 重启服务端（调用 /root/airpanel/start.sh 完成停止+启动+验证）
 	mux.HandleFunc("/api/restart", api.authenticate(api.handleRestart))

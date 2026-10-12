@@ -47,3 +47,6 @@ tbody tr{transition:background-color .12s ease}
 #log-tooltip.hidden{display:none}
 #log-tooltip .lt-head{padding:8px 12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:#94a3b8;border-bottom:1px solid #334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #log-tooltip .lt-body{margin:0;padding:10px 12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.5;white-space:pre;overflow:auto;max-height:calc(70vh - 33px)}
+/* 顶部 Logo hover 已运行时长浮层 */
+#uptime-tip{position:fixed;z-index:1070;background:#0f172a;color:#e2e8f0;border-radius:6px;padding:5px 10px;font-size:12px;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.25);pointer-events:none}
+#uptime-tip.hidden{display:none}
