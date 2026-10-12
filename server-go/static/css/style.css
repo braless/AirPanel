@@ -37,3 +37,45 @@ tbody tr{transition:background-color .12s ease}
 .btn-success{background-color:#16a34a;color:#fff}
 .btn-success:hover{background-color:#15803d}
 .btn-success:focus{--tw-ring-color:rgb(34 197 94/.5);outline:2px solid transparent;outline-offset:2px}
+
+/* ===== Tabler 重构补充 ===== */
+/* app.js 用 .hidden 控制显隐 */
+.hidden{display:none!important}
+/* 概览设备信息网格 */
+.grid-ov-info{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
+@media (min-width:640px){.grid-ov-info{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (min-width:1024px){.grid-ov-info{grid-template-columns:repeat(4,minmax(0,1fr))}}
+/* 趋势图图例色点 */
+.legend-dot{display:inline-block;width:.65rem;height:.65rem;border-radius:.25rem}
+/* 终端窗口圆点 */
+.dot{display:inline-block;width:.75rem;height:.75rem;border-radius:50%}
+.dot-red{background:#f87171}
+.dot-yellow{background:#fbbf24}
+.dot-green{background:#34d399}
+/* 定位辅助（Bootstrap 无 inset-0） */
+.inset-0{inset:0!important}
+/* 侧边栏 nav 高亮（app.js 以 li.nav-item 加 active/bg-slate-800） */
+.navbar-vertical .nav-item .nav-link{border-radius:.5rem;margin:.125rem 0}
+.navbar-vertical .nav-item.active .nav-link{background:rgba(59,130,246,.18);color:#fff}
+/* 自定义输入框兼容（app.js 动态生成 class="input"） */
+.input{display:block;width:100%;padding:.4375rem .625rem;font-size:.875rem;line-height:1.25rem;color:#1f2933;background-color:#fff;border:1px solid #d9dee7;border-radius:.5rem;transition:border-color .15s ease-in-out}
+.input:focus{border-color:#3b82f6;outline:0;box-shadow:0 0 0 .125rem rgba(59,130,246,.15)}
+/* 自定义标签兼容（app.js 动态生成 class="label"） */
+.label{display:block;font-size:.875rem;font-weight:500;margin-bottom:.375rem;color:#232e3c}
+
+/* ===== 侧边栏（Tabler 重构） ===== */
+.sidebar{display:flex;flex-direction:column;width:16rem;flex-shrink:0;background:linear-gradient(180deg,#0f172a 0%,#1e1b4b 100%);color:#cbd5e1}
+.sidebar #brand-title{color:#fff}
+.sidebar .nav-link{color:#94a3b8;border-radius:.5rem;padding:.5rem .75rem;margin:.125rem 0;white-space:nowrap}
+.sidebar .nav-link:hover{color:#fff;background:rgba(148,163,184,.12)}
+.sidebar .nav-item.active .nav-link{color:#fff;background:rgba(59,130,246,.24)}
+@media (min-width:992px){
+  .sidebar{position:sticky;top:0;height:100vh}
+}
+@media (max-width:991.98px){
+  .sidebar{position:fixed;top:0;bottom:0;left:0;z-index:40;transform:translateX(-100%);transition:transform .3s ease;box-shadow:0 0 2rem rgba(0,0,0,.3)}
+  #sidebar-overlay{position:fixed;inset:0;z-index:35;background:rgba(15,23,42,.55);backdrop-filter:blur(4px)}
+}
+@media (min-width:992px){
+  #sidebar-overlay{display:none}
+}
