@@ -72,15 +72,15 @@
     $('#login-password').value = '';
   }
 
-  function enterMain() {
+  async function enterMain() {
     $('#login-view').classList.add('hidden');
     $('#main-view').classList.remove('hidden');
     const uname = localStorage.getItem('panel_username') || 'admin';
     $('#m-user-name').textContent = uname;
     applyBrandUI();
     loadUiSettings();
-    loadDevices();
-    switchPage('devices');
+    await loadDevices();
+    switchPage('overview'); // 默认进入设备概览
   }
 
   // ---------------- 界面自定义（标题/头像 Logo） ----------------
@@ -2078,6 +2078,14 @@
     if (e.options.length === 0) e.innerHTML = opts.join('');
   }
 
+  // 设置"使用省电模式"开关按钮状态（绿=关闭，橙=开启），data-state: off/on
+  function setPowerSaveToggle(en) {
+    const btn = $('#powersave-toggle-btn');
+    if (!btn) return;
+    btn.dataset.state = en ? 'on' : 'off';
+    btn.style.background = en ? '#ea580c' : '#16a34a';
+  }
+
   // 读取设备省电配置
   async function loadPowersaveSettings() {
     fillHourSelects();
@@ -2095,8 +2103,8 @@
       else if (result && result.config) text = result.config;
       else if (result) text = JSON.stringify(result);
       const cfg = parseLuaConfig(text);
-      // 仅在设备配置显式 POWERSAVE_ENABLE=true 时勾选；未配置/默认 false 显示未勾选，与实际一致
-      $('#powersave-enable').checked = cfg.POWERSAVE_ENABLE === true;
+      // 仅在设备配置显式 POWERSAVE_ENABLE=true 时置为开启；未配置/默认 false 显示关闭，与实际一致
+      setPowerSaveToggle(cfg.POWERSAVE_ENABLE === true);
       $('#powersave-start').value = cfg.POWERSAVE_START_HOUR || 1;
       $('#powersave-end').value = cfg.POWERSAVE_END_HOUR || 8;
       const deep = cfg.POWERSAVE_DEEP === true;
@@ -2138,8 +2146,9 @@
   // 收集省电表单的配置键值
   function collectPowersaveKv() {
     const deepRadio = $$('input[name="powersave-deep"]:checked')[0];
+    const toggle = $('#powersave-toggle-btn');
     return {
-      POWERSAVE_ENABLE: $('#powersave-enable').checked,
+      POWERSAVE_ENABLE: toggle ? toggle.dataset.state === 'on' : false,
       POWERSAVE_START_HOUR: parseInt($('#powersave-start').value, 10) || 1,
       POWERSAVE_END_HOUR: parseInt($('#powersave-end').value, 10) || 8,
       POWERSAVE_DEEP: deepRadio ? deepRadio.value === 'true' : false,
@@ -2174,6 +2183,7 @@
       await API.executeTask({ imei, task: 'set_config', configText: patched });
       const res = await API.executeTask({ imei, task: 'powersave', action: 'enter' });
       const info = res && res.result && res.result.message ? res.result.message : '已立即进入省电';
+      setPowerSaveToggle(true); // 立即进入即视为启用省电，同步开关状态
       if (msg) { msg.textContent = info; msg.className = 'text-sm text-emerald-600'; }
       toast(info);
     } catch (err) {
@@ -2258,6 +2268,11 @@
     $('#powersave-form').addEventListener('submit', handlePowersaveSettings);
     $('#powersave-enter-btn').addEventListener('click', powersaveEnterNow);
     $('#powersave-exit-btn').addEventListener('click', powersaveExitNow);
+    // "使用省电模式"开关按钮：点击切换启用/停用并变色（保存由"保存设置"提交）
+    $('#powersave-toggle-btn').addEventListener('click', () => {
+      const cur = $('#powersave-toggle-btn').dataset.state === 'on';
+      setPowerSaveToggle(!cur);
+    });
     // 设置页 Tab 切换
     $$('.set-tab-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
