@@ -235,9 +235,19 @@ local function tts()
     end
 
     if config.TTS_TEXT and config.TTS_TEXT ~= "" then
-        -- 播放 TTS
-        audio.setTTSSpeed(60)
-        audio.play(7, "TTS", config.TTS_TEXT, 7, ttsCallback)
+        -- 播放 TTS；若配置了自定义前置 mp3（TTS_BEFORE_MP3）且文件存在，则先播放 mp3，播放结束后再播放 TTS
+        local function playTts()
+            audio.setTTSSpeed(60)
+            audio.play(7, "TTS", config.TTS_TEXT, 7, ttsCallback)
+        end
+        local mp3 = config.TTS_BEFORE_MP3 or ""
+        local fh = io.open(mp3, "rb")
+        if fh then
+            fh:close()
+            audio.play(7, "FILE", mp3, 7, playTts)
+        else
+            playTts()
+        end
     else
         -- 播放音频文件
         if getCallInAction() == 3 then
