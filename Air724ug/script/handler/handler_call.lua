@@ -1,13 +1,20 @@
 ------------------------------------------------- Config --------------------------------------------------
--- WebDAV 配置优先从 nvm 读取（Web 端"存储配置"下发），未下发时用 config.lua 兜底
-local wdav_url = nvm.get("WEBDAV_URL") or config.WEBDAV_URL or ""
-local wdav_user = nvm.get("WEBDAV_USER") or config.WEBDAV_USER or ""
-local wdav_pass = nvm.get("WEBDAV_PASS") or config.WEBDAV_PASS or ""
-local wdav_dir = nvm.get("RECORD_DIR") or config.WEBDAV_DIR or "通话录音"
+-- WebDAV 配置实时读取：nvm 优先（Web 端下发），config.lua 兜底；每次调用取最新值，运行中下发立即生效
+local function wdavConfig()
+    return {
+        url = nvm.get("WEBDAV_URL") or config.WEBDAV_URL or "",
+        user = nvm.get("WEBDAV_USER") or config.WEBDAV_USER or "",
+        pass = nvm.get("WEBDAV_PASS") or config.WEBDAV_PASS or "",
+        dir = nvm.get("RECORD_DIR") or config.WEBDAV_DIR or "通话录音",
+    }
+end
 
 -- 是否开启录音上传 (WebDAV)：需 WebDAV 已配置，且未通过 Web 端关闭录音（RECORD_ENABLE）
 -- nvm.get("RECORD_ENABLE") 未设置时按开启处理（默认开），Web 端下发 false 则关闭
-local record_enable = wdav_url ~= "" and nvm.get("RECORD_ENABLE") ~= false
+local function recordEnabled()
+    local url = nvm.get("WEBDAV_URL") or config.WEBDAV_URL or ""
+    return url ~= "" and nvm.get("RECORD_ENABLE") ~= false
+end
 
 -- 去除链接最后的斜杠
 local function trimSlash(url)
@@ -28,9 +35,6 @@ local function urlEncodePath(s)
     end
     return table.concat(out)
 end
-
--- WebDAV 录音上传根路径：根 URL + "/" + percent-encode 后的录音目录
-local record_upload_url = (trimSlash(wdav_url) ~= "") and (trimSlash(wdav_url) .. "/" .. urlEncodePath(wdav_dir)) or ""
 
 -- 录音格式, 1:pcm 2:wav 3:amrnb 4:speex
 local record_format = 2
@@ -66,7 +70,7 @@ local CALL_RECORD_START_TIME = 0
 
 local function getCallInAction()
     -- 动作为接听, 但录音上传未开启
-    if nvm.get("CALL_IN_ACTION") == 1 and not record_enable then
+    if nvm.get("CALL_IN_ACTION") == 1 and not recordEnabled() then
         return 3
     end
     return nvm.get("CALL_IN_ACTION")
@@ -180,18 +184,20 @@ end
 
 -- 录音上传 (WebDAV): MKCOL 建"通话录音"目录后 PUT 文件（扁平结构，文件名=手机号_年月日时分秒）
 local function webdavUploadTask()
+    local wd = wdavConfig()
+    -- 实时计算上传根路径：根 URL + "/" + percent-encode 后的录音目录
+    local base = (trimSlash(wd.url) ~= "") and (trimSlash(wd.url) .. "/" .. urlEncodePath(wd.dir)) or ""
     local number = sim.getNumber() or "unknown"
     local time = os.time()
     local dt = os.date("*t", time)
     -- 文件名时间戳: 年月日时分秒
     local file_stamp = string.format("%04d%02d%02d%02d%02d%02d", dt.year, dt.month, dt.day, dt.hour, dt.min, dt.sec)
-    local base = record_upload_url
     -- URL 结构: /通话录音/18888888888_20261016162030.wav
     local dirs = {
         base,
     }
-    local user = wdav_user
-    local pass = wdav_pass
+    local user = wd.user
+    local pass = wd.pass
     -- Basic 认证: 在 URL 中嵌入 user:pass@ (http.request 自动解析生成 Authorization: Basic 头)
     local function authUrl(u)
         if user ~= "" then
@@ -243,7 +249,7 @@ end
 
 -- 开始录音
 local function recordStart()
-    if not record_enable then
+    if not recordEnabled() then
         log.info("handler_call.recordStart", "未开启录音")
         return
     end
