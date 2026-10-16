@@ -109,8 +109,8 @@ BARK_EVENT_ICON = "https://i.postimg.cc/s2m0ryT5/IMG-6281.png"
 --   MQTT_URL = "ws://192.168.1.100:9527/websocket"  -- 明文 WebSocket（直接连面板端口）
 --   MQTT_URL = "mqtt://panel.example.com:1883"      -- MQTT 明文（需服务端 config.json 中 mqtt.port > 0）
 --   MQTT_URL = "mqtts://panel.example.com:8883"     -- MQTT over TLS
---MQTT_URL = "ws://142.248.137.59:9527/websocket"
-MQTT_URL = "ws://air.oaife.com/websocket"
+MQTT_URL = "ws://142.248.137.59:9527/websocket"
+--MQTT_URL = "ws://air.oaife.com/websocket"
 -- ==================== 旧参数（MQTT_URL 留空时才生效） ====================
 -- MQTT_HOST 填写服务端地址，例如 "192.168.1.100" 或 "panel.example.com"
 MQTT_HOST = ""
@@ -169,15 +169,6 @@ NOTIFY_APPEND_MORE_INFO = true
 -- 通知最大重发次数
 NOTIFY_RETRY_MAX = 100
 
--------------------------------------------------- 录音上传配置 --------------------------------------------------
-
--- 腾讯云 COS / 阿里云 OSS / AWS S3 等对象存储上传地址, 以下为腾讯云 COS 示例, 请自行修改
--- 存储桶需设置为: <私有读写>
--- 存储桶 Policy 权限: <用户类型: 所有用户> <授权资源: xxx-123456/{录音文件目录}/*> <授权操作: PutObject,GetObject>
--- 提示: 本项目未使用签名认证上传, 请勿泄露自己的地址及目录名
--- 当注释掉或者为空则不启用上传, 并且会将来电动作配置项覆盖为: 接听 -> 接听后挂断
--- UPLOAD_URL = "http://xxx-123456.cos.ap-nanjing.myqcloud.com/{录音文件目录}"
-
 -------------------------------------------------- 短信来电配置 --------------------------------------------------
 
 -- 允许发短信控制设备的号码, 如果注释掉或者为空, 则禁止所有号码, 短信格式示例:
@@ -194,7 +185,7 @@ SMS_CONTROL_WHITELIST_NUMBERS = {}
 SMS_TTS = 0
 
 -- 电话接通后 TTS 语音内容, 在播放完后开始录音, 如果注释掉或者为空则播放 audio_pickup_record.amr 或 audio_pickup_hangup.amr 文件
-TTS_TEXT = "您好,本号码已启用托管,您的来电已被记录，机主核实后会联系您! 感谢您的来电! 再见"
+TTS_TEXT = "您好,本号码已启用托管, 请听到滴声后留言, 滴 滴 滴  "  -- 您好,本号码已启用托管,您的来电已被记录，机主核实后会联系您! 感谢您的来电! 再见
 -- 自定义前置音频：在播放 TTS_TEXT 之前先播放该音频文件（位于 script/audio 目录，Luatools 平铺到设备 /lua 根目录），留空则直接播放 TTS
 -- 注意：Air724UG 的 mp3 解码要求码率 >=64kbps（体积大），来电场景请使用 AMR 文件（如 /lua/audio_greeting.amr），走 audioStream 播放最稳定
 TTS_BEFORE_MP3 = "/lua/audio_greeting.amr"
