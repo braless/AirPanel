@@ -2318,15 +2318,6 @@
 
   // ---------------- 通话录音设置 ----------------
 
-  // 设置"通话录音"开关按钮状态（绿=关闭，黄=开启），data-state: off/on
-  function setRecordToggle(en) {
-    const btn = $('#record-toggle-btn');
-    if (!btn) return;
-    btn.dataset.state = en ? 'on' : 'off';
-    btn.style.background = en ? '#f59e0b' : '#16a34a';
-    btn.style.color = en ? '#1f2937' : '#fff';
-  }
-
   // 填充通话录音设备下拉
   function fillRecordDevice() {
     const sel = $('#record-device');
@@ -2349,8 +2340,9 @@
       const data = await API.executeTask({ imei, task: 'get_config' });
       const text = powersaveCfgText(data);
       const cfg = parseLuaConfig(text);
-      // 仅在设备配置显式 RECORD_ENABLE=false 时置为关闭；未配置默认开启
-      setRecordToggle(cfg.RECORD_ENABLE !== false);
+      // 勾选状态：仅当设备配置显式 false 时取消勾选；未配置默认开启
+      $('#record-enable').checked = cfg.RECORD_ENABLE !== false;
+      $('#record-tts-before').checked = cfg.TTS_BEFORE_ENABLE !== false;
       const msg = $('#record-msg');
       if (msg) msg.className = 'hidden';
     } catch (err) { toast(err.message, false); }
@@ -2363,8 +2355,11 @@
     msg.className = 'hidden';
     const imei = $('#record-device').value;
     if (!imei) { msg.textContent = '请选择目标设备'; msg.className = 'text-sm text-red-600'; return; }
-    const toggle = $('#record-toggle-btn');
-    const kv = { RECORD_ENABLE: toggle ? toggle.dataset.state === 'on' : true };
+    const toggle = $('#record-enable');
+    const kv = {
+      RECORD_ENABLE: $('#record-enable').checked,
+      TTS_BEFORE_ENABLE: $('#record-tts-before').checked,
+    };
     try {
       const data = await API.executeTask({ imei, task: 'get_config' });
       const patched = patchLuaConfig(powersaveCfgText(data), kv);
@@ -2504,12 +2499,7 @@
         if (tab === 'record') loadRecordSettings();
       });
     });
-    // "通话录音"开关按钮：点击切换启用/停用并变色（保存由"保存设置"提交）
-    $('#record-toggle-btn').addEventListener('click', () => {
-      const cur = $('#record-toggle-btn').dataset.state === 'on';
-      setRecordToggle(!cur);
-    });
-    // 通话录音设置保存
+    // 通话录音设置保存（勾选开关无需额外点击逻辑，随表单提交）
     $('#record-form').addEventListener('submit', handleRecordSettings);
     $('#clear-tasks-7d').addEventListener('click', () => clearTasks(7));
     $('#clear-tasks-all').addEventListener('click', () => clearTasks(0));

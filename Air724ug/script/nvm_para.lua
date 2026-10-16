@@ -147,6 +147,9 @@ NOTIFY_RETRY_MAX = 100
 -- 是否启用通话录音并上传 WebDAV, true 开启 / false 关闭 (Web 端"通话录音"设置项远程下发)
 RECORD_ENABLE = true
 
+-- 是否播放 TTS_TEXT 之前的前置音频 (TTS_BEFORE_MP3), true 播放 / false 跳过 (Web 端"通话录音"设置项远程下发)
+TTS_BEFORE_ENABLE = true
+
 -- WebDAV 录音上传地址与账号(由 config.lua 提供, 不在此远程下发)
 -- WEBDAV_URL / WEBDAV_USER / WEBDAV_PASS 见 config.lua 录音上传配置
 

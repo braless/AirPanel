@@ -1129,16 +1129,21 @@
 
             <!-- 通话录音 -->
             <div id="set-tab-record" class="card p-6 mt-6 hidden">
-              <form id="record-form" class="space-y-6">
-                <div class="flex items-center justify-between gap-4 rounded-lg bg-slate-50 px-4 py-3">
-                  <div>
-                    <label class="font-medium text-sm text-slate-700">通话录音</label>
-                    <p class="text-xs text-slate-400 mt-0.5">开启后，通话录音上传到 WebDAV（需设备端已配置 WEBDAV_URL）</p>
-                  </div>
-                  <button type="button" id="record-toggle-btn" class="btn shrink-0"
-                          style="min-width:8.5rem;color:#fff;background:#16a34a" data-state="off">通话录音</button>
-                </div>
-                <p class="text-xs text-slate-400">默认开启。关闭后设备不再录制并上传通话录音，来电动作保持接听但不录音。</p>
+              <form id="record-form" class="space-y-5">
+                <label class="flex items-center gap-3 rounded-lg bg-slate-50 px-4 py-3 cursor-pointer">
+                  <input type="checkbox" id="record-enable" class="w-5 h-5 shrink-0" style="accent-color:#2563eb">
+                  <span>
+                    <span class="font-medium text-sm text-slate-700">启用通话录音</span><br>
+                    <span class="text-xs text-slate-400 mt-0.5">开启后，通话录音上传到 WebDAV「通话录音」目录（需设备端已配置 WEBDAV_URL）</span>
+                  </span>
+                </label>
+                <label class="flex items-center gap-3 rounded-lg bg-slate-50 px-4 py-3 cursor-pointer">
+                  <input type="checkbox" id="record-tts-before" class="w-5 h-5 shrink-0" style="accent-color:#2563eb">
+                  <span>
+                    <span class="font-medium text-sm text-slate-700">播放前置语音</span><br>
+                    <span class="text-xs text-slate-400 mt-0.5">在播放 TTS 话术前，先播放自定义前置音频（TTS_BEFORE_MP3，如 audio_greeting.amr）</span>
+                  </span>
+                </label>
 
                 <div>
                   <label class="label" for="record-device">目标设备</label>
