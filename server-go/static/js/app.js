@@ -2316,6 +2316,68 @@
     return '';
   }
 
+  // ---------------- 通话录音设置 ----------------
+
+  // 设置"通话录音"开关按钮状态（绿=关闭，黄=开启），data-state: off/on
+  function setRecordToggle(en) {
+    const btn = $('#record-toggle-btn');
+    if (!btn) return;
+    btn.dataset.state = en ? 'on' : 'off';
+    btn.style.background = en ? '#f59e0b' : '#16a34a';
+    btn.style.color = en ? '#1f2937' : '#fff';
+  }
+
+  // 填充通话录音设备下拉
+  function fillRecordDevice() {
+    const sel = $('#record-device');
+    if (!sel) return;
+    const prev = sel.value;
+    sel.innerHTML = devices.map((d) =>
+      `<option value="${esc(d.imei)}">${d.name ? esc(d.name) + ' · ' : ''}${esc(d.imei)}</option>`).join('');
+    if (prev) sel.value = prev;
+    else if (devices.length === 1) sel.value = devices[0].imei;
+  }
+
+  // 读取设备通话录音配置
+  async function loadRecordSettings() {
+    fillRecordDevice();
+    const sel = $('#record-device');
+    if (!sel) return;
+    const imei = sel.value;
+    if (!imei) { toast('请先添加设备', false); return; }
+    try {
+      const data = await API.executeTask({ imei, task: 'get_config' });
+      const text = powersaveCfgText(data);
+      const cfg = parseLuaConfig(text);
+      // 仅在设备配置显式 RECORD_ENABLE=false 时置为关闭；未配置默认开启
+      setRecordToggle(cfg.RECORD_ENABLE !== false);
+      const msg = $('#record-msg');
+      if (msg) msg.className = 'hidden';
+    } catch (err) { toast(err.message, false); }
+  }
+
+  // 保存通话录音配置
+  async function handleRecordSettings(e) {
+    e.preventDefault();
+    const msg = $('#record-msg');
+    msg.className = 'hidden';
+    const imei = $('#record-device').value;
+    if (!imei) { msg.textContent = '请选择目标设备'; msg.className = 'text-sm text-red-600'; return; }
+    const toggle = $('#record-toggle-btn');
+    const kv = { RECORD_ENABLE: toggle ? toggle.dataset.state === 'on' : true };
+    try {
+      const data = await API.executeTask({ imei, task: 'get_config' });
+      const patched = patchLuaConfig(powersaveCfgText(data), kv);
+      await API.executeTask({ imei, task: 'set_config', configText: patched });
+      msg.textContent = '通话录音配置已保存并下发设备';
+      msg.className = 'text-sm text-emerald-600';
+      toast('通话录音配置已保存');
+    } catch (err) {
+      msg.textContent = err.message;
+      msg.className = 'text-sm text-red-600';
+    }
+  }
+
   // 立即进入省电：先保存当前表单配置（含档位），再下发立即进入
   async function powersaveEnterNow() {
     const msg = $('#powersave-msg');
@@ -2439,8 +2501,16 @@
         });
         if (tab === 'led') loadLedSettings();
         if (tab === 'powersave') loadPowersaveSettings();
+        if (tab === 'record') loadRecordSettings();
       });
     });
+    // "通话录音"开关按钮：点击切换启用/停用并变色（保存由"保存设置"提交）
+    $('#record-toggle-btn').addEventListener('click', () => {
+      const cur = $('#record-toggle-btn').dataset.state === 'on';
+      setRecordToggle(!cur);
+    });
+    // 通话录音设置保存
+    $('#record-form').addEventListener('submit', handleRecordSettings);
     $('#clear-tasks-7d').addEventListener('click', () => clearTasks(7));
     $('#clear-tasks-all').addEventListener('click', () => clearTasks(0));
     // 定时任务

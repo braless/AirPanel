@@ -37,6 +37,15 @@ require "websocket"
 
 local util_mqtt = require "util_mqtt"
 local util_powersave = require "util_powersave"
+
+-- 开启 IPv6 支持（Air724UG 的 LuatOS-Air 需固件编译时包含 ipv6 能力，标准固件默认不带）
+-- 安全检测式：固件支持则启用，不支持则跳过，不影响现有 IPv4 联网
+if mobile and type(mobile.ipv6) == "function" then
+    pcall(mobile.ipv6, true)
+    log.info("main", "已开启 IPv6 支持（开机联网会比平时慢 2~3 秒）")
+else
+    log.warn("main", "当前固件不支持 IPv6（LuatOS-Air 需编译含 ipv6），已安全跳过")
+end
 -- 配置
 local GOTIFY_POLL_INTERVAL = 20 * 1000 -- 轮询间隔 20 秒
 -- 输出音频通道选项, 0:听筒 1:耳机 2:喇叭
