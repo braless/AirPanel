@@ -25,11 +25,14 @@ type Recording struct {
 // davMultistatus PROPFIND 响应结构（忽略命名空间，按 local name 匹配）
 type davResponse struct {
 	Href string `xml:"href"`
-	Prop struct {
-		ContentLength string `xml:"getcontentlength"`
-		LastModified  string `xml:"getlastmodified"`
-		DisplayName   string `xml:"displayname"`
-	} `xml:"prop"`
+	// prop 实际位于 response → propstat → prop 层级
+	PropStat struct {
+		Prop struct {
+			ContentLength string `xml:"getcontentlength"`
+			LastModified  string `xml:"getlastmodified"`
+			DisplayName   string `xml:"displayname"`
+		} `xml:"prop"`
+	} `xml:"propstat"`
 }
 type davMultistatus struct {
 	Responses []davResponse `xml:"response"`
@@ -39,6 +42,9 @@ type davMultistatus struct {
 func webdavHTTPClient() *http.Client {
 	return &http.Client{Timeout: 30 * time.Second}
 }
+
+// webdavBrowserUA：绕过 Cloudflare 按 UA 的机器人拦截（默认 Go-http-client UA 会被 1010 拦）
+const webdavBrowserUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
 func webdavAuthHeader(user, pass string) string {
 	return "Basic " + base64.StdEncoding.EncodeToString([]byte(user+":"+pass))
@@ -70,6 +76,7 @@ func listRecordings(cfg *WebDAVConfig) ([]Recording, error) {
 	req.Header.Set("Authorization", webdavAuthHeader(cfg.Username, cfg.Password))
 	req.Header.Set("Depth", "1")
 	req.Header.Set("Content-Type", "application/xml")
+	req.Header.Set("User-Agent", webdavBrowserUA)
 	body := `<?xml version="1.0" encoding="utf-8"?><d:propfind xmlns:d="DAV:"><d:prop><d:getcontentlength/><d:getlastmodified/><d:displayname/></d:prop></d:propfind>`
 	req.Body = io.NopCloser(strings.NewReader(body))
 	req.ContentLength = int64(len(body))
@@ -111,11 +118,11 @@ func listRecordings(cfg *WebDAVConfig) ([]Recording, error) {
 			continue
 		}
 		var size int64
-		fmt.Sscanf(strings.TrimSpace(r.Prop.ContentLength), "%d", &size)
+		fmt.Sscanf(strings.TrimSpace(r.PropStat.Prop.ContentLength), "%d", &size)
 		out = append(out, Recording{
 			Name:    name,
 			Size:    size,
-			ModTime: strings.TrimSpace(r.Prop.LastModified),
+			ModTime: strings.TrimSpace(r.PropStat.Prop.LastModified),
 			URL:     "/api/recordings/play?file=" + url.QueryEscape(name),
 		})
 	}
@@ -135,6 +142,7 @@ func streamRecording(cfg *WebDAVConfig, name string, w http.ResponseWriter) erro
 		return err
 	}
 	req.Header.Set("Authorization", webdavAuthHeader(cfg.Username, cfg.Password))
+	req.Header.Set("User-Agent", webdavBrowserUA)
 
 	resp, err := webdavHTTPClient().Do(req)
 	if err != nil {
