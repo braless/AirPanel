@@ -2472,15 +2472,20 @@
         tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-10 text-center text-slate-400">暂无录音文件</td></tr>';
         return;
       }
-      tbody.innerHTML = files.map((f) =>
-        `<tr>
+      tbody.innerHTML = files.map((f, i) => {
+        const aid = 'rec-audio-' + i;
+        return `<tr>
           <td class="px-4 py-3 font-medium text-slate-700 truncate max-w-[16rem]" title="${esc(f.name)}">${esc(f.name)}</td>
           <td class="px-4 py-3 text-slate-500">${fmtSize(f.size)}</td>
           <td class="px-4 py-3 text-slate-500">${esc(f.modTime || '')}</td>
           <td class="px-4 py-3">
-            <audio controls preload="none" class="w-56 h-8" src="${esc(f.url)}"></audio>
+            <div class="flex items-center gap-2">
+              <button type="button" class="btn btn-primary !px-3 !py-1.5 text-xs" data-play="${esc(f.url)}" data-audio="${aid}">播放</button>
+              <audio id="${aid}" controls preload="none" class="hidden w-52 h-8"></audio>
+            </div>
           </td>
-        </tr>`).join('');
+        </tr>`;
+      }).join('');
     } catch (err) {
       tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-10 text-center text-red-500">${esc(err.message)}</td></tr>`;
     }
@@ -2596,6 +2601,19 @@
     $('#settings-form').addEventListener('submit', handleSettings);
     $('#notify-settings-form').addEventListener('submit', handleNotifySettings);
     $('#recordings-refresh').addEventListener('click', loadRecordings);
+    // 播放录音：点击带认证拉取音频为 Blob 后播放
+    $('#recordings-tbody').addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-play]');
+      if (!btn) return;
+      const audio = document.getElementById(btn.dataset.audio);
+      if (!audio) return;
+      try {
+        const url = await API.fetchAudio(btn.dataset.play);
+        audio.src = url;
+        audio.classList.remove('hidden');
+        audio.play().catch(() => {});
+      } catch (err) { toast(err.message, false); }
+    });
     $('#store-form').addEventListener('submit', handleStoreSettings);
     $('#store-push-btn').addEventListener('click', pushStoreToDevice);
     $('#notify-test-btn').addEventListener('click', sendTestNotify);
