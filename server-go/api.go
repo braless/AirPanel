@@ -81,6 +81,8 @@ func (api *API) routes() http.Handler {
 	mux.HandleFunc("/api/block-rules/update", api.authenticate(api.handleUpdateBlockRule))
 	mux.HandleFunc("/api/block-rules/delete", api.authenticate(api.handleDeleteBlockRule))
 	mux.HandleFunc("/api/block-rules/reset", api.authenticate(api.handleResetBlockRules))
+	mux.HandleFunc("/api/recordings", api.authenticate(api.handleRecordings))
+	mux.HandleFunc("/api/recordings/play", api.authenticate(api.handleRecordingPlay))
 	mux.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true, "uptimeSec": int64(time.Since(serverStartTime).Seconds())})
 	})
@@ -267,6 +269,7 @@ func (api *API) handleSaveSettings(w http.ResponseWriter, r *http.Request) {
 		NotifyConfig   map[string]map[string]string `json:"notifyConfig"`
 		SMSEventLED    EventLED                     `json:"smsLed"`
 		CallEventLED   EventLED                     `json:"callLed"`
+		WebDAV         *WebDAVConfig                `json:"webdav"`
 	}
 	if err := decodeJSON(r, &body); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"message": "请求体格式错误"})
@@ -284,6 +287,9 @@ func (api *API) handleSaveSettings(w http.ResponseWriter, r *http.Request) {
 	s.NotifyConfig = body.NotifyConfig
 	s.SMSEventLED = body.SMSEventLED
 	s.CallEventLED = body.CallEventLED
+	if body.WebDAV != nil {
+		s.WebDAV = *body.WebDAV
+	}
 
 	if err := api.app.saveSettings(s); err != nil {
 		log.Printf("保存设置失败: %v", err)

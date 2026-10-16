@@ -95,6 +95,10 @@ const API = {
   testNotify(payload) {
     return this.request('POST', '/notify/test', payload);
   },
+  // 通话录音（WebDAV）
+  recordings() {
+    return this.request('GET', '/recordings');
+  },
   // 通话记录
   calls(page, params) {
     const q = '?page=' + encodeURIComponent(page) + buildRecordFilter(params);

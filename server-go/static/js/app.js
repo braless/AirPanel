@@ -236,6 +236,7 @@
     if (name === 'schedules') { renderSchDeviceSelect(); renderSchTaskSelect(); onSchCycleChange(); onSchTaskChange(); loadSchedules(); }
     if (name === 'calls') { fillRecordImeiFilter('#calls-filter-imei'); loadCalls(); }
     if (name === 'sms') { fillRecordImeiFilter('#sms-filter-imei'); loadSms(); }
+    if (name === 'recordings') loadRecordings();
     if (name === 'logcenter') { fillRecordImeiFilter('#log-filter-imei'); loadLogs(); }
     if (name === 'logs') loadTasks();
     if (name === 'block') loadBlockRules();
@@ -247,6 +248,7 @@
         $('#set-new-username').placeholder = '当前：' + uname;
       }
       loadNotifySettings();
+      loadStoreSettings();
     }
   }
 
@@ -2454,6 +2456,129 @@
     }
   }
 
+  // ---------------- 通话录音（WebDAV）列表 ----------------
+
+  async function loadRecordings() {
+    const tbody = $('#recordings-tbody');
+    const empty = $('#recordings-empty');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-10 text-center text-slate-400">加载中...</td></tr>';
+    try {
+      const data = await API.recordings();
+      if (!data.success) throw new Error(data.error || '获取录音失败');
+      const files = data.files || [];
+      if (empty) empty.classList.toggle('hidden', files.length > 0);
+      if (files.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-10 text-center text-slate-400">暂无录音文件</td></tr>';
+        return;
+      }
+      tbody.innerHTML = files.map((f) =>
+        `<tr>
+          <td class="px-4 py-3 font-medium text-slate-700 truncate max-w-[16rem]" title="${esc(f.name)}">${esc(f.name)}</td>
+          <td class="px-4 py-3 text-slate-500">${fmtSize(f.size)}</td>
+          <td class="px-4 py-3 text-slate-500">${esc(f.modTime || '')}</td>
+          <td class="px-4 py-3">
+            <audio controls preload="none" class="w-56 h-8" src="${esc(f.url)}"></audio>
+          </td>
+        </tr>`).join('');
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-10 text-center text-red-500">${esc(err.message)}</td></tr>`;
+    }
+  }
+
+  function fmtSize(n) {
+    if (!n) return '0 B';
+    if (n < 1024) return n + ' B';
+    if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+    return (n / 1024 / 1024).toFixed(1) + ' MB';
+  }
+
+  // ---------------- 存储配置（WebDAV） ----------------
+
+  function fillStoreDevice() {
+    const sel = $('#store-device');
+    if (!sel) return;
+    const prev = sel.value;
+    sel.innerHTML = devices.map((d) =>
+      `<option value="${esc(d.imei)}">${d.name ? esc(d.name) + ' · ' : ''}${esc(d.imei)}</option>`).join('');
+    if (prev) sel.value = prev;
+    else if (devices.length === 1) sel.value = devices[0].imei;
+  }
+
+  async function loadStoreSettings() {
+    fillStoreDevice();
+    try {
+      const settings = await API.getSettings();
+      const wd = settings.webdav || {};
+      $('#store-url').value = wd.url || '';
+      $('#store-user').value = wd.username || '';
+      $('#store-pass').value = wd.password || '';
+      $('#store-dir').value = wd.dir || '通话录音';
+      const msg = $('#store-msg');
+      if (msg) msg.className = 'hidden';
+    } catch (err) { toast(err.message, false); }
+  }
+
+  // 保存存储配置到服务端（回传全量 settings，避免覆盖通知 / 灯光配置）
+  async function handleStoreSettings(e) {
+    e.preventDefault();
+    const msg = $('#store-msg');
+    msg.className = 'hidden';
+    try {
+      const settings = await API.getSettings();
+      const payload = {
+        notifyEnabled: settings.notifyEnabled,
+        notifyChannels: settings.notifyChannels || [],
+        notifyConfig: settings.notifyConfig || {},
+        smsLed: settings.smsLed,
+        callLed: settings.callLed,
+        webdav: {
+          url: $('#store-url').value.trim(),
+          username: $('#store-user').value.trim(),
+          password: $('#store-pass').value.trim(),
+          dir: $('#store-dir').value.trim() || '通话录音',
+        },
+      };
+      await API.saveSettings(payload);
+      msg.textContent = '存储配置已保存';
+      msg.className = 'text-sm text-emerald-600';
+      toast('存储配置已保存');
+    } catch (err) {
+      msg.textContent = err.message;
+      msg.className = 'text-sm text-red-600';
+    }
+  }
+
+  // 下发 WebDAV 配置到设备（nvm: WEBDAV_URL / USER / PASS / RECORD_DIR）
+  async function pushStoreToDevice() {
+    const msg = $('#store-msg');
+    const imei = $('#store-device').value;
+    if (!imei) { toast('请先选择目标设备', false); return; }
+    const btn = $('#store-push-btn');
+    const oldText = btn.textContent;
+    btn.disabled = true; btn.textContent = '下发中...';
+    try {
+      const kv = {
+        WEBDAV_URL: $('#store-url').value.trim(),
+        WEBDAV_USER: $('#store-user').value.trim(),
+        WEBDAV_PASS: $('#store-pass').value.trim(),
+        RECORD_DIR: $('#store-dir').value.trim() || '通话录音',
+      };
+      const data = await API.executeTask({ imei, task: 'get_config' });
+      const patched = patchLuaConfig(powersaveCfgText(data), kv);
+      await API.executeTask({ imei, task: 'set_config', configText: patched });
+      msg.textContent = 'WebDAV 配置已下发到设备';
+      msg.className = 'text-sm text-emerald-600';
+      toast('已下发到设备');
+    } catch (err) {
+      msg.textContent = err.message;
+      msg.className = 'text-sm text-red-600';
+      toast(err.message, false);
+    } finally {
+      btn.disabled = false; btn.textContent = oldText;
+    }
+  }
+
   // ---------------- 初始化 ----------------
 
   function bindEvents() {
@@ -2470,6 +2595,9 @@
     $('#console-clear').addEventListener('click', resetConsole);
     $('#settings-form').addEventListener('submit', handleSettings);
     $('#notify-settings-form').addEventListener('submit', handleNotifySettings);
+    $('#recordings-refresh').addEventListener('click', loadRecordings);
+    $('#store-form').addEventListener('submit', handleStoreSettings);
+    $('#store-push-btn').addEventListener('click', pushStoreToDevice);
     $('#notify-test-btn').addEventListener('click', sendTestNotify);
     $('#notify-channels-list').addEventListener('change', onNotifyChannelChange);
     $('#led-settings-form').addEventListener('submit', handleLedSettings);
