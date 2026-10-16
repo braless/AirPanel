@@ -100,10 +100,11 @@ const API = {
     return this.request('GET', '/recordings');
   },
   // 拉取录音音频为 Blob（带认证 header），返回 Object URL 供 <audio> 播放
+  // 注意：url 已含 /api 前缀（来自 /api/recordings 返回的完整路径），此处不再拼接
   async fetchAudio(url) {
     const headers = {};
     if (this.token) headers['Authorization'] = 'Bearer ' + this.token;
-    const res = await fetch('/api' + url, { method: 'GET', headers });
+    const res = await fetch(url, { method: 'GET', headers });
     if (res.status === 401 || res.status === 403) {
       this.clearToken();
       throw new Error('登录已失效，请重新登录');
