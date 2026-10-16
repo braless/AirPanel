@@ -1,14 +1,15 @@
 ------------------------------------------------- Config --------------------------------------------------
--- 是否开启录音上传
-local record_enable = nvm.get("UPLOAD_URL") and nvm.get("UPLOAD_URL") ~= ""
+-- 是否开启录音上传 (WebDAV)：需 WebDAV 已配置，且未通过 Web 端关闭录音（RECORD_ENABLE）
+-- nvm.get("RECORD_ENABLE") 未设置时按开启处理（默认开），Web 端下发 false 则关闭
+local record_enable = config.WEBDAV_URL and config.WEBDAV_URL ~= "" and nvm.get("RECORD_ENABLE") ~= false
 
 -- 去除链接最后的斜杠
 local function trimSlash(url)
     return string.gsub(url, "/$", "")
 end
 
--- 录音上传接口
-local record_upload_url = trimSlash(nvm.get("UPLOAD_URL") or "") .. "/record"
+-- WebDAV 录音上传根路径
+local record_upload_url = trimSlash(config.WEBDAV_URL or "") .. "/record"
 
 -- 录音格式, 1:pcm 2:wav 3:amrnb 4:speex
 local record_format = 2
@@ -142,34 +143,64 @@ local function recordUploadResultNotify(result, url, msg)
     end)
 end
 
--- 录音上传结果回调
-local function customHttpCallback(url, result, prompt, head, body)
-    if result and prompt == "200" then
-        log.info("handler_call.customHttpCallback", "录音上传成功", url, result, prompt)
-        recordUploadResultNotify(true, url)
-    else
-        log.error("handler_call.customHttpCallback", "录音上传失败", url, result, prompt, head, body)
-        recordUploadResultNotify(false, nil, "录音上传失败")
-    end
+------------------------------------------------- 录音上传相关 (WebDAV) --------------------------------------------------
+
+-- WebDAV 同步请求 (必须在协程内调用, 通过信号等待请求完成)
+local syncDone = "handler_call.webdavDone"
+local function syncWebdav(method, url, head, body, timeout)
+    local ret = {}
+    sys.taskInit(http.request, method, url, nil, head, body, timeout or 20000, function(...)
+        ret.result, ret.prompt, ret.head, ret.body = ...
+        sys.publish(syncDone)
+    end)
+    sys.waitUntil(syncDone, (timeout or 20000) + 5000)
+    return ret
 end
 
--- 录音上传
-local function upload()
-    local local_file = record.getFilePath()
-    local time = os.time()
-    local date = os.date("*t", time)
-    local date_str = string.format("%04d/%02d/%02d/%02d-%02d-%02d", date.year, date.month, date.day, date.hour, date.min, date.sec)
-    -- URL 结构: /record/18888888888/2022/12/12/12-00-00/10086_1668784328.wav
-    local url = record_upload_url .. "/"
-    url = url .. (sim.getNumber() or "unknown") .. "/"
-    url = url .. date_str .. "/"
-    url = url .. CALL_NUMBER .. "_" .. time .. "." .. record_extention
-
-    local function httpCallback(...)
-        customHttpCallback(url, ...)
+-- 录音上传 (WebDAV): 逐级 MKCOL 建目录后 PUT 文件
+-- WebDAV 服务器未开 create_full_put_path 时, PUT 到不存在的父目录会返回 409, 故需先逐级建目录
+local function webdavUploadTask()
+    local number = sim.getNumber() or "unknown"
+    local date = os.date("*t", os.time())
+    local date_str = string.format("%04d/%02d/%02d", date.year, date.month, date.day)
+    local base = record_upload_url
+    -- URL 结构: /record/18888888888/2022/12/12/10086_1668784328.wav
+    local dirs = {
+        base,
+        base .. "/" .. number,
+        base .. "/" .. number .. "/" .. date_str,
+    }
+    local user = config.WEBDAV_USER or ""
+    local pass = config.WEBDAV_PASS or ""
+    -- Basic 认证: 在 URL 中嵌入 user:pass@ (http.request 自动解析生成 Authorization: Basic 头)
+    local function authUrl(u)
+        if user ~= "" then
+            return u:gsub("^(https?)://", "%1://" .. user .. ":" .. pass .. "@", 1)
+        end
+        return u
     end
 
-    sys.taskInit(http.request, "PUT", url, nil, record_upload_header, record_upload_body, 50000, httpCallback)
+    -- 逐级 MKCOL 建目录, 已存在(405/409/301)视为成功
+    for _, d in ipairs(dirs) do
+        local r = syncWebdav("MKCOL", authUrl(d), nil, nil, 15000)
+        local code = tonumber(r.prompt or "")
+        if not (code == 201 or code == 405 or code == 409 or code == 200 or code == 301) then
+            log.warn("handler_call.webdavUpload", "MKCOL 建目录异常", d, r.result, r.prompt)
+        end
+    end
+
+    -- PUT 录音文件
+    local url = base .. "/" .. number .. "/" .. date_str .. "/" .. CALL_NUMBER .. "_" .. os.time() .. "." .. record_extention
+    local r = syncWebdav("PUT", authUrl(url), record_upload_header, record_upload_body, 50000)
+    local code = tonumber(r.prompt or 0)
+    -- WebDAV PUT 成功返回 201 Created (部分实现为 200/204), 通知使用不含凭据的干净 url, 避免泄露账号密码
+    if r.result and (code == 201 or code == 200 or code == 204) then
+        log.info("handler_call.webdavUpload", "录音上传成功", url, r.result, r.prompt)
+        recordUploadResultNotify(true, url)
+    else
+        log.error("handler_call.webdavUpload", "录音上传失败", url, r.result, r.prompt)
+        recordUploadResultNotify(false, nil, "录音上传失败" .. (r.prompt and (" HTTP " .. r.prompt) or ""))
+    end
 end
 
 ------------------------------------------------- 录音相关 --------------------------------------------------
@@ -183,7 +214,7 @@ local function recordCallback(result, size)
     -- 如果录音成功, 上传录音文件
     if result then
         log.info("handler_call.recordCallback", "录音成功", "result:", result, "size:", size)
-        upload()
+        sys.taskInit(webdavUploadTask)
     else
         log.error("handler_call.recordCallback", "录音失败", "result:", result, "size:", size)
         recordUploadResultNotify(false, nil, "录音失败 size:" .. (size or "nil"))
