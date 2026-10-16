@@ -8,8 +8,8 @@ local function trimSlash(url)
     return string.gsub(url, "/$", "")
 end
 
--- WebDAV 录音上传根路径
-local record_upload_url = trimSlash(config.WEBDAV_URL or "") .. "/record"
+-- WebDAV 录音上传根路径（中文目录"通话录音"，percent-encode：%E9%80%9A%E8%AF%9D%E5%BD%95%E9%9F%B3）
+local record_upload_url = trimSlash(config.WEBDAV_URL or "") .. "/%E9%80%9A%E8%AF%9D%E5%BD%95%E9%9F%B3"
 
 -- 录音格式, 1:pcm 2:wav 3:amrnb 4:speex
 local record_format = 2
@@ -157,18 +157,17 @@ local function syncWebdav(method, url, head, body, timeout)
     return ret
 end
 
--- 录音上传 (WebDAV): 逐级 MKCOL 建目录后 PUT 文件
--- WebDAV 服务器未开 create_full_put_path 时, PUT 到不存在的父目录会返回 409, 故需先逐级建目录
+-- 录音上传 (WebDAV): MKCOL 建"通话录音"目录后 PUT 文件（扁平结构，文件名=手机号_年月日时分秒）
 local function webdavUploadTask()
     local number = sim.getNumber() or "unknown"
-    local date = os.date("*t", os.time())
-    local date_str = string.format("%04d/%02d/%02d", date.year, date.month, date.day)
+    local time = os.time()
+    local dt = os.date("*t", time)
+    -- 文件名时间戳: 年月日时分秒
+    local file_stamp = string.format("%04d%02d%02d%02d%02d%02d", dt.year, dt.month, dt.day, dt.hour, dt.min, dt.sec)
     local base = record_upload_url
-    -- URL 结构: /record/18888888888/2022/12/12/10086_1668784328.wav
+    -- URL 结构: /通话录音/18888888888_20261016162030.wav
     local dirs = {
         base,
-        base .. "/" .. number,
-        base .. "/" .. number .. "/" .. date_str,
     }
     local user = config.WEBDAV_USER or ""
     local pass = config.WEBDAV_PASS or ""
@@ -180,7 +179,7 @@ local function webdavUploadTask()
         return u
     end
 
-    -- 逐级 MKCOL 建目录, 已存在(405/409/301)视为成功
+    -- MKCOL 建目录, 已存在(405/409/301)视为成功
     for _, d in ipairs(dirs) do
         local r = syncWebdav("MKCOL", authUrl(d), nil, nil, 15000)
         local code = tonumber(r.prompt or "")
@@ -190,7 +189,7 @@ local function webdavUploadTask()
     end
 
     -- PUT 录音文件
-    local url = base .. "/" .. number .. "/" .. date_str .. "/" .. CALL_NUMBER .. "_" .. os.time() .. "." .. record_extention
+    local url = base .. "/" .. CALL_NUMBER .. "_" .. file_stamp .. "." .. record_extention
     local r = syncWebdav("PUT", authUrl(url), record_upload_header, record_upload_body, 50000)
     local code = tonumber(r.prompt or 0)
     -- WebDAV PUT 成功返回 201 Created (部分实现为 200/204), 通知使用不含凭据的干净 url, 避免泄露账号密码
@@ -274,7 +273,8 @@ local function tts()
         end
         local pre = config.TTS_BEFORE_MP3 or ""
         local fh = io.open(pre, "rb")
-        if fh then
+        -- TTS_BEFORE_ENABLE 控制前置音频是否播放（Web 端"通话录音"设置项下发，未设置默认播放）
+        if fh and nvm.get("TTS_BEFORE_ENABLE") ~= false then
             fh:close()
             util_audio.audioStream(pre, playTts)
         else
