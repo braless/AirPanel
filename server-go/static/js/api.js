@@ -99,6 +99,19 @@ const API = {
   recordings() {
     return this.request('GET', '/recordings');
   },
+  // 拉取录音音频为 Blob（带认证 header），返回 Object URL 供 <audio> 播放
+  async fetchAudio(url) {
+    const headers = {};
+    if (this.token) headers['Authorization'] = 'Bearer ' + this.token;
+    const res = await fetch('/api' + url, { method: 'GET', headers });
+    if (res.status === 401 || res.status === 403) {
+      this.clearToken();
+      throw new Error('登录已失效，请重新登录');
+    }
+    if (!res.ok) throw new Error('获取录音失败');
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
+  },
   // 通话记录
   calls(page, params) {
     const q = '?page=' + encodeURIComponent(page) + buildRecordFilter(params);
