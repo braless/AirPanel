@@ -108,6 +108,9 @@ local function handleTask(ws, json_data)
                             if newcfg then
                                 for k, v in pairs(newcfg) do
                                     config[k] = v
+                                    if v ~= nil then
+                                        nvm.set(k, v)
+                                    end
                                 end
                                 result = {success = true}
                             else
