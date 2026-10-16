@@ -1,15 +1,36 @@
 ------------------------------------------------- Config --------------------------------------------------
+-- WebDAV 配置优先从 nvm 读取（Web 端"存储配置"下发），未下发时用 config.lua 兜底
+local wdav_url = nvm.get("WEBDAV_URL") or config.WEBDAV_URL or ""
+local wdav_user = nvm.get("WEBDAV_USER") or config.WEBDAV_USER or ""
+local wdav_pass = nvm.get("WEBDAV_PASS") or config.WEBDAV_PASS or ""
+local wdav_dir = nvm.get("RECORD_DIR") or config.WEBDAV_DIR or "通话录音"
+
 -- 是否开启录音上传 (WebDAV)：需 WebDAV 已配置，且未通过 Web 端关闭录音（RECORD_ENABLE）
 -- nvm.get("RECORD_ENABLE") 未设置时按开启处理（默认开），Web 端下发 false 则关闭
-local record_enable = config.WEBDAV_URL and config.WEBDAV_URL ~= "" and nvm.get("RECORD_ENABLE") ~= false
+local record_enable = wdav_url ~= "" and nvm.get("RECORD_ENABLE") ~= false
 
 -- 去除链接最后的斜杠
 local function trimSlash(url)
     return string.gsub(url, "/$", "")
 end
 
--- WebDAV 录音上传根路径（中文目录"通话录音"，percent-encode：%E9%80%9A%E8%AF%9D%E5%BD%95%E9%9F%B3）
-local record_upload_url = trimSlash(config.WEBDAV_URL or "") .. "/%E9%80%9A%E8%AF%9D%E5%BD%95%E9%9F%B3"
+-- URL 路径编码：非 ASCII（中文）逐字节 %XX（UTF-8），用于 WebDAV 中文目录
+local function urlEncodePath(s)
+    local out = {}
+    for i = 1, #s do
+        local b = s:byte(i)
+        if (b >= 0x41 and b <= 0x5A) or (b >= 0x61 and b <= 0x7A) or (b >= 0x30 and b <= 0x39)
+           or b == 45 or b == 95 or b == 46 or b == 126 then
+            out[#out + 1] = string.char(b)
+        else
+            out[#out + 1] = string.format("%%%02X", b)
+        end
+    end
+    return table.concat(out)
+end
+
+-- WebDAV 录音上传根路径：根 URL + "/" + percent-encode 后的录音目录
+local record_upload_url = (trimSlash(wdav_url) ~= "") and (trimSlash(wdav_url) .. "/" .. urlEncodePath(wdav_dir)) or ""
 
 -- 录音格式, 1:pcm 2:wav 3:amrnb 4:speex
 local record_format = 2
@@ -169,8 +190,8 @@ local function webdavUploadTask()
     local dirs = {
         base,
     }
-    local user = config.WEBDAV_USER or ""
-    local pass = config.WEBDAV_PASS or ""
+    local user = wdav_user
+    local pass = wdav_pass
     -- Basic 认证: 在 URL 中嵌入 user:pass@ (http.request 自动解析生成 Authorization: Basic 头)
     local function authUrl(u)
         if user ~= "" then

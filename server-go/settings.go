@@ -18,7 +18,15 @@ type EventLED struct {
 	Duration int    `json:"duration"` // 持续毫秒，默认 5000
 }
 
-// Settings 面板设置（账号 / 离线通知 / 事件灯光）
+// WebDAVConfig WebDAV 存储配置（通话录音上传/浏览/播放）
+type WebDAVConfig struct {
+	URL      string `json:"url"`      // WebDAV 服务器根地址，如 https://web.oaife.com
+	Username string `json:"username"` // 账号
+	Password string `json:"password"` // 密码
+	Dir      string `json:"dir"`      // 录音目录（设备上传 + 列表浏览），如 通话录音
+}
+
+// Settings 面板设置（账号 / 离线通知 / 事件灯光 / WebDAV）
 type Settings struct {
 	Username       string                       `json:"username"`
 	Password       string                       `json:"-"` // bcrypt 哈希，不返回给前端
@@ -27,6 +35,7 @@ type Settings struct {
 	NotifyConfig   map[string]map[string]string `json:"notifyConfig"`   // 各渠道配置项
 	SMSEventLED    EventLED                     `json:"smsLed"`         // 来短信灯光
 	CallEventLED   EventLED                     `json:"callLed"`        // 来电话灯光
+	WebDAV         WebDAVConfig                 `json:"webdav"`         // WebDAV 存储
 }
 
 // settings 表的键名
@@ -38,6 +47,7 @@ const (
 	settingNotifyConfig   = "notify_config"
 	settingSMSEventLED    = "sms_led"
 	settingCallEventLED   = "call_led"
+	settingWebDAV         = "webdav"
 )
 
 // defaultOfflineTimeout 固定离线判定超时（秒）= 5 分钟，不支持远程修改。
@@ -93,6 +103,12 @@ func (d *DB) loadSettings() (*Settings, error) {
 	if s.CallEventLED.Duration == 0 {
 		s.CallEventLED.Duration = 5000
 	}
+	if v := all[settingWebDAV]; v != "" {
+		_ = json.Unmarshal([]byte(v), &s.WebDAV)
+	}
+	if s.WebDAV.Dir == "" {
+		s.WebDAV.Dir = "通话录音"
+	}
 	return s, nil
 }
 
@@ -114,6 +130,7 @@ func (d *DB) saveSettings(s *Settings) error {
 	}
 	sled, _ := json.Marshal(s.SMSEventLED)
 	cled, _ := json.Marshal(s.CallEventLED)
+	wd, _ := json.Marshal(s.WebDAV)
 	pairs := [][2]string{
 		{settingUsername, s.Username},
 		{settingPassword, s.Password},
@@ -122,6 +139,7 @@ func (d *DB) saveSettings(s *Settings) error {
 		{settingNotifyConfig, string(cf)},
 		{settingSMSEventLED, string(sled)},
 		{settingCallEventLED, string(cled)},
+		{settingWebDAV, string(wd)},
 	}
 	for _, kv := range pairs {
 		if err := d.setSetting(kv[0], kv[1]); err != nil {

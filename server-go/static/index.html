@@ -86,6 +86,9 @@
           <a href="#" data-nav="sms" class="nav-item flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-slate-800 hover:text-white">
             <span class="text-base">💬</span> 短信记录
           </a>
+          <a href="#" data-nav="recordings" class="nav-item flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-slate-800 hover:text-white">
+            <span class="text-base">🎙️</span> 通话录音
+          </a>
           <a href="#" data-nav="logcenter" class="nav-item flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-slate-800 hover:text-white">
             <span class="text-base">📜</span> 日志中心
           </a>
@@ -759,6 +762,39 @@
           </div>
         </section>
 
+        <!-- 通话录音（WebDAV） -->
+        <section id="page-recordings" class="page hidden">
+          <div class="mb-4 sm:mb-6 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 class="text-lg sm:text-xl font-semibold text-slate-900">通话录音</h2>
+              <p class="text-sm text-slate-500 mt-0.5">WebDAV 存储的通话录音文件，点击可播放</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="recordings-refresh" class="btn btn-ghost !px-3 !py-1.5 text-xs">刷新列表</button>
+            </div>
+          </div>
+          <div id="recordings-empty" class="card mb-4 hidden">
+            <p class="text-sm text-slate-500 px-4 py-6 text-center">暂无录音文件。请先在「基本设置 → 存储配置」填写 WebDAV 并下发到设备。</p>
+          </div>
+          <div class="card overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="bg-slate-50 text-left text-xs font-medium text-slate-500 uppercase">
+                    <th class="px-4 py-3">文件名</th>
+                    <th class="px-4 py-3">大小</th>
+                    <th class="px-4 py-3">修改时间</th>
+                    <th class="px-4 py-3">播放</th>
+                  </tr>
+                </thead>
+                <tbody id="recordings-tbody" class="divide-y divide-slate-100">
+                  <tr><td colspan="4" class="px-4 py-10 text-center text-slate-400">加载中...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
         <!-- 日志中心 -->
         <section id="page-logcenter" class="page hidden">
           <div class="mb-4 sm:mb-6 flex flex-wrap items-start justify-between gap-3">
@@ -927,6 +963,8 @@
                       style="color:#64748b;border-bottom:2px solid transparent;margin-bottom:-1px">省电模式</button>
               <button type="button" class="set-tab-btn px-4 py-2 text-sm transition-colors" data-set-tab="record"
                       style="color:#64748b;border-bottom:2px solid transparent;margin-bottom:-1px">通话录音</button>
+              <button type="button" class="set-tab-btn px-4 py-2 text-sm transition-colors" data-set-tab="store"
+                      style="color:#64748b;border-bottom:2px solid transparent;margin-bottom:-1px">存储配置</button>
               <button type="button" class="set-tab-btn px-4 py-2 text-sm transition-colors" data-set-tab="ui"
                       style="color:#64748b;border-bottom:2px solid transparent;margin-bottom:-1px">界面设置</button>
             </div>
@@ -1152,6 +1190,41 @@
 
                 <p id="record-msg" class="hidden text-sm"></p>
                 <button type="submit" class="btn btn-primary">保存设置</button>
+              </form>
+            </div>
+
+            <!-- 存储配置（WebDAV） -->
+            <div id="set-tab-store" class="card p-6 mt-6 hidden">
+              <form id="store-form" class="space-y-4">
+                <p class="text-xs text-slate-400">WebDAV 服务器配置：设备端通话录音上传到此目录，Web 端「通话录音」菜单浏览并播放。保存后需将配置下发到设备（见下方按钮）。</p>
+                <div>
+                  <label class="label" for="store-url">WebDAV 地址</label>
+                  <input id="store-url" type="text" class="input" placeholder="https://web.oaife.com">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="label" for="store-user">账号</label>
+                    <input id="store-user" type="text" class="input" placeholder="Yanshen">
+                  </div>
+                  <div>
+                    <label class="label" for="store-pass">密码</label>
+                    <input id="store-pass" type="password" class="input" placeholder="••••••">
+                  </div>
+                </div>
+                <div>
+                  <label class="label" for="store-dir">录音目录</label>
+                  <input id="store-dir" type="text" class="input" placeholder="通话录音">
+                  <p class="text-xs text-slate-400 mt-1">设备上传的目录名；「通话录音」菜单将浏览该目录</p>
+                </div>
+                <div>
+                  <label class="label" for="store-device">下发目标设备</label>
+                  <select id="store-device" class="input"></select>
+                </div>
+                <p id="store-msg" class="hidden text-sm"></p>
+                <div class="flex items-center gap-3">
+                  <button type="submit" class="btn btn-primary">保存存储配置</button>
+                  <button type="button" id="store-push-btn" class="btn btn-ghost">下发配置到设备</button>
+                </div>
               </form>
             </div>
 
