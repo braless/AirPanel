@@ -141,16 +141,25 @@
         <!-- ========== 设备列表 ========== -->
         <section class="page" data-page="devices" id="page-devices">
           <div class="hero">
-            <div><h1>设备列表</h1><p>管理接入面板的 Air724UG 设备</p></div>
+            <div><h1>设备</h1><p>通过 MQTT 接入的设备 · 在线状态与基础信息</p></div>
             <div class="hero-actions">
               <span class="dim" id="refresh-devices-time"></span>
               <button class="btn ghost sm" id="refresh-devices"><i class="ic" data-i="refresh"></i>刷新</button>
             </div>
           </div>
-          <div class="card flush">
-            <table class="tbl"><thead><tr>
-              <th>IMEI</th><th>备注</th><th>号码</th><th>状态</th><th>首次接入</th><th>最后在线</th><th style="text-align:right">操作</th>
-            </tr></thead><tbody id="devices-tbody"></tbody></table>
+          <div class="devices-layout">
+            <div class="card">
+              <div class="dev-tools">
+                <input class="input" id="devSearch" placeholder="搜索名称 / IMEI">
+              </div>
+              <div class="seg" id="devFilter" style="width:100%">
+                <button class="on" data-f="all" style="flex:1">全部</button>
+                <button data-f="online" style="flex:1">在线</button>
+                <button data-f="offline" style="flex:1">离线</button>
+              </div>
+              <div class="dev-list" id="devList"></div>
+            </div>
+            <div class="card" id="devDetail"></div>
           </div>
         </section>
 
@@ -407,18 +416,20 @@
         <!-- ========== 基本设置 ========== -->
         <section class="page" data-page="settings" id="page-settings">
           <div class="hero"><div><h1>基本设置</h1><p>账号、通知、灯光、省电、录音与存储</p></div></div>
-          <div class="set-tabs">
-            <button class="set-tab-btn on" data-set-tab="account">账号</button>
-            <button class="set-tab-btn" data-set-tab="notify">离线通知</button>
-            <button class="set-tab-btn" data-set-tab="led">来电灯光</button>
-            <button class="set-tab-btn" data-set-tab="powersave">省电模式</button>
-            <button class="set-tab-btn" data-set-tab="record">通话录音</button>
-            <button class="set-tab-btn" data-set-tab="store">存储配置</button>
-            <button class="set-tab-btn" data-set-tab="ui">界面</button>
-          </div>
+          <div class="settings-layout">
+            <div class="card set-nav" id="setNav">
+              <button class="set-item on" data-set="account"><i class="ic" data-i="person"></i>账号与安全</button>
+              <button class="set-item" data-set="notify"><i class="ic" data-i="bell"></i>通知推送</button>
+              <button class="set-item" data-set="led"><i class="ic" data-i="lightbulb"></i>灯光指示</button>
+              <button class="set-item" data-set="powersave"><i class="ic" data-i="power"></i>省电模式</button>
+              <button class="set-item" data-set="record"><i class="ic" data-i="mic"></i>通话录音</button>
+              <button class="set-item" data-set="store"><i class="ic" data-i="server"></i>存储配置</button>
+              <button class="set-item" data-set="ui"><i class="ic" data-i="palette"></i>界面设置</button>
+            </div>
+            <div>
 
           <!-- 账号 -->
-          <div class="card set-panel on" id="set-tab-account">
+          <div class="card set-panel on" id="set-tab-account" data-panel="account">
             <div class="card-head"><div><div class="card-title">账号与安全</div><div class="card-sub">修改登录用户名与密码</div></div></div>
             <form id="settings-form" class="grid2">
               <div class="field"><label class="label">当前用户名</label><input id="set-current-username" class="input" disabled></div>
@@ -431,7 +442,7 @@
           </div>
 
           <!-- 离线通知 -->
-          <div class="card set-panel hidden" id="set-tab-notify">
+          <div class="card set-panel" id="set-tab-notify" data-panel="notify">
             <div class="card-head"><div><div class="card-title">离线通知</div><div class="card-sub">设备离线 / 事件时推送</div></div></div>
             <form id="notify-settings-form">
               <div class="switch-row" style="padding:0"><div class="grow"><div class="t">启用离线通知</div><div class="s">设备离线时向所选渠道推送</div></div>
@@ -448,7 +459,7 @@
           </div>
 
           <!-- 来电灯光 -->
-          <div class="card set-panel hidden" id="set-tab-led">
+          <div class="card set-panel" id="set-tab-led" data-panel="led">
             <div class="card-head"><div><div class="card-title">来电灯光</div><div class="card-sub">来短信 / 来电话时的 RGB 灯效</div></div></div>
             <form id="led-settings-form" class="grid2">
               <div class="card" style="box-shadow:none;background:var(--fill2)">
@@ -473,7 +484,7 @@
           </div>
 
           <!-- 省电模式 -->
-          <div class="card set-panel hidden" id="set-tab-powersave">
+          <div class="card set-panel" id="set-tab-powersave" data-panel="powersave">
             <div class="card-head"><div><div class="card-title">省电模式</div><div class="card-sub">凌晨低功耗策略</div></div></div>
             <form id="powersave-form">
               <div class="field"><label class="label">目标设备</label><select id="powersave-device" class="select"></select></div>
@@ -503,7 +514,7 @@
           </div>
 
           <!-- 通话录音 -->
-          <div class="card set-panel hidden" id="set-tab-record">
+          <div class="card set-panel" id="set-tab-record" data-panel="record">
             <div class="card-head"><div><div class="card-title">通话录音</div><div class="card-sub">设备端通话录音开关</div></div></div>
             <form id="record-form">
               <div class="field"><label class="label">目标设备</label><select id="record-device" class="select"></select></div>
@@ -517,7 +528,7 @@
           </div>
 
           <!-- 存储配置 -->
-          <div class="card set-panel hidden" id="set-tab-store">
+          <div class="card set-panel" id="set-tab-store" data-panel="store">
             <div class="card-head"><div><div class="card-title">存储配置</div><div class="card-sub">WebDAV 上传地址与目录</div></div></div>
             <form id="store-form" class="grid2">
               <div class="field"><label class="label">WebDAV 地址</label><input id="store-url" class="input" placeholder="https://web.oaife.com/"></div>
@@ -534,7 +545,7 @@
           </div>
 
           <!-- 界面 -->
-          <div class="card set-panel hidden" id="set-tab-ui">
+          <div class="card set-panel" id="set-tab-ui" data-panel="ui">
             <div class="card-head"><div><div class="card-title">界面设置</div><div class="card-sub">仅影响当前浏览器，保存到本地</div></div>
               <span class="badge blue">本地偏好</span></div>
             <label class="label">主题</label>
@@ -555,6 +566,8 @@
               <button class="btn ghost sm" id="ui-reset-btn">恢复默认</button>
             </div>
             <p id="ui-msg" class="hidden" style="font-size:12px;margin-top:10px"></p>
+          </div>
+            </div>
           </div>
         </section>
 

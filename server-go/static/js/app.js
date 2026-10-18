@@ -65,6 +65,7 @@
 
   let currentPage = 'devices';
   let devices = [];
+  let currentDevice = null;
 
   // ---------------- 工具函数 ----------------
 
@@ -397,17 +398,18 @@
     $('#ov-uptime').textContent = '开机 ' + fmtDur(lat ? lat.workTime : null);
 
     // 电流/续航
-    $('#ov-current').textContent = pow.currentMa !== undefined ? pow.currentMa + ' mA' : '—';
     $('#ov-current-note').textContent = (pow.avgCurrentMa > 0) ? '已配置实测值覆盖' : '基于功耗模型估算';
     $('#ov-esthours').textContent = (pow.estHours > 0) ? pow.estHours.toFixed(1) + ' 小时' : '—';
     $('#ov-esthours-note').textContent = (bat.percent > 0) ? `按剩余 ${(bat.mah * bat.percent / 100).toFixed(0)} mAh 估算` : '电量未知，暂无法估算';
-    $('#ov-mah').textContent = bat.mah ? bat.mah + ' mAh' : '—';
 
     // 设备状态
     $('#ov-status').textContent = dev.connected ? '在线' : '离线';
-    $('#ov-status-note').textContent = dev.connected
-      ? '最近活跃 ' + fmtTime(dev.lastSeen)
-      : '最后在线 ' + fmtTime(dev.lastSeen);
+    const stNote = $('#ov-status-note');
+    if (stNote) {
+      stNote.textContent = dev.connected
+        ? '最近活跃 ' + fmtTime(dev.lastSeen)
+        : '最后在线 ' + fmtTime(dev.lastSeen);
+    }
 
     // 设备信息网格
     const info = [
@@ -503,32 +505,102 @@
         timeEl.textContent = '上次刷新 ' + `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
       }
     } catch (err) {
-      $('#devices-tbody').innerHTML = `<tr><td colspan="7" class="empty" style="color:var(--red)">${esc(err.message)}</td></tr>`;
+      const dl = $('#devList');
+      if (dl) dl.innerHTML = `<div style="padding:24px 12px;text-align:center;font-size:11px;color:var(--red)">${esc(err.message)}</div>`;
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = '刷新'; }
     }
   }
 
+  // 设备页：左侧设备列表（搜索/过滤）+ 右侧详情（原型 devices-layout）
   function renderDevices() {
-    const tbody = $('#devices-tbody');
-    if (!devices.length) {
-      tbody.innerHTML = '<tr><td colspan="7" class="empty">暂无设备接入</td></tr>';
+    const q = ((($('#devSearch') || {}).value) || '').trim().toLowerCase();
+    const fbtn = $('#devFilter .on');
+    const f = fbtn ? fbtn.dataset.f : 'all';
+    const list = devices.filter((d) => {
+      if (f === 'online' && !d.connected) return false;
+      if (f === 'offline' && d.connected) return false;
+      if (q && !((d.name || '') + d.imei + (d.phone || '')).toLowerCase().includes(q)) return false;
+      return true;
+    });
+    if (!currentDevice && devices.length) currentDevice = devices[0].imei;
+    if (currentDevice && !devices.some((d) => d.imei === currentDevice)) currentDevice = null;
+    const box = $('#devList');
+    if (!box) return;
+    box.innerHTML = list.length ? list.map((d) => `
+      <div class="dev-row ${d.imei === currentDevice ? 'on' : ''}" data-dev="${esc(d.imei)}">
+        <div class="dev-avatar ${d.connected ? '' : 'off'}"><i class="ic" data-i="cpu"></i></div>
+        <div style="min-width:0">
+          <div class="dev-name">${esc(d.name || d.imei)}</div>
+          <div class="dev-meta">${esc(d.imei)} · ${d.connected ? (d.phone || '在线') : '设备离线'}</div>
+        </div>
+        <span class="badge ${d.connected ? 'green' : 'gray'}">${d.connected ? '在线' : '离线'}</span>
+      </div>`).join('')
+      : '<div style="padding:22px 10px;text-align:center;font-size:11px;color:var(--ink3)">没有匹配的设备</div>';
+    paintIcons(box);
+    renderDeviceDetail();
+  }
+
+  function renderDeviceDetail() {
+    const box = $('#devDetail');
+    if (!box) return;
+    const d = devices.find((x) => x.imei === currentDevice);
+    if (!d) {
+      box.innerHTML = '<div style="padding:40px 16px;text-align:center;font-size:11px;color:var(--ink3)">选择左侧设备查看详情</div>';
       return;
     }
-    tbody.innerHTML = devices.map((d) => `
-      <tr>
-        <td class="mono">${esc(d.imei)}</td>
-        <td><div class="rowflex" style="gap:4px"><span class="remark-name">${esc(d.name || '—')}</span>
-          <button class="icon-btn" style="width:24px;height:24px;border-radius:7px" data-remark="${esc(d.imei)}" title="设置备注"><i class="ic" data-i="pencil"></i></button></div></td>
-        <td class="dim">${esc(d.phone || '—')}</td>
-        <td>${d.connected ? '<span class="badge-online">在线</span>' : '<span class="badge-offline">离线</span>'}</td>
-        <td class="faint">${fmtTime(d.firstSeen)}</td>
-        <td class="faint">${fmtTime(d.lastSeen)}</td>
-        <td class="right"><div class="rowflex" style="gap:5px">
-          <button class="mini-btn" data-run="${esc(d.imei)}">执行任务</button>
-          <button class="mini-btn danger" data-del="${esc(d.imei)}">删除</button></div></td>
-      </tr>`).join('');
-    paintIcons(tbody);
+    box.innerHTML = `
+    <div class="detail-head">
+      <div class="dev-avatar big ${d.connected ? '' : 'off'}"><i class="ic" data-i="cpu"></i></div>
+      <div style="min-width:0">
+        <h2>${esc(d.name || d.imei)}</h2>
+        <div class="sub">IMEI ${esc(d.imei)} · ${esc(d.phone || '无号码')}</div>
+      </div>
+      <div class="detail-actions">
+        <button class="btn sm" data-goto="tasks"><i class="ic" data-i="bolt"></i>下发任务</button>
+        <button class="btn sm ghost" data-goto="logcenter"><i class="ic" data-i="list"></i>日志</button>
+      </div>
+    </div>
+    <div class="detail-grid">
+      <div class="cell"><div class="k">在线状态</div><div class="v">${d.connected ? '在线' : '离线'}</div></div>
+      <div class="cell"><div class="k">设备号码</div><div class="v">${esc(d.phone || '—')}</div></div>
+      <div class="cell"><div class="k">首次接入</div><div class="v">${fmtTime(d.firstSeen)}</div></div>
+      <div class="cell"><div class="k">最后在线</div><div class="v">${fmtTime(d.lastSeen)}</div></div>
+      <div class="cell"><div class="k">备注</div><div class="v">${esc(d.name || '—')}</div></div>
+      <div class="cell"><div class="k">IMEI</div><div class="v">${esc(d.imei)}</div></div>
+    </div>
+    <div style="margin-top:14px;padding-top:14px;border-top:.5px solid var(--hair)">
+      <div class="label">快捷操作</div>
+      <div class="quick-grid" style="margin-top:7px">
+        <button class="quick" data-task-jump="get_temperature"><span class="tile" style="--qt:rgba(255,159,10,.14);--qf:#FF9F0A"><i class="ic" data-i="temp"></i></span>查询温度</button>
+        <button class="quick" data-task-jump="get_config"><span class="tile" style="--qt:rgba(90,200,250,.16);--qf:#32ADE6"><i class="ic" data-i="doc"></i></span>读取配置</button>
+        <button class="quick" data-task-jump="set_led"><span class="tile" style="--qt:rgba(175,82,222,.14);--qf:#AF52DE"><i class="ic" data-i="lightbulb"></i></span>灯光控制</button>
+        <button class="quick" data-task-jump="reboot"><span class="tile" style="--qt:rgba(255,59,48,.13);--qf:#FF3B30"><i class="ic" data-i="refresh"></i></span>重启设备</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;margin-top:14px;padding-top:12px;border-top:.5px solid var(--hair)">
+      <button class="btn sm ghost" data-remark="${esc(d.imei)}"><i class="ic" data-i="pencil"></i>设置备注</button>
+      <button class="btn sm ghost" data-del="${esc(d.imei)}"><i class="ic" data-i="trash"></i>删除设备</button>
+    </div>`;
+    paintIcons(box);
+  }
+
+  function jumpToTask(task) {
+    switchPage('tasks');
+    renderDeviceSelect(currentDevice);
+    const imeiSel = $('#task-imei');
+    if (imeiSel && currentDevice) imeiSel.value = currentDevice;
+    const tsel = $('#task-type');
+    if (tsel) { tsel.value = task; onTaskTypeChange(); }
+  }
+
+  async function editRemark(imei) {
+    const dev = devices.find((x) => x.imei === imei);
+    const cur = dev && dev.name ? dev.name : '';
+    const nn = prompt('设置设备备注', cur);
+    if (nn === null) return;
+    try { await API.updateDeviceRemark({ imei, name: nn }); toast('备注已更新'); loadDevices(); }
+    catch (err) { toast('更新失败：' + err.message, false); }
   }
 
   // 删除设备（在线设备会先被断开连接；若设备仍在运行，重连后会重新出现在列表）
@@ -2676,17 +2748,12 @@
       const cur = $('#powersave-toggle-btn').dataset.state === 'on';
       setPowerSaveToggle(!cur);
     });
-    // 设置页 Tab 切换
-    $$('.set-tab-btn').forEach((btn) => {
+    // 设置页 Tab 切换（原型：左侧竖向 set-nav + 右侧 set-panel）
+    $$('.set-item').forEach((btn) => {
       btn.addEventListener('click', () => {
-        const tab = btn.dataset.setTab;
-        $$('.set-tab-btn').forEach((b) => {
-          const active = b.dataset.setTab === tab;
-          b.classList.toggle('on', active);
-        });
-        $$('[id^="set-tab-"]').forEach((el) => {
-          el.classList.toggle('hidden', !el.id.endsWith(tab));
-        });
+        const tab = btn.dataset.set;
+        $$('.set-item').forEach((b) => b.classList.toggle('on', b.dataset.set === tab));
+        $$('.set-panel').forEach((p) => p.classList.toggle('on', p.dataset.panel === tab));
         if (tab === 'led') loadLedSettings();
         if (tab === 'powersave') loadPowersaveSettings();
         if (tab === 'record') loadRecordSettings();
@@ -2912,21 +2979,33 @@
     $('#overview-refresh').addEventListener('click', loadOverview);
     $('#ov-save-config').addEventListener('click', saveOverviewConfig);
 
-    // 设备表格里"执行任务"/"删除"按钮 / 备注编辑
-    $('#devices-tbody').addEventListener('click', (e) => {
-      const runBtn = e.target.closest('[data-run]');
-      if (runBtn) {
-        renderDeviceSelect(runBtn.dataset.run);
-        switchPage('tasks');
+    // 设备页：左列表选中 + 右详情操作 + 搜索/过滤
+    $('#devList').addEventListener('click', (e) => {
+      const row = e.target.closest('.dev-row');
+      if (row) { currentDevice = row.dataset.dev; renderDevices(); }
+    });
+    $('#devDetail').addEventListener('click', (e) => {
+      const goto = e.target.closest('[data-goto]');
+      if (goto) {
+        if (goto.dataset.goto === 'tasks' && currentDevice) {
+          switchPage('tasks'); renderDeviceSelect(currentDevice);
+          const isel = $('#task-imei'); if (isel) isel.value = currentDevice;
+        } else switchPage(goto.dataset.goto);
         return;
       }
+      const jump = e.target.closest('[data-task-jump]');
+      if (jump) { jumpToTask(jump.dataset.taskJump); return; }
       const delBtn = e.target.closest('[data-del]');
-      if (delBtn) {
-        deleteDevice(delBtn.dataset.del);
-        return;
-      }
+      if (delBtn) { deleteDevice(delBtn.dataset.del); return; }
       const remarkBtn = e.target.closest('[data-remark]');
-      if (remarkBtn) startEditRemark(remarkBtn.dataset.remark);
+      if (remarkBtn) editRemark(remarkBtn.dataset.remark);
+    });
+    $('#devSearch').addEventListener('input', renderDevices);
+    $('#devFilter').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-f]');
+      if (!b) return;
+      $$('#devFilter [data-f]').forEach((x) => x.classList.toggle('on', x === b));
+      renderDevices();
     });
   }
 

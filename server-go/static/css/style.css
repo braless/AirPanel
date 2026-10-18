@@ -16,6 +16,23 @@ body{margin:0;font-family:var(--sans);background:var(--canvas);color:var(--ink);
   --accent:#0A84FF;--green:#34C759;--orange:#FF9F0A;--red:#FF3B30;
   --purple:#AF52DE;--teal:#5AC8FA;--indigo:#5856D6;--pink:#FF2D55;--yellow:#FFD60A;
   --ga:1;
+
+  /* 默认浅色主题变量（无 data-theme 时即为浅色） */
+  --canvas:#edf0f6;
+  --ink:#0a0a0f;
+  --ink2:rgba(60,60,67,.64);
+  --ink3:rgba(60,60,67,.4);
+  --ink4:rgba(60,60,67,.2);
+  --glass:rgba(255,255,255,calc(.54 * var(--ga)));
+  --glass2:rgba(255,255,255,calc(.76 * var(--ga)));
+  --stroke:rgba(60,60,67,.16);
+  --hair:rgba(60,60,67,.1);
+  --fill:rgba(120,120,128,.13);
+  --fill2:rgba(120,120,128,.075);
+  --spec:rgba(255,255,255,.9);
+  --shadow:0 26px 60px -36px rgba(28,38,68,.42);
+  --seg-on:#fff;
+  --console:linear-gradient(165deg,rgba(27,32,44,.95),rgba(13,17,26,.98));
 }
 html[data-theme="light"]{
   --canvas:#edf0f6;
@@ -25,7 +42,7 @@ html[data-theme="light"]{
   --ink4:rgba(60,60,67,.2);
   --glass:rgba(255,255,255,calc(.54 * var(--ga)));
   --glass2:rgba(255,255,255,calc(.76 * var(--ga)));
-  --stroke:rgba(255,255,255,.82);
+  --stroke:rgba(60,60,67,.16);
   --hair:rgba(60,60,67,.1);
   --fill:rgba(120,120,128,.13);
   --fill2:rgba(120,120,128,.075);
