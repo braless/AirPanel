@@ -1,0 +1,67 @@
+name: iOS IPA Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'AirPanel-iOS/**'
+
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-ipa:
+    name: Build unsigned AirPanel IPA
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: Build app (unsigned)
+        run: |
+          cd AirPanel-iOS
+          xcodebuild \
+            -project AirPanel.xcodeproj \
+            -target AirPanel \
+            -configuration Release \
+            -sdk iphoneos \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Locate built app
+        id: app
+        run: |
+          APP="$(find "$HOME/Library/Developer/Xcode/DerivedData" \
+            -path '*Release-iphoneos/AirPanel.app' -type d 2>/dev/null | head -1)"
+          if [ -z "$APP" ]; then
+            echo "::error::未找到 AirPanel.app 构建产物"
+            exit 1
+          fi
+          echo "app=$APP" >> "$GITHUB_OUTPUT"
+          echo "found: $APP"
+          ls "$APP"
+
+      - name: Package unsigned IPA
+        run: |
+          APP="${{ steps.app.outputs.app }}"
+          rm -rf Payload
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          ditto -c -k --sequesterRsrc --keepParent Payload AirPanel-unsigned.ipa
+          ls -lh AirPanel-unsigned.ipa
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AirPanel-unsigned-ipa
+          path: AirPanel-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 14
