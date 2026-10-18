@@ -11,8 +11,10 @@ RUN go mod download
 # 拷贝源码及前端静态文件（static/ 由 go:embed 内嵌进二进制）
 COPY . .
 
-# 项目使用纯 Go 实现（modernc.org/sqlite 不依赖 CGO），可静态编译
-RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o panel-server .
+# 项目使用纯 Go 实现（modernc.org/sqlite 不依赖 CGO），可静态交叉编译
+# buildx 多平台构建时 TARGETARCH 自动注入（amd64 / arm64），据此设置 GOARCH
+ARG TARGETARCH
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w" -o panel-server .
 
 # ---------- 运行阶段 ----------
 FROM alpine:3.20
