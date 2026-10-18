@@ -39,9 +39,12 @@ jobs:
       - name: Locate built app
         id: app
         run: |
-          APP="$(find "$HOME/Library/Developer/Xcode/DerivedData" \
-            -path '*Release-iphoneos/AirPanel.app' -type d 2>/dev/null | head -1)"
-          if [ -z "$APP" ]; then
+          APP="AirPanel-iOS/build/Release-iphoneos/AirPanel.app"
+          if [ ! -d "$APP" ]; then
+            APP="$(find "$HOME/Library/Developer/Xcode/DerivedData" \
+              -path '*Release-iphoneos/AirPanel.app' -type d 2>/dev/null | head -1)"
+          fi
+          if [ -z "$APP" ] || [ ! -d "$APP" ]; then
             echo "::error::未找到 AirPanel.app 构建产物"
             exit 1
           fi
