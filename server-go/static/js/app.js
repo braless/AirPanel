@@ -5,6 +5,64 @@
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
+  /* ---------- iOS27 图标库（SF Symbols 线稿 SVG） ---------- */
+  const ICONS = {
+    grid:'<rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>',
+    cpu:'<rect x="6.5" y="6.5" width="11" height="11" rx="2.5"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3"/>',
+    bolt:'<path d="M13 2.5 5.5 13.5h5l-1 8 8-11.5h-5z"/>',
+    clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5.5l3.5 2"/>',
+    phone:'<path d="M6.2 3.8h3l1.4 3.6-1.8 1.4a12.5 12.5 0 0 0 5.4 5.4l1.4-1.8 3.6 1.4v3c0 1-.8 1.8-1.8 1.8C10.6 18.6 5.4 13.4 4.4 5.6c0-1 .8-1.8 1.8-1.8Z"/>',
+    msg:'<path d="M4 5.5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/>',
+    mic:'<rect x="9" y="3" width="6" height="10" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v3M9 20h6"/>',
+    list:'<path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>',
+    shield:'<path d="M12 3 5 6v6c0 4.2 3 7.2 7 9 4-1.8 7-4.8 7-9V6z"/><path d="m9 12 2 2 4-4"/>',
+    gear:'<circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3M5.5 5.5l2.1 2.1M16.4 16.4l2.1 2.1M18.5 5.5l-2.1 2.1M7.6 16.4l-2.1 2.1"/>',
+    search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 4 4"/>',
+    refresh:'<path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v4h-4"/>',
+    plus:'<path d="M12 5v14M5 12h14"/>',
+    chevR:'<path d="m9 5 7 7-7 7"/>',
+    more:'<circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/>',
+    play:'<path d="M8 5.5v13l11-6.5z"/>',
+    pause:'<path d="M8 5v14M16 5v14"/>',
+    trash:'<path d="M4.5 7h15M9 7V5h6v2M6.5 7l1 13h9l1-13M10 11v5M14 11v5"/>',
+    pencil:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4M4 20v-4"/>',
+    check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+    x:'<path d="M6 6l12 12M18 6 6 18"/>',
+    wifi:'<path d="M4 9a12 12 0 0 1 16 0M7 12.5a8 8 0 0 1 10 0M10 16a4 4 0 0 1 4 0"/><circle cx="12" cy="19" r="1"/>',
+    battery:'<rect x="2.5" y="7.5" width="17" height="9" rx="3"/><path d="M21 11v2"/><path d="M6 10.5v3"/>',
+    signal:'<path d="M4 20v-4M9 20v-8M14 20V7M19 20V4"/>',
+    temp:'<path d="M10 14.5V5a2 2 0 1 1 4 0v9.5a4 4 0 1 1-4 0Z"/><path d="M12 9v6"/>',
+    power:'<path d="M12 3v9"/><path d="M7.5 6.5a8 8 0 1 0 9 0"/>',
+    key:'<circle cx="8" cy="12" r="4"/><path d="M12 12h8M17 12v3M20 12v2"/>',
+    person:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/>',
+    bell:'<path d="M6 9a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 13 6 9Z"/><path d="M10 18a2 2 0 0 0 4 0"/>',
+    terminal:'<rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="m7.5 9 3 3-3 3M13 15h4"/>',
+    doc:'<path d="M7 3.5h6.5L18 8v12.5H7z"/><path d="M13.5 3.5V8H18M9.5 12h6M9.5 15.5h6"/>',
+    sliders:'<path d="M4 7h6M14 7h6M4 17h10M18 17h2"/><circle cx="12" cy="7" r="2"/><circle cx="16" cy="17" r="2"/>',
+    lightbulb:'<path d="M9 18h6M10 21h4"/><path d="M8.5 14.5a6 6 0 1 1 7 0c-.8.6-1 1.4-1 2.5h-5c0-1.1-.2-1.9-1-2.5Z"/>',
+    wave:'<path d="M3 12h2l2-6 3 12 3-9 2 5 2-3h4"/>',
+    cal:'<rect x="3.5" y="5.5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3.5v4M16 3.5v4"/>',
+    palette:'<path d="M12 3a9 9 0 1 0 0 18h1.5a2 2 0 0 0 0-4H13a2 2 0 0 1 0-4h4a4 4 0 0 0 4-4c0-3.3-4-6-9-6Z"/><circle cx="7.5" cy="10" r="1"/><circle cx="10" cy="6.5" r="1"/><circle cx="14" cy="6.5" r="1"/>',
+    logout:'<path d="M10 4H5v16h5M15 8l4 4-4 4M19 12H9"/>',
+    restart:'<path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v4h-4"/>',
+    info:'<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/>',
+    copy:'<rect x="8" y="8" width="12" height="12" rx="3"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
+    upload:'<path d="M12 16V4M7 9l5-5 5 5M4 20h16"/>',
+    download:'<path d="M12 3v12M7 10l5 5 5-5M4 20h16"/>',
+    chevD:'<path d="m5 9 7 7 7-7"/>',
+    chevL:'<path d="m15 5-7 7 7 7"/>'
+  };
+  const FILLED = new Set(['bolt', 'play', 'pause', 'signal']);
+  function paintIcons(root) {
+    (root || document).querySelectorAll('.ic[data-i]').forEach((el) => {
+      const body = ICONS[el.dataset.i];
+      if (!body) return;
+      const fill = FILLED.has(el.dataset.i);
+      el.innerHTML = '<svg viewBox="0 0 24 24" fill="' + (fill ? 'currentColor' : 'none') +
+        '" stroke="' + (fill ? 'none' : 'currentColor') + '" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + body + '</svg>';
+    });
+  }
+
   let currentPage = 'devices';
   let devices = [];
 
@@ -26,12 +84,12 @@
   let toastTimer = null;
   function toast(msg, ok = true) {
     const el = $('#toast');
-    el.textContent = msg;
-    el.className = 'fixed top-5 left-1/2 -translate-x-1/2 z-50 rounded-lg px-4 py-2.5 text-sm text-white shadow-lg ' +
-      (ok ? 'bg-slate-800' : 'bg-red-600');
-    el.classList.remove('hidden');
+    $('#toast-text').textContent = msg;
+    const ic = el.querySelector('.ic');
+    if (ic) ic.style.color = ok ? '' : 'var(--red)';
+    el.classList.add('on');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => el.classList.add('hidden'), 3000);
+    toastTimer = setTimeout(() => el.classList.remove('on'), 3000);
   }
 
   // ---------------- 登录 / 登出 ----------------
@@ -163,11 +221,11 @@
     $('#m-brand-title').textContent = title;
     document.title = title + ' 管理面板';
     const el = $('#brand-logo');
-    el.classList.remove('overflow-hidden', 'p-0');
+    el.style.overflow = 'hidden'; el.style.padding = '0';
     if (/^https?:\/\//i.test(logo)) {
-      el.classList.add('overflow-hidden');
-      el.innerHTML = '<img src="' + logo + '" alt="logo" class="w-full h-full object-cover">';
+      el.innerHTML = '<img src="' + logo + '" alt="logo" style="width:100%;height:100%;object-fit:cover">';
     } else {
+      el.style.overflow = ''; el.style.padding = '';
       el.textContent = logo || 'A';
     }
   }
@@ -181,11 +239,11 @@
   function updateUiPreview() {
     const v = $('#ui-logo').value.trim();
     const p = $('#ui-logo-preview');
-    p.classList.remove('overflow-hidden', 'p-0');
+    p.style.overflow = 'hidden'; p.style.padding = '0';
     if (/^https?:\/\//i.test(v)) {
-      p.classList.add('overflow-hidden');
-      p.innerHTML = '<img src="' + v + '" alt="logo" class="w-full h-full object-cover">';
+      p.innerHTML = '<img src="' + v + '" alt="logo" style="width:100%;height:100%;object-fit:cover">';
     } else {
+      p.style.overflow = ''; p.style.padding = '';
       p.textContent = v || 'A';
     }
   }
@@ -216,20 +274,23 @@
 
   // 移动端抽屉开关（内联样式避免依赖 Tailwind 未生成的工具类）
   function toggleSidebar(open) {
-    const sb = $('#sidebar');
-    sb.style.transform = open ? 'translateX(0)' : '';
-    $('#sidebar-overlay').classList.toggle('hidden', !open);
+    $('#sidebar').classList.toggle('open', !!open);
+    $('#sidebar-overlay').classList.toggle('on', !!open);
   }
+
+  const PAGE_META = {
+    overview: ['监控', '设备概览'], devices: ['监控', '设备列表'],
+    calls: ['通信', '通话记录'], sms: ['通信', '短信记录'], recordings: ['通信', '通话录音'],
+    tasks: ['自动化', '任务执行'], schedules: ['自动化', '定时任务'], logs: ['自动化', '任务记录'],
+    logcenter: ['系统', '日志中心'], block: ['系统', '屏蔽配置'], settings: ['系统', '基本设置'],
+  };
 
   function switchPage(name) {
     currentPage = name;
-    $$('.page').forEach((s) => s.classList.toggle('hidden', s.id !== 'page-' + name));
-    $$('.nav-item').forEach((a) => {
-      const active = a.dataset.nav === name;
-      a.classList.toggle('bg-slate-800', active);
-      a.classList.toggle('text-white', active);
-      a.classList.toggle('text-slate-300', !active);
-    });
+    $$('.page').forEach((s) => s.classList.toggle('on', s.id === 'page-' + name));
+    $$('.nav-item').forEach((a) => a.classList.toggle('on', a.dataset.nav === name));
+    const meta = PAGE_META[name];
+    if (meta) { $('#crumb').textContent = meta[0]; $('#pageName').textContent = meta[1]; }
     if (name === 'devices') loadDevices();
     if (name === 'overview') { fillOverviewDevice(); loadOverview(); }
     if (name === 'tasks') renderDeviceSelect();
@@ -368,7 +429,7 @@
       ['上报间隔', '—'],
     ];
     $('#ov-info-grid').innerHTML = info.map(([k, v]) =>
-      `<div><p class="text-xs text-slate-400">${esc(k)}</p><p class="mt-0.5 font-medium text-slate-700 break-all">${esc(v)}</p></div>`).join('');
+      `<div><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join('');
 
     // 配置回填
     $('#ov-battery-mah').value = bat.mah || 1800;
@@ -381,7 +442,7 @@
     const el = $('#overview-chart');
     if (!el) return;
     if (!history || history.length < 2) {
-      el.innerHTML = '<p class="text-center text-sm text-slate-400 py-6">暂无足够的遥测数据，等待设备上报</p>';
+      el.innerHTML = '<div class="ov-empty">暂无足够的遥测数据，等待设备上报</div>';
       return;
     }
     const W = 720, H = 210, pad = 12;
@@ -407,12 +468,12 @@
     const voltArr = history.map(h => (h.voltage ?? 0) / 1000);
     const tempArr = history.map(h => h.temperature ?? 0);
 
-    el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" class="w-full h-auto" preserveAspectRatio="none">
-      ${[0.25, 0.5, 0.75].map(t => `<line x1="${pad}" y1="${(pad + t * (H - 2 * pad)).toFixed(1)}" x2="${W - pad}" y2="${(pad + t * (H - 2 * pad)).toFixed(1)}" stroke="#f1f5f9" stroke-width="1"/>`).join('')}
-      <path d="${poly(rssiArr, yr)}" fill="#3b82f6" fill-opacity="0.06"/>
-      <path d="${line(rssiArr, yr)}" fill="none" stroke="#3b82f6" stroke-width="2"/>
-      <path d="${line(voltArr, yv)}" fill="none" stroke="#22c55e" stroke-width="2"/>
-      <path d="${line(tempArr, yt)}" fill="none" stroke="#f97316" stroke-width="2"/>
+    el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto" preserveAspectRatio="none">
+      ${[0.25, 0.5, 0.75].map(t => `<line x1="${pad}" y1="${(pad + t * (H - 2 * pad)).toFixed(1)}" x2="${W - pad}" y2="${(pad + t * (H - 2 * pad)).toFixed(1)}" stroke="var(--hair)" stroke-width="1"/>`).join('')}
+      <path d="${poly(rssiArr, yr)}" fill="var(--accent)" fill-opacity="0.08"/>
+      <path d="${line(rssiArr, yr)}" fill="none" stroke="var(--accent)" stroke-width="2"/>
+      <path d="${line(voltArr, yv)}" fill="none" stroke="var(--green)" stroke-width="2"/>
+      <path d="${line(tempArr, yt)}" fill="none" stroke="var(--orange)" stroke-width="2"/>
     </svg>`;
   }
 
@@ -442,7 +503,7 @@
         timeEl.textContent = '上次刷新 ' + `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
       }
     } catch (err) {
-      $('#devices-tbody').innerHTML = `<tr><td colspan="7" class="px-4 py-10 text-center text-red-500">${esc(err.message)}</td></tr>`;
+      $('#devices-tbody').innerHTML = `<tr><td colspan="7" class="empty" style="color:var(--red)">${esc(err.message)}</td></tr>`;
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = '刷新'; }
     }
@@ -451,29 +512,23 @@
   function renderDevices() {
     const tbody = $('#devices-tbody');
     if (!devices.length) {
-      tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-10 text-center text-slate-400">暂无设备接入</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" class="empty">暂无设备接入</td></tr>';
       return;
     }
     tbody.innerHTML = devices.map((d) => `
-      <tr class="hover:bg-slate-50">
-        <td class="px-4 py-3 font-mono text-slate-700">${esc(d.imei)}</td>
-        <td class="px-4 py-3 text-slate-600">
-          <div class="flex items-center gap-1.5 min-w-32">
-            <span class="remark-name truncate max-w-28">${esc(d.name || '—')}</span>
-            <button class="shrink-0 text-slate-400 hover:text-blue-600 transition-colors" data-remark="${esc(d.imei)}" title="设置备注">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-            </button>
-          </div>
-        </td>
-        <td class="px-4 py-3 text-slate-600">${esc(d.phone || '—')}</td>
-        <td class="px-4 py-3">${d.connected ? '<span class="badge-online">● 在线</span>' : '<span class="badge-offline">○ 离线</span>'}</td>
-        <td class="px-4 py-3 text-slate-500">${fmtTime(d.firstSeen)}</td>
-        <td class="px-4 py-3 text-slate-500">${fmtTime(d.lastSeen)}</td>
-        <td class="px-4 py-3 text-right">
-          <button class="btn btn-ghost !px-3 !py-1.5 text-xs" data-run="${esc(d.imei)}">执行任务</button>
-          <button class="btn btn-ghost !px-3 !py-1.5 text-xs text-red-600 hover:text-red-700" data-del="${esc(d.imei)}">删除</button>
-        </td>
+      <tr>
+        <td class="mono">${esc(d.imei)}</td>
+        <td><div class="rowflex" style="gap:4px"><span class="remark-name">${esc(d.name || '—')}</span>
+          <button class="icon-btn" style="width:24px;height:24px;border-radius:7px" data-remark="${esc(d.imei)}" title="设置备注"><i class="ic" data-i="pencil"></i></button></div></td>
+        <td class="dim">${esc(d.phone || '—')}</td>
+        <td>${d.connected ? '<span class="badge-online">在线</span>' : '<span class="badge-offline">离线</span>'}</td>
+        <td class="faint">${fmtTime(d.firstSeen)}</td>
+        <td class="faint">${fmtTime(d.lastSeen)}</td>
+        <td class="right"><div class="rowflex" style="gap:5px">
+          <button class="mini-btn" data-run="${esc(d.imei)}">执行任务</button>
+          <button class="mini-btn danger" data-del="${esc(d.imei)}">删除</button></div></td>
       </tr>`).join('');
+    paintIcons(tbody);
   }
 
   // 删除设备（在线设备会先被断开连接；若设备仍在运行，重连后会重新出现在列表）
@@ -500,11 +555,12 @@
     const td = document.querySelector(`[data-remark="${CSS.escape(imei)}"]`)?.closest('td');
     if (!td) return;
     td.innerHTML = `
-      <div class="flex items-center gap-1">
-        <input type="text" class="input !py-1 !px-2 text-xs min-w-32" maxlength="30" value="${esc(dev ? dev.name : '')}" placeholder="备注">
-        <button class="shrink-0 text-emerald-600 hover:scale-110 transition" title="保存" data-remark-save="1">✓</button>
-        <button class="shrink-0 text-slate-400 hover:text-red-500 transition" title="取消" data-remark-cancel="1">✕</button>
+      <div class="rowflex" style="gap:5px">
+        <input type="text" class="input" style="height:30px;width:180px" maxlength="30" value="${esc(dev ? dev.name : '')}" placeholder="备注">
+        <button class="icon-btn" style="width:28px;height:28px;color:#1f9d45" title="保存" data-remark-save="1"><i class="ic" data-i="check"></i></button>
+        <button class="icon-btn" style="width:28px;height:28px;color:var(--ink3)" title="取消" data-remark-cancel="1"><i class="ic" data-i="x"></i></button>
       </div>`;
+    paintIcons(td);
     const input = td.querySelector('input');
     input.focus();
     input.select();
@@ -737,27 +793,23 @@
     body.innerHTML = TASK_GROUPS.map((g, gi) => {
       const open = gi === libOpenGroup;
       return `
-      <div>
-        <button type="button" class="task-lib-group w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors" data-group="${gi}">
-          <span class="flex items-center gap-2 text-sm font-semibold text-slate-800">${g.icon} ${g.name}</span>
-          <svg class="w-4 h-4 text-slate-400 shrink-0" style="transform: ${open ? 'rotate(90deg)' : 'none'}; transition: transform .2s" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+      <div style="margin-bottom:8px">
+        <button type="button" class="task-lib-group" data-group="${gi}">
+          <span class="rowflex" style="gap:8px">${g.icon} ${g.name}</span>
+          <i class="ic" data-i="${open ? 'chevD' : 'chevR'}" style="width:14px;height:14px;color:var(--ink3)"></i>
         </button>
-        ${open ? `<ul class="mt-2 rounded-xl border border-slate-100 divide-y divide-slate-100 overflow-hidden">
+        ${open ? `<div style="margin-top:4px;border:.5px solid var(--hair);border-radius:12px;overflow:hidden">
           ${g.tasks.map((t) => {
             const h = TASK_HELP[t];
-            return h ? `<li>
-              <a href="javascript:void(0)" class="task-lib-item flex items-center justify-between gap-3 px-4 py-3 hover:bg-blue-50/60 transition-colors" data-task="${t}">
-                <span class="flex items-center gap-2.5 min-w-0">
-                  <span class="font-medium text-sm text-slate-800">${h.title}</span>
-                  <code class="font-mono text-xs text-blue-600 bg-blue-50 rounded px-1.5 py-0.5 shrink-0">${t}</code>
-                </span>
-                <svg class="w-4 h-4 text-slate-300 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-              </a>
-            </li>` : '';
+            return h ? `<a href="javascript:void(0)" class="task-lib-item" data-task="${t}">
+              <span class="rowflex" style="gap:8px"><span>${h.title}</span><code>${t}</code></span>
+              <i class="ic" data-i="chevR" style="width:14px;height:14px;color:var(--ink3)"></i>
+            </a>` : '';
           }).join('')}
-        </ul>` : ''}
+        </div>` : ''}
       </div>`;
     }).join('');
+    paintIcons(body);
   }
 
   function showTaskLibrary() {
@@ -775,12 +827,12 @@
     $('#task-help-cmd').textContent = task;
     let html = `<p>${h.desc}</p>`;
     if (h.params.length) {
-      html += '<div><p class="font-semibold text-slate-800 text-xs mb-1.5">请求参数</p><ul class="space-y-1 list-disc pl-5">'
-        + h.params.map((p) => `<li><code class="font-mono text-xs bg-slate-100 rounded px-1.5 py-0.5">${p[0]}</code> — ${p[1]}</li>`).join('')
+      html += '<div><div class="label" style="margin:12px 0 6px">请求参数</div><ul style="display:flex;flex-direction:column;gap:6px;padding:0;margin:0;list-style:none">'
+        + h.params.map((p) => `<li><code style="font-family:var(--mono);font-size:11px;background:var(--fill2);border-radius:6px;padding:2px 7px">${p[0]}</code> — ${p[1]}</li>`).join('')
         + '</ul></div>';
     }
-    html += `<div><p class="font-semibold text-slate-800 text-xs mb-1.5">返回结果</p><p>${h.result}</p></div>`;
-    html += `<div class="rounded-lg bg-amber-50 border border-amber-100 px-3.5 py-2.5 text-xs text-amber-700">⚠️ ${h.note}</div>`;
+    html += `<div><div class="label" style="margin:12px 0 6px">返回结果</div><p>${h.result}</p></div>`;
+    html += `<div style="border-radius:12px;background:rgba(255,159,10,.1);border:.5px solid rgba(255,159,10,.22);padding:10px 12px;font-size:11.5px;color:#b56a00;margin-top:12px">⚠️ ${h.note}</div>`;
     $('#task-help-body').innerHTML = html;
     $('#task-help-modal').classList.remove('hidden');
   }
@@ -829,7 +881,7 @@
       ta.value = text;
       st.textContent = `✔ 已读取当前配置（${(text.length / 1024).toFixed(1)} KB）`;
       const box = $('#task-result');
-      consoleLine(box, `▶ 已读取配置 → ${imei}`, 'text-sky-400');
+      consoleLine(box, `▶ 已读取配置 → ${imei}`, 'c-sky');
     } catch (err) {
       ta.value = '';
       st.textContent = '✘ 读取失败：' + err.message;
@@ -852,8 +904,8 @@
       const pretty = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
       st.textContent = '✔ 保存成功：' + (pretty.length > 60 ? pretty.slice(0, 60) + '…' : pretty);
       const box = $('#task-result');
-      consoleLine(box, `▶ 保存配置 → ${imei}`, 'text-sky-400');
-      consoleLine(box, pretty, 'text-emerald-200 whitespace-pre-wrap break-all');
+      consoleLine(box, `▶ 保存配置 → ${imei}`, 'c-sky');
+      consoleLine(box, pretty, 'c-ok whitespace-pre-wrap break-all');
       toast('配置已保存');
     } catch (err) {
       st.textContent = '✘ 保存失败：' + err.message;
@@ -880,7 +932,7 @@
   }
   function resetConsole() {
     const box = $('#task-result');
-    box.innerHTML = '<p class="text-slate-500">// 等待下发任务...</p>';
+    box.innerHTML = '<p class="c-dim">// 等待下发任务...</p>';
   }
 
   async function handleTaskSubmit(e) {
@@ -940,8 +992,8 @@
     btn.textContent = '下发中...';
     const box = $('#task-result');
     resetConsole();
-    consoleLine(box, `▶ 下发任务 → ${imei}（${TASK_LABELS[type] || type}）`, 'text-sky-400');
-    consoleLine(box, '⏳ 等待设备回报（最长 30 秒）...', 'text-slate-400');
+    consoleLine(box, `▶ 下发任务 → ${imei}（${TASK_LABELS[type] || type}）`, 'c-sky');
+    consoleLine(box, '⏳ 等待设备回报（最长 30 秒）...', 'c-dim');
     try {
       const data = await API.executeTask(payload);
       const result = data.result;
@@ -949,11 +1001,11 @@
         throw new Error(result.error);
       }
       const pretty = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
-      consoleLine(box, '✔ 设备已回报：', 'text-emerald-400');
-      consoleLine(box, pretty, 'text-emerald-200 whitespace-pre-wrap break-all');
+      consoleLine(box, '✔ 设备已回报：', 'c-ok');
+      consoleLine(box, pretty, 'c-ok whitespace-pre-wrap break-all');
       toast('任务执行成功');
     } catch (err) {
-      consoleLine(box, `✘ 执行失败：${err.message}`, 'text-red-400');
+      consoleLine(box, `✘ 执行失败：${err.message}`, 'c-err');
       toast('任务执行失败', false);
     } finally {
       btn.disabled = false;
@@ -973,7 +1025,7 @@
       const tasks = data.tasks || [];
       const tbody = $('#tasks-tbody');
       if (!tasks.length) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-10 text-center text-slate-400">暂无任务记录</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="empty">暂无任务记录</td></tr>';
         renderTaskPagination(0, 1);
         return;
       }
@@ -984,17 +1036,17 @@
         const deviceLabel = t.deviceName || t.imei;
         const isName = !!t.deviceName;
         return `
-        <tr class="hover:bg-slate-50 align-top">
-          <td class="px-4 py-3 text-slate-500 whitespace-nowrap">${fmtTime(t.createdAt)}</td>
-          <td class="px-4 py-3 text-slate-700">${esc(deviceLabel)}${isName ? `<span class="block text-xs font-mono text-slate-400 mt-0.5">${esc(t.imei)}</span>` : ''}</td>
-          <td class="px-4 py-3 text-slate-600">${esc(t.task)}</td>
+        <tr>
+          <td class="faint">${fmtTime(t.createdAt)}</td>
+          <td >${esc(deviceLabel)}${isName ? `<span class="sub">${esc(t.imei)}</span>` : ''}</td>
+          <td class="dim">${esc(t.task)}</td>
           <td class="px-4 py-3">${ok ? '<span class="badge-online">成功</span>' : '<span class="badge-offline">失败</span>'}</td>
-          <td class="px-4 py-3 text-slate-500 max-w-xs"><pre class="text-xs font-mono whitespace-pre-wrap break-all">${esc(result)}</pre></td>
+          <td class="dim"><pre style="font-size:10.5px;font-family:var(--mono);white-space:pre-wrap;word-break:break-all">${esc(result)}</pre></td>
         </tr>`;
       }).join('');
       renderTaskPagination(data.total || 0, tasksPage);
     } catch (err) {
-      $('#tasks-tbody').innerHTML = `<tr><td colspan="5" class="px-4 py-10 text-center text-red-500">${esc(err.message)}</td></tr>`;
+      $('#tasks-tbody').innerHTML = `<tr><td colspan="5" class="empty" style="color:var(--red)">${esc(err.message)}</td></tr>`;
       renderTaskPagination(0, 1);
     }
   }
@@ -1021,16 +1073,16 @@
     }
 
     // 按钮样式以已有 Tailwind 类为主，缺失的工具类用内联样式补充
-    const btnCls = 'h-8 px-2 rounded-lg text-sm transition-colors';
+    const btnCls = '';
     const btnStyle = (dis) => `style="min-width:2rem${dis ? ';opacity:.4;cursor:not-allowed' : ''}"`;
     let html = `
-      <button type="button" data-page="${page - 1}" class="${btnCls} text-slate-600" ${btnStyle(page <= 1)} ${page <= 1 ? 'disabled' : ''}>‹</button>`;
+      <button type="button" data-page="${page - 1}" class="${btnCls}" ${btnStyle(page <= 1)} ${page <= 1 ? 'disabled' : ''}>‹</button>`;
     html += list.map((p) => p === '…'
-      ? '<span class="text-slate-300" style="width:1.5rem;text-align:center;line-height:2rem">…</span>'
-      : `<button type="button" data-page="${p}" class="${btnCls} ${p === page ? 'bg-blue-600 text-white' : 'text-slate-600'}" style="min-width:2rem">${p}</button>`
+      ? '<span class="faint" style="width:1.5rem;text-align:center;line-height:2rem">…</span>'
+      : `<button type="button" data-page="${p}" class="${btnCls} ${p === page ? 'on' : ''}" style="min-width:2rem">${p}</button>`
     ).join('');
     html += `
-      <button type="button" data-page="${page + 1}" class="${btnCls} text-slate-600" ${btnStyle(page >= totalPages)} ${page >= totalPages ? 'disabled' : ''}>›</button>`;
+      <button type="button" data-page="${page + 1}" class="${btnCls}" ${btnStyle(page >= totalPages)} ${page >= totalPages ? 'disabled' : ''}>›</button>`;
     btns.innerHTML = html;
   }
 
@@ -1092,7 +1144,7 @@
       const calls = data.calls || [];
       const tbody = $('#calls-tbody');
       if (!calls.length) {
-        tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-10 text-center text-slate-400">暂无通话记录</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="empty">暂无通话记录</td></tr>';
         renderCallPagination(0, 1);
         return;
       }
@@ -1104,23 +1156,23 @@
           : '<span class="badge-online">来电</span>';
         const deviceLabel = c.deviceName || c.imei;
         return `
-        <tr class="hover:bg-slate-50 align-top">
-          <td class="px-4 py-3 text-slate-500 whitespace-nowrap">${fmtTime(c.startedAt)}</td>
+        <tr>
+          <td class="faint">${fmtTime(c.startedAt)}</td>
           <td class="px-4 py-3">${dirBadge}</td>
-          <td class="px-4 py-3 text-slate-700 font-mono">${esc(c.number || '—')}</td>
-          <td class="px-4 py-3 text-slate-600">${esc(status)}</td>
-          <td class="px-4 py-3 text-slate-600 whitespace-nowrap">${dur}</td>
+          <td class="mono">${esc(c.number || '—')}</td>
+          <td class="dim">${esc(status)}</td>
+          <td class="dim">${dur}</td>
           <td class="px-4 py-3">${notifyBadge(c.notifyStatus)}</td>
-          <td class="px-4 py-3">${c.spam ? `<span class="spam-badge">垃圾电话</span>${c.spamRule ? `<div class="text-xs text-red-500 mt-0.5 break-all">命中：${esc(c.spamRule)}</div>` : ''}` : '<span class="text-slate-300">—</span>'}</td>
-          <td class="px-4 py-3 text-slate-500">${esc(deviceLabel)}${c.deviceName ? `<span class="block text-xs font-mono text-slate-400 mt-0.5">${esc(c.imei)}</span>` : ''}</td>
-          <td class="px-4 py-3 text-right whitespace-nowrap">
-            <button type="button" data-call-del="${c.id}" class="h-7 px-2.5 rounded-lg text-xs font-medium text-red-600 bg-white border border-slate-200 hover:bg-red-50 hover:border-red-300 transition-colors">删除</button>
+          <td class="px-4 py-3">${c.spam ? `<span class="spam-badge">垃圾电话</span>${c.spamRule ? `<div class="text-xs c-err mt-0.5 break-all">命中：${esc(c.spamRule)}</div>` : ''}` : '<span class="c-em">—</span>'}</td>
+          <td class="dim">${esc(deviceLabel)}${c.deviceName ? `<span class="sub">${esc(c.imei)}</span>` : ''}</td>
+          <td class="right">
+            <button type="button" data-call-del="${c.id}" class="mini-btn danger">删除</button>
           </td>
         </tr>`;
       }).join('');
       renderCallPagination(data.total || 0, callsPage);
     } catch (err) {
-      $('#calls-tbody').innerHTML = `<tr><td colspan="9" class="px-4 py-10 text-center text-red-500">${esc(err.message)}</td></tr>`;
+      $('#calls-tbody').innerHTML = `<tr><td colspan="9" class="empty" style="color:var(--red)">${esc(err.message)}</td></tr>`;
       renderCallPagination(0, 1);
     }
   }
@@ -1139,13 +1191,13 @@
       if (i === 1 || i === totalPages || Math.abs(i - page) <= 1) list.push(i);
       else if (list[list.length - 1] !== '…') list.push('…');
     }
-    const btnCls = 'h-8 px-2 rounded-lg text-sm transition-colors';
+    const btnCls = '';
     const btnStyle = (dis) => `style="min-width:2rem${dis ? ';opacity:.4;cursor:not-allowed' : ''}"`;
-    let html = `<button type="button" data-calls-page="${page - 1}" class="${btnCls} text-slate-600" ${btnStyle(page <= 1)} ${page <= 1 ? 'disabled' : ''}>‹</button>`;
+    let html = `<button type="button" data-calls-page="${page - 1}" class="${btnCls}" ${btnStyle(page <= 1)} ${page <= 1 ? 'disabled' : ''}>‹</button>`;
     html += list.map((p) => p === '…'
-      ? '<span class="text-slate-300" style="width:1.5rem;text-align:center;line-height:2rem">…</span>'
-      : `<button type="button" data-calls-page="${p}" class="${btnCls} ${p === page ? 'bg-blue-600 text-white' : 'text-slate-600'}" style="min-width:2rem">${p}</button>`).join('');
-    html += `<button type="button" data-calls-page="${page + 1}" class="${btnCls} text-slate-600" ${btnStyle(page >= totalPages)} ${page >= totalPages ? 'disabled' : ''}>›</button>`;
+      ? '<span class="faint" style="width:1.5rem;text-align:center;line-height:2rem">…</span>'
+      : `<button type="button" data-calls-page="${p}" class="${btnCls} ${p === page ? 'on' : ''}" style="min-width:2rem">${p}</button>`).join('');
+    html += `<button type="button" data-calls-page="${page + 1}" class="${btnCls}" ${btnStyle(page >= totalPages)} ${page >= totalPages ? 'disabled' : ''}>›</button>`;
     btns.innerHTML = html;
   }
 
@@ -1163,7 +1215,7 @@
       const list = data.sms || [];
       const tbody = $('#sms-tbody');
       if (!list.length) {
-        tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-10 text-center text-slate-400">暂无短信记录</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="empty">暂无短信记录</td></tr>';
         renderSmsPagination(0, 1);
         return;
       }
@@ -1173,22 +1225,22 @@
           : '<span class="badge-online">接收</span>';
         const deviceLabel = m.deviceName || m.imei;
         return `
-        <tr class="hover:bg-slate-50 align-top">
-          <td class="px-4 py-3 text-slate-500 whitespace-nowrap">${fmtTime(m.createdAt)}</td>
+        <tr>
+          <td class="faint">${fmtTime(m.createdAt)}</td>
           <td class="px-4 py-3">${dirBadge}</td>
-          <td class="px-4 py-3 text-slate-700 font-mono">${esc(m.number || '—')}</td>
-          <td class="px-4 py-3 text-slate-600 max-w-md"><span class="break-all">${esc(m.content || '')}</span></td>
+          <td class="mono">${esc(m.number || '—')}</td>
+          <td class="dim"><span style="word-break:break-all">${esc(m.content || '')}</span></td>
           <td class="px-4 py-3">${notifyBadge(m.notifyStatus)}</td>
-          <td class="px-4 py-3">${m.spam ? `<span class="spam-badge">垃圾短信</span>${m.spamRule ? `<div class="text-xs text-red-500 mt-0.5 break-all">命中：${esc(m.spamRule)}</div>` : ''}` : '<span class="text-slate-300">—</span>'}</td>
-          <td class="px-4 py-3 text-slate-500">${esc(deviceLabel)}${m.deviceName ? `<span class="block text-xs font-mono text-slate-400 mt-0.5">${esc(m.imei)}</span>` : ''}</td>
-          <td class="px-4 py-3 text-right whitespace-nowrap">
-            <button type="button" data-sms-del="${m.id}" class="h-7 px-2.5 rounded-lg text-xs font-medium text-red-600 bg-white border border-slate-200 hover:bg-red-50 hover:border-red-300 transition-colors">删除</button>
+          <td class="px-4 py-3">${m.spam ? `<span class="spam-badge">垃圾短信</span>${m.spamRule ? `<div class="text-xs c-err mt-0.5 break-all">命中：${esc(m.spamRule)}</div>` : ''}` : '<span class="c-em">—</span>'}</td>
+          <td class="dim">${esc(deviceLabel)}${m.deviceName ? `<span class="sub">${esc(m.imei)}</span>` : ''}</td>
+          <td class="right">
+            <button type="button" data-sms-del="${m.id}" class="mini-btn danger">删除</button>
           </td>
         </tr>`;
       }).join('');
       renderSmsPagination(data.total || 0, smsPage);
     } catch (err) {
-      $('#sms-tbody').innerHTML = `<tr><td colspan="8" class="px-4 py-10 text-center text-red-500">${esc(err.message)}</td></tr>`;
+      $('#sms-tbody').innerHTML = `<tr><td colspan="8" class="empty" style="color:var(--red)">${esc(err.message)}</td></tr>`;
       renderSmsPagination(0, 1);
     }
   }
@@ -1207,13 +1259,13 @@
       if (i === 1 || i === totalPages || Math.abs(i - page) <= 1) list.push(i);
       else if (list[list.length - 1] !== '…') list.push('…');
     }
-    const btnCls = 'h-8 px-2 rounded-lg text-sm transition-colors';
+    const btnCls = '';
     const btnStyle = (dis) => `style="min-width:2rem${dis ? ';opacity:.4;cursor:not-allowed' : ''}"`;
-    let html = `<button type="button" data-sms-page="${page - 1}" class="${btnCls} text-slate-600" ${btnStyle(page <= 1)} ${page <= 1 ? 'disabled' : ''}>‹</button>`;
+    let html = `<button type="button" data-sms-page="${page - 1}" class="${btnCls}" ${btnStyle(page <= 1)} ${page <= 1 ? 'disabled' : ''}>‹</button>`;
     html += list.map((p) => p === '…'
-      ? '<span class="text-slate-300" style="width:1.5rem;text-align:center;line-height:2rem">…</span>'
-      : `<button type="button" data-sms-page="${p}" class="${btnCls} ${p === page ? 'bg-blue-600 text-white' : 'text-slate-600'}" style="min-width:2rem">${p}</button>`).join('');
-    html += `<button type="button" data-sms-page="${page + 1}" class="${btnCls} text-slate-600" ${btnStyle(page >= totalPages)} ${page >= totalPages ? 'disabled' : ''}>›</button>`;
+      ? '<span class="faint" style="width:1.5rem;text-align:center;line-height:2rem">…</span>'
+      : `<button type="button" data-sms-page="${p}" class="${btnCls} ${p === page ? 'on' : ''}" style="min-width:2rem">${p}</button>`).join('');
+    html += `<button type="button" data-sms-page="${page + 1}" class="${btnCls}" ${btnStyle(page >= totalPages)} ${page >= totalPages ? 'disabled' : ''}>›</button>`;
     btns.innerHTML = html;
   }
 
@@ -1243,7 +1295,7 @@
       const list = data.logs || [];
       const tbody = $('#log-tbody');
       if (!list.length) {
-        tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-10 text-center text-slate-400">暂无日志</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="empty">暂无日志</td></tr>';
         renderLogPagination(0, 1);
         return;
       }
@@ -1254,10 +1306,10 @@
         try { payload = JSON.stringify(JSON.parse(payload), null, 2); } catch (e) { /* 保留原文 */ }
         const oneLine = payload.replace(/\s+/g, ' ').trim();
         return `
-        <tr class="hover:bg-slate-50 align-top">
-          <td class="px-4 py-3 text-slate-500 whitespace-nowrap">${fmtTime(l.createdAt)}</td>
+        <tr>
+          <td class="faint">${fmtTime(l.createdAt)}</td>
           <td class="px-4 py-3 whitespace-nowrap"><span class="badge-online">${esc(typeLabel)}</span></td>
-          <td class="px-4 py-3 text-slate-500 whitespace-nowrap">${esc(deviceLabel)}${l.deviceName ? `<span class="text-xs font-mono text-slate-400"> ${esc(l.imei)}</span>` : ''}</td>
+          <td class="faint">${esc(deviceLabel)}${l.deviceName ? `<span class="sub"> ${esc(l.imei)}</span>` : ''}</td>
           <td class="px-4 py-3">
             <div class="log-cell" data-log-json="${esc(payload)}" data-log-topic="${esc(l.topic)}">
               <span class="log-topic">${esc(l.topic)}</span>
@@ -1269,7 +1321,7 @@
       }).join('');
       renderLogPagination(data.total || 0, logPage);
     } catch (err) {
-      $('#log-tbody').innerHTML = `<tr><td colspan="4" class="px-4 py-10 text-center text-red-500">${esc(err.message)}</td></tr>`;
+      $('#log-tbody').innerHTML = `<tr><td colspan="4" class="empty" style="color:var(--red)">${esc(err.message)}</td></tr>`;
       renderLogPagination(0, 1);
     }
   }
@@ -1288,13 +1340,13 @@
       if (i === 1 || i === totalPages || Math.abs(i - page) <= 1) list.push(i);
       else if (list[list.length - 1] !== '…') list.push('…');
     }
-    const btnCls = 'h-8 px-2 rounded-lg text-sm transition-colors';
+    const btnCls = '';
     const btnStyle = (dis) => `style="min-width:2rem${dis ? ';opacity:.4;cursor:not-allowed' : ''}"`;
-    let html = `<button type="button" data-log-page="${page - 1}" class="${btnCls} text-slate-600" ${btnStyle(page <= 1)} ${page <= 1 ? 'disabled' : ''}>‹</button>`;
+    let html = `<button type="button" data-log-page="${page - 1}" class="${btnCls}" ${btnStyle(page <= 1)} ${page <= 1 ? 'disabled' : ''}>‹</button>`;
     html += list.map((p) => p === '…'
-      ? '<span class="text-slate-300" style="width:1.5rem;text-align:center;line-height:2rem">…</span>'
-      : `<button type="button" data-log-page="${p}" class="${btnCls} ${p === page ? 'bg-blue-600 text-white' : 'text-slate-600'}" style="min-width:2rem">${p}</button>`).join('');
-    html += `<button type="button" data-log-page="${page + 1}" class="${btnCls} text-slate-600" ${btnStyle(page >= totalPages)} ${page >= totalPages ? 'disabled' : ''}>›</button>`;
+      ? '<span class="faint" style="width:1.5rem;text-align:center;line-height:2rem">…</span>'
+      : `<button type="button" data-log-page="${p}" class="${btnCls} ${p === page ? 'on' : ''}" style="min-width:2rem">${p}</button>`).join('');
+    html += `<button type="button" data-log-page="${page + 1}" class="${btnCls}" ${btnStyle(page >= totalPages)} ${page >= totalPages ? 'disabled' : ''}>›</button>`;
     btns.innerHTML = html;
   }
 
@@ -1414,7 +1466,7 @@
       renderBlockPagination(blockTotal, blockPage);
       updateBlockTip();
     } catch (err) {
-      $('#block-tbody').innerHTML = `<tr><td colspan="5" class="px-4 py-10 text-center text-red-500">${esc(err.message)}</td></tr>`;
+      $('#block-tbody').innerHTML = `<tr><td colspan="5" class="empty" style="color:var(--red)">${esc(err.message)}</td></tr>`;
       renderBlockPagination(0, 1);
     }
   }
@@ -1424,7 +1476,7 @@
     const tbody = $('#block-tbody');
     const list = blockRulesPage;
     if (!list.length) {
-      tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-10 text-center text-slate-400">暂无${blockTab === 'keyword' ? '关键字' : '号码'}规则，可在上方添加</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" class="empty">暂无${blockTab === 'keyword' ? '关键字' : '号码'}规则，可在上方添加</td></tr>`;
       return;
     }
     tbody.innerHTML = list.map((r) => {
@@ -1433,18 +1485,18 @@
         ? ({ prefix: '前缀', exact: '精确', contains: '包含' }[r.matchMode] || r.matchMode)
         : '包含';
       const valueLabel = r.ruleType === 'number'
-        ? `<span class="font-mono">${esc(r.value)}</span> <span class="text-xs text-slate-400">（${modeLabel}）</span>`
+        ? `<span class="font-mono">${esc(r.value)}</span> <span class="text-xs c-dim">（${modeLabel}）</span>`
         : `<span class="font-medium text-slate-700">${esc(r.value)}</span>`;
       const enabled = r.enabled === 1;
       return `
-      <tr class="hover:bg-slate-50 align-top">
+      <tr>
         <td class="px-4 py-3">${valueLabel}</td>
         <td class="px-4 py-3">${srcLabel}</td>
         <td class="px-4 py-3">${enabled ? '<span class="notify-badge notify-sent">生效中</span>' : '<span class="notify-badge notify-none">已停用</span>'}</td>
-        <td class="px-4 py-3 text-slate-500">${esc(r.note || '—')}</td>
-        <td class="px-4 py-3 text-right whitespace-nowrap">
-          <button type="button" data-block-toggle="${r.id}" class="h-7 px-2.5 rounded-lg text-xs font-medium ${enabled ? 'text-slate-600 bg-white border border-slate-200 hover:bg-slate-50' : 'text-emerald-600 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100'} transition-colors">${enabled ? '停用' : '启用'}</button>
-          <button type="button" data-block-del="${r.id}" class="h-7 px-2.5 rounded-lg text-xs font-medium text-red-600 bg-white border border-slate-200 hover:bg-red-50 hover:border-red-300 transition-colors ml-1">删除</button>
+        <td class="dim">${esc(r.note || '—')}</td>
+        <td class="right">
+          <button type="button" data-block-toggle="${r.id}" class="mini-btn ${enabled ? '' : 'success'}">${enabled ? '停用' : '启用'}</button>
+          <button type="button" data-block-del="${r.id}" class="mini-btn danger">删除</button>
         </td>
       </tr>`;
     }).join('');
@@ -1471,25 +1523,20 @@
       if (i === 1 || i === totalPages || Math.abs(i - page) <= 1) list.push(i);
       else if (list[list.length - 1] !== '…') list.push('…');
     }
-    const btnCls = 'h-8 px-2 rounded-lg text-sm transition-colors';
+    const btnCls = '';
     const btnStyle = (dis) => `style="min-width:2rem${dis ? ';opacity:.4;cursor:not-allowed' : ''}"`;
-    let html = `<button type="button" data-block-page="${page - 1}" class="${btnCls} text-slate-600" ${btnStyle(page <= 1)} ${page <= 1 ? 'disabled' : ''}>‹</button>`;
+    let html = `<button type="button" data-block-page="${page - 1}" class="${btnCls}" ${btnStyle(page <= 1)} ${page <= 1 ? 'disabled' : ''}>‹</button>`;
     html += list.map((p) => p === '…'
-      ? '<span class="text-slate-300" style="width:1.5rem;text-align:center;line-height:2rem">…</span>'
-      : `<button type="button" data-block-page="${p}" class="${btnCls} ${p === page ? 'bg-blue-600 text-white' : 'text-slate-600'}" style="min-width:2rem">${p}</button>`).join('');
-    html += `<button type="button" data-block-page="${page + 1}" class="${btnCls} text-slate-600" ${btnStyle(page >= totalPages)} ${page >= totalPages ? 'disabled' : ''}>›</button>`;
+      ? '<span class="faint" style="width:1.5rem;text-align:center;line-height:2rem">…</span>'
+      : `<button type="button" data-block-page="${p}" class="${btnCls} ${p === page ? 'on' : ''}" style="min-width:2rem">${p}</button>`).join('');
+    html += `<button type="button" data-block-page="${page + 1}" class="${btnCls}" ${btnStyle(page >= totalPages)} ${page >= totalPages ? 'disabled' : ''}>›</button>`;
     btns.innerHTML = html;
   }
 
   // 切换关键字 / 号码 tab
   function switchBlockTab(tab) {
     blockTab = tab;
-    $$('.block-tab-btn').forEach((b) => {
-      const active = b.dataset.blockTab === tab;
-      b.style.color = active ? '#2563eb' : '#64748b';
-      b.style.borderBottom = active ? '2px solid #2563eb' : '2px solid transparent';
-      b.style.fontWeight = active ? '600' : '400';
-    });
+    $$('.block-tab-btn').forEach((b) => b.classList.toggle('on', b.dataset.blockTab === tab));
     $('#block-mode-wrap').style.display = tab === 'number' ? '' : 'none';
     $('#block-value-label').textContent = tab === 'number'
       ? '号码（支持前缀，如 1068 / 95 / 400）'
@@ -1610,23 +1657,23 @@
       for (let i = from; i <= to; i++) {
         opts += `<option value="${i}" ${i === def ? 'selected' : ''}>${String(i).padStart(2, '0')}</option>`;
       }
-      return `<select id="${id}" class="input !py-1.5 !px-3 text-sm" style="width:${w || '4.2rem'}">${opts}</select>`;
+      return `<select id="${id}" class="input" style="width:${w || '4.2rem'}">${opts}</select>`;
     };
-    const selCls = 'input !py-1.5 !px-3 text-sm';
+    const selCls = 'input';
     if (type === 'weekly') {
-      box.innerHTML = `<span class="text-slate-500">每</span>` +
+      box.innerHTML = `<span class="c-dim">每</span>` +
         `<select id="sch-c-weekday" class="${selCls}" style="width:4rem">` + WEEKDAY_NAMES.map((w, i) => `<option value="${i}">${w}</option>`).join('') + `</select>` +
-        `<span class="text-slate-500">的</span>` + numSel('sch-c-hour', 0, 23, 8, '4.2rem') + `<span class="text-slate-500">点</span>` + numSel('sch-c-minute', 0, 59, 0, '4.2rem') + `<span class="text-slate-500">分</span>`;
+        `<span class="c-dim">的</span>` + numSel('sch-c-hour', 0, 23, 8, '4.2rem') + `<span class="c-dim">点</span>` + numSel('sch-c-minute', 0, 59, 0, '4.2rem') + `<span class="c-dim">分</span>`;
     } else if (type === 'monthly') {
-      box.innerHTML = `<span class="text-slate-500">每月</span>` + numSel('sch-c-day', 1, 31, 1, '4.2rem') + `<span class="text-slate-500">日</span>` + numSel('sch-c-hour', 0, 23, 8, '4.2rem') + `<span class="text-slate-500">点</span>` + numSel('sch-c-minute', 0, 59, 0, '4.2rem') + `<span class="text-slate-500">分</span>`;
+      box.innerHTML = `<span class="c-dim">每月</span>` + numSel('sch-c-day', 1, 31, 1, '4.2rem') + `<span class="c-dim">日</span>` + numSel('sch-c-hour', 0, 23, 8, '4.2rem') + `<span class="c-dim">点</span>` + numSel('sch-c-minute', 0, 59, 0, '4.2rem') + `<span class="c-dim">分</span>`;
     } else if (type === 'daily') {
-      box.innerHTML = numSel('sch-c-hour', 0, 23, 8, '4.2rem') + `<span class="text-slate-500">点</span>` + numSel('sch-c-minute', 0, 59, 0, '4.2rem') + `<span class="text-slate-500">分</span>`;
+      box.innerHTML = numSel('sch-c-hour', 0, 23, 8, '4.2rem') + `<span class="c-dim">点</span>` + numSel('sch-c-minute', 0, 59, 0, '4.2rem') + `<span class="c-dim">分</span>`;
     } else if (type === 'hourly') {
-      box.innerHTML = `<span class="text-slate-500">每小时的</span>` + numSel('sch-c-minute', 0, 59, 0, '4.2rem') + `<span class="text-slate-500">分</span>`;
+      box.innerHTML = `<span class="c-dim">每小时的</span>` + numSel('sch-c-minute', 0, 59, 0, '4.2rem') + `<span class="c-dim">分</span>`;
     } else if (type === 'interval_min') {
-      box.innerHTML = `<span class="text-slate-500">每</span>` + numSel('sch-c-n', 1, 59, 5, '4.2rem') + `<span class="text-slate-500">分钟执行一次</span>`;
+      box.innerHTML = `<span class="c-dim">每</span>` + numSel('sch-c-n', 1, 59, 5, '4.2rem') + `<span class="c-dim">分钟执行一次</span>`;
     } else if (type === 'interval_hour') {
-      box.innerHTML = `<span class="text-slate-500">每</span>` + numSel('sch-c-n', 1, 23, 2, '4.2rem') + `<span class="text-slate-500">小时执行一次</span>`;
+      box.innerHTML = `<span class="c-dim">每</span>` + numSel('sch-c-n', 1, 23, 2, '4.2rem') + `<span class="c-dim">小时执行一次</span>`;
     } else {
       box.innerHTML = '';
     }
@@ -1672,31 +1719,31 @@
     const box = $('#sch-params');
     if (task === '__custom__') {
       box.innerHTML = `
-        <div class="border-t border-slate-100 pt-4 grid gap-4 grid-cols-2">
+        <div class="grid2" style="border-top:.5px solid var(--hair);padding-top:12px">
           <div>
             <label class="label" for="sch-custom-cmd">命令名称</label>
-            <input id="sch-custom-cmd" type="text" class="input font-mono text-xs" placeholder="如 ussd_query、get_status、set_gpio">
+            <input id="sch-custom-cmd" type="text" class="input mono" placeholder="如 ussd_query、get_status、set_gpio">
           </div>
           <div>
-            <label class="label" for="sch-custom-params">命令参数 <span class="text-slate-400 font-normal">（可选 JSON 对象）</span></label>
-            <textarea id="sch-custom-params" rows="2" class="input font-mono text-xs" placeholder='{"pin": 15, "level": 1}'></textarea>
+            <label class="label" for="sch-custom-params">命令参数 <span class="dim" style="font-weight:400">（可选 JSON 对象）</span></label>
+            <textarea id="sch-custom-params" rows="2" class="input mono" placeholder='{"pin": 15, "level": 1}'></textarea>
           </div>
         </div>`;
       return;
     }
     const h = TASK_HELP[task];
     if (!h || !h.params.length) {
-      box.innerHTML = '<p class="text-xs text-slate-400 border-t border-slate-100 pt-3">该任务无需参数</p>';
+      box.innerHTML = '<p class="dim" style="border-top:.5px solid var(--hair);padding-top:10px;font-size:11px">该任务无需参数</p>';
       return;
     }
-    box.innerHTML = '<div class="border-t border-slate-100 pt-4 grid gap-4 grid-cols-2">' + h.params.map((p) => {
+    box.innerHTML = '<div class="grid2" style="border-top:.5px solid var(--hair);padding-top:12px">' + h.params.map((p) => {
       const isLong = p[0] === 'configText' || p[0] === 'content';
       return `<div>
         <label class="label" for="sch-p-${esc(p[0])}">${esc(p[0])}</label>
         ${isLong
-          ? `<textarea id="sch-p-${esc(p[0])}" rows="3" class="input font-mono text-xs"></textarea>`
+          ? `<textarea id="sch-p-${esc(p[0])}" rows="3" class="textarea mono" style="font-size:11px"></textarea>`
           : `<input id="sch-p-${esc(p[0])}" type="text" class="input">`}
-        <p class="text-xs text-slate-400 mt-1">${p[1]}</p>
+        <p class="dim" style="font-size:10px;margin-top:4px">${p[1]}</p>
       </div>`;
     }).join('') + '</div>';
   }
@@ -1751,7 +1798,7 @@
       renderSchedules();
       renderSchedulePagination(data.total || 0, schedulesPage);
     } catch (err) {
-      $('#schedules-tbody').innerHTML = `<tr><td colspan="7" class="px-4 py-10 text-center text-red-500">${esc(err.message)}</td></tr>`;
+      $('#schedules-tbody').innerHTML = `<tr><td colspan="7" class="empty" style="color:var(--red)">${esc(err.message)}</td></tr>`;
       renderSchedulePagination(0, 1);
     }
   }
@@ -1776,23 +1823,23 @@
       if (i === 1 || i === totalPages || Math.abs(i - page) <= 1) list.push(i);
       else if (list[list.length - 1] !== '…') list.push('…');
     }
-    const btnCls = 'h-8 px-2 rounded-lg text-sm transition-colors';
+    const btnCls = '';
     const btnStyle = (dis) => `style="min-width:2rem${dis ? ';opacity:.4;cursor:not-allowed' : ''}"`;
     let html = `
-      <button type="button" data-page="${page - 1}" class="${btnCls} text-slate-600" ${btnStyle(page <= 1)} ${page <= 1 ? 'disabled' : ''}>‹</button>`;
+      <button type="button" data-page="${page - 1}" class="${btnCls}" ${btnStyle(page <= 1)} ${page <= 1 ? 'disabled' : ''}>‹</button>`;
     html += list.map((p) => p === '…'
-      ? '<span class="text-slate-300" style="width:1.5rem;text-align:center;line-height:2rem">…</span>'
-      : `<button type="button" data-page="${p}" class="${btnCls} ${p === page ? 'bg-blue-600 text-white' : 'text-slate-600'}" style="min-width:2rem">${p}</button>`
+      ? '<span class="faint" style="width:1.5rem;text-align:center;line-height:2rem">…</span>'
+      : `<button type="button" data-page="${p}" class="${btnCls} ${p === page ? 'on' : ''}" style="min-width:2rem">${p}</button>`
     ).join('');
     html += `
-      <button type="button" data-page="${page + 1}" class="${btnCls} text-slate-600" ${btnStyle(page >= totalPages)} ${page >= totalPages ? 'disabled' : ''}>›</button>`;
+      <button type="button" data-page="${page + 1}" class="${btnCls}" ${btnStyle(page >= totalPages)} ${page >= totalPages ? 'disabled' : ''}>›</button>`;
     btns.innerHTML = html;
   }
 
   function renderSchedules() {
     const tbody = $('#schedules-tbody');
     if (!schedules.length) {
-      tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-10 text-center text-slate-400">暂无定时任务</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" class="empty">暂无定时任务</td></tr>';
       return;
     }
     tbody.innerHTML = schedules.map((s) => {
@@ -1800,18 +1847,18 @@
       const deviceLabel = s.deviceName || s.imei;
       const name = s.name || ('任务 #' + s.id);
       return `
-      <tr class="hover:bg-slate-50 align-top">
-        <td class="px-4 py-3 text-slate-700">${esc(name)}</td>
-        <td class="px-4 py-3 text-slate-600">${esc(deviceLabel)}${s.deviceName ? `<span class="block text-xs font-mono text-slate-400 mt-0.5">${esc(s.imei)}</span>` : ''}</td>
-        <td class="px-4 py-3 text-slate-600"><span class="font-medium">${esc(taskLabel)}</span><span class="block text-xs font-mono text-slate-400 mt-0.5">${esc(s.task)}</span></td>
-        <td class="px-4 py-3 text-slate-600 whitespace-nowrap">${esc(specDescribe(s.spec))}</td>
-        <td class="px-4 py-3 text-slate-500 whitespace-nowrap">${fmtTime(s.lastExecuted)}</td>
+      <tr>
+        <td >${esc(name)}</td>
+        <td class="dim">${esc(deviceLabel)}${s.deviceName ? `<span class="sub">${esc(s.imei)}</span>` : ''}</td>
+        <td class="dim"><span class="font-medium">${esc(taskLabel)}</span><span class="sub">${esc(s.task)}</span></td>
+        <td class="dim">${esc(specDescribe(s.spec))}</td>
+        <td class="faint">${fmtTime(s.lastExecuted)}</td>
         <td class="px-4 py-3">${s.enabled ? '<span class="badge-online">已启用</span>' : '<span class="badge-offline">已停用</span>'}</td>
-        <td class="px-4 py-3 text-right whitespace-nowrap">
-          <button class="btn btn-ghost !px-3 !py-1.5 text-xs" data-sch-run="${s.id}">执行</button>
-          <button class="btn btn-ghost !px-3 !py-1.5 text-xs" data-sch-toggle="${s.id}" data-next="${s.enabled ? 0 : 1}">${s.enabled ? '停用' : '启用'}</button>
-          <button class="btn btn-ghost !px-3 !py-1.5 text-xs" data-sch-edit="${s.id}">编辑</button>
-          <button class="btn btn-ghost !px-3 !py-1.5 text-xs text-red-600 hover:text-red-700" data-sch-del="${s.id}">删除</button>
+        <td class="right">
+          <button class="mini-btn" data-sch-run="${s.id}">执行</button>
+          <button class="mini-btn" data-sch-toggle="${s.id}" data-next="${s.enabled ? 0 : 1}">${s.enabled ? '停用' : '启用'}</button>
+          <button class="mini-btn" data-sch-edit="${s.id}">编辑</button>
+          <button class="mini-btn danger" data-sch-del="${s.id}">删除</button>
         </td>
       </tr>`;
     }).join('');
@@ -1987,7 +2034,7 @@
     try {
       const data = await API.changeUserInfo({ oldPassword, newUsername, newPassword });
       msg.textContent = data.message;
-      msg.className = 'text-sm ' + (data.needRelogin ? 'text-amber-600' : 'text-emerald-600');
+      msg.className = 'text-sm ' + (data.needRelogin ? 'c-warn' : 'text-emerald-600');
       if (data.needRelogin) {
         if (newUsername) localStorage.setItem('panel_username', newUsername);
         toast('信息已修改，请重新登录');
@@ -2034,11 +2081,8 @@
     notifyChannelDefs.forEach((ch) => {
       const checked = selected.includes(ch.name);
       const label = document.createElement('label');
-      label.className = 'inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm cursor-pointer transition-colors';
-      label.style.borderColor = checked ? '#3b82f6' : '#e2e8f0';
-      label.style.backgroundColor = checked ? '#eff6ff' : '#ffffff';
-      label.style.color = checked ? '#1d4ed8' : '#475569';
-      label.innerHTML = '<input type="checkbox" data-channel="' + esc(ch.name) + '" class="w-4 h-4" style="accent-color:#2563eb" ' + (checked ? 'checked' : '') + '> <span>' + esc(ch.label) + '</span>';
+      label.className = checked ? 'chip on' : 'chip';
+      label.innerHTML = '<input type="checkbox" data-channel="' + esc(ch.name) + '" ' + (checked ? 'checked' : '') + '> <span>' + esc(ch.label) + '</span>';
       list.appendChild(label);
 
       // 各渠道配置表单
@@ -2057,7 +2101,7 @@
           input = '<input type="' + t + '" data-key="' + esc(f.key) + '" class="input" placeholder="' + esc(f.placeholder || '') + '" value="' + esc(val) + '">';
         }
         return '<div class="' + (f.type === 'textarea' ? 'sm:col-span-2' : '') + '">' +
-          '<label class="label">' + esc(f.label) + (f.required ? ' <span class="text-red-500">*</span>' : '') + '</label>' +
+          '<label class="label">' + esc(f.label) + (f.required ? ' <span class="c-err">*</span>' : '') + '</label>' +
           input + '</div>';
       }).join('');
       box.innerHTML = '<h4 class="text-sm font-semibold text-slate-700">' + esc(ch.label) + ' 配置</h4>' +
@@ -2074,9 +2118,7 @@
     const label = cb.closest('label');
     if (box) box.style.display = cb.checked ? '' : 'none';
     if (label) {
-      label.className = cb.checked
-        ? 'inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm cursor-pointer border-blue-500 bg-blue-50 text-blue-700 transition-colors'
-        : 'inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm cursor-pointer border-slate-200 bg-white text-slate-600 hover:border-slate-300 transition-colors';
+      label.className = cb.checked ? 'chip on' : 'chip';
     }
   }
 
@@ -2462,32 +2504,32 @@
     const tbody = $('#recordings-tbody');
     const empty = $('#recordings-empty');
     if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-10 text-center text-slate-400">加载中...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" class="empty">加载中...</td></tr>';
     try {
       const data = await API.recordings();
       if (!data.success) throw new Error(data.error || '获取录音失败');
       const files = data.files || [];
       if (empty) empty.classList.toggle('hidden', files.length > 0);
       if (files.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-10 text-center text-slate-400">暂无录音文件</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="empty">暂无录音文件</td></tr>';
         return;
       }
       tbody.innerHTML = files.map((f, i) => {
         const aid = 'rec-audio-' + i;
         return `<tr>
-          <td class="px-4 py-3 font-medium text-slate-700 truncate max-w-[16rem]" title="${esc(f.name)}">${esc(f.name)}</td>
-          <td class="px-4 py-3 text-slate-500">${fmtSize(f.size)}</td>
-          <td class="px-4 py-3 text-slate-500">${esc(f.modTime || '')}</td>
+          <td class="mono" title="${esc(f.name)}">${esc(f.name)}</td>
+          <td class="dim">${fmtSize(f.size)}</td>
+          <td class="dim">${esc(f.modTime || '')}</td>
           <td class="px-4 py-3">
             <div class="flex items-center gap-2">
-              <button type="button" class="btn btn-primary !px-3 !py-1.5 text-xs" data-play="${esc(f.url)}" data-audio="${aid}">播放</button>
-              <audio id="${aid}" controls preload="none" class="hidden w-52 h-8"></audio>
+              <button type="button" class="mini-btn primary" data-play="${esc(f.url)}" data-audio="${aid}">播放</button>
+              <audio id="${aid}" controls preload="none" class="hidden" style="width:13rem;height:2rem"></audio>
             </div>
           </td>
         </tr>`;
       }).join('');
     } catch (err) {
-      tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-10 text-center text-red-500">${esc(err.message)}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="4" class="empty" style="color:var(--red)">${esc(err.message)}</td></tr>`;
     }
   }
 
@@ -2586,7 +2628,14 @@
 
   // ---------------- 初始化 ----------------
 
+  function cycleAppearance() {
+    const b = document.body;
+    if (b.dataset.theme === 'dark') { delete b.dataset.theme; localStorage.removeItem('panel_theme'); }
+    else { b.dataset.theme = 'dark'; localStorage.setItem('panel_theme', 'dark'); }
+  }
+
   function bindEvents() {
+    paintIcons(document);
     $('#login-form').addEventListener('submit', handleLogin);
     $('#logout-btn').addEventListener('click', handleLogout);
     $('#restart-btn').addEventListener('click', handleServerRestart);
@@ -2633,9 +2682,7 @@
         const tab = btn.dataset.setTab;
         $$('.set-tab-btn').forEach((b) => {
           const active = b.dataset.setTab === tab;
-          b.style.color = active ? '#2563eb' : '#64748b';
-          b.style.borderBottom = active ? '2px solid #2563eb' : '2px solid transparent';
-          b.style.fontWeight = active ? '600' : 'normal';
+          b.classList.toggle('on', active);
         });
         $$('[id^="set-tab-"]').forEach((el) => {
           el.classList.toggle('hidden', !el.id.endsWith(tab));
@@ -2815,6 +2862,7 @@
     });
 
     $('#confirm-cancel').addEventListener('click', () => closeConfirm(false));
+    $('#confirm-cancel2').addEventListener('click', () => closeConfirm(false));
     $('#confirm-ok').addEventListener('click', () => closeConfirm(true));
     $('#confirm-overlay').addEventListener('click', () => closeConfirm(false));
 
@@ -2853,6 +2901,8 @@
     });
     $('#menu-btn').addEventListener('click', () => toggleSidebar(true));
     $('#sidebar-overlay').addEventListener('click', () => toggleSidebar(false));
+    $('#appearance-btn').addEventListener('click', cycleAppearance);
+    $('#top-refresh').addEventListener('click', () => switchPage(currentPage));
 
     $$('.nav-item').forEach((a) =>
       a.addEventListener('click', (e) => { e.preventDefault(); switchPage(a.dataset.nav); toggleSidebar(false); }));
@@ -2881,6 +2931,7 @@
   }
 
   function init() {
+    if (localStorage.getItem('panel_theme') === 'dark') document.body.dataset.theme = 'dark';
     bindEvents();
     onTaskTypeChange();
     if (API.token) {
