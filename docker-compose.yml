@@ -1,19 +1,13 @@
-version: '3'
-
+# AirPanel 服务端 docker-compose（服务器部署版）
 services:
   panel-server:
+    image: biling/airpanel:latest
     container_name: airpanel
-    build:
-      context: ./server-go
-      dockerfile: Dockerfile
-    image: airpanel:latest
-    ports:
-      # 单端口：HTTP 管理面板 + MQTT over WebSocket(/websocket) 共用 9527
-      - "9527:9527"
-    volumes:
-      # SQLite 数据持久化
-      - panel-data:/app/data
     restart: unless-stopped
-
-volumes:
-  panel-data:
+    ports:
+      - "9527:9527"
+      - "1883:1883"
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./:/app/data
