@@ -454,10 +454,20 @@ func notifyCustomPost(msg string, c map[string]string) error {
 	if contentType == "" {
 		contentType = "application/json"
 	}
-	// 请求体模板中的 {msg} 替换为通知内容
-	tmpl := strings.ReplaceAll(c["body"], "{msg}", msg)
+	// 请求体模板中的 {msg} 替换为通知内容。
+	// JSON 模式下必须将 {msg} 替换为 JSON 转义后的字符串内容（去掉外层引号），
+	// 否则通知文本中的换行/引号/反斜杠会破坏 JSON 结构（如离线通知含换行）。
 	var body string
 	if strings.Contains(contentType, "json") {
+		esc := "{msg}"
+		if j, err := json.Marshal(msg); err == nil {
+			s := string(j)
+			if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
+				s = s[1 : len(s)-1]
+			}
+			esc = s
+		}
+		tmpl := strings.ReplaceAll(c["body"], "{msg}", esc)
 		// 校验为合法 JSON
 		var obj any
 		if err := json.Unmarshal([]byte(tmpl), &obj); err != nil {
@@ -466,6 +476,7 @@ func notifyCustomPost(msg string, c map[string]string) error {
 		body = tmpl
 	} else {
 		// 表单格式：k=v&k2=v2，仅对值中的 {msg} 已替换，整体重新编码
+		tmpl := strings.ReplaceAll(c["body"], "{msg}", msg)
 		form, err := url.ParseQuery(tmpl)
 		if err != nil {
 			return fmt.Errorf("custom_post body 表单解析失败: %v", err)
