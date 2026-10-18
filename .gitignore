@@ -34,3 +34,6 @@ AirPanel-iOS/**/xcuserstate
 # 服务器部署脚本与临时输出（含连接参数，禁止入库）
 server-go/deploy_panel.py
 server-go/deploy_out.txt
+
+# 设备端真实配置（含敏感凭据，仅本地维护，禁止提交）
+Air724ug/script/config.lua
