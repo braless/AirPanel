@@ -309,7 +309,7 @@ func (d *DB) recentTasks(page, pageSize int) ([]TaskRecord, error) {
 		page = 1
 	}
 	rows, err := d.sql.Query(
-		`SELECT t.task_id, t.imei, t.task, t.params, t.result, t.error, t.status, t.created_at, t.finished_at, d.name
+		`SELECT t.task_id, t.imei, t.task, t.params, t.result, t.error, t.status, t.created_at, t.finished_at, COALESCE(d.name, '')
 		 FROM tasks t LEFT JOIN devices d ON d.imei = t.imei
 		 ORDER BY t.id DESC LIMIT ? OFFSET ?`, pageSize, (page-1)*pageSize)
 	if err != nil {
@@ -416,7 +416,7 @@ func (d *DB) getSchedule(id int64) (*Schedule, error) {
 // listSchedules 返回全部定时任务（关联设备备注名，按 id 倒序），调度器全量扫描使用
 func (d *DB) listSchedules() ([]Schedule, error) {
 	rows, err := d.sql.Query(
-		`SELECT s.id, s.name, s.imei, s.task, s.params, s.spec, s.enabled, s.created_at, s.last_executed, s.last_check, d.name
+		`SELECT s.id, s.name, s.imei, s.task, s.params, s.spec, s.enabled, s.created_at, s.last_executed, s.last_check, COALESCE(d.name, '')
 		 FROM schedules s LEFT JOIN devices d ON d.imei = s.imei
 		 ORDER BY s.id DESC`)
 	if err != nil {
@@ -449,7 +449,7 @@ func (d *DB) listSchedulesPage(page, pageSize int) ([]Schedule, error) {
 		pageSize = 5
 	}
 	rows, err := d.sql.Query(
-		`SELECT s.id, s.name, s.imei, s.task, s.params, s.spec, s.enabled, s.created_at, s.last_executed, s.last_check, d.name
+		`SELECT s.id, s.name, s.imei, s.task, s.params, s.spec, s.enabled, s.created_at, s.last_executed, s.last_check, COALESCE(d.name, '')
 		 FROM schedules s LEFT JOIN devices d ON d.imei = s.imei
 		 ORDER BY s.id DESC LIMIT ? OFFSET ?`, pageSize, (page-1)*pageSize)
 	if err != nil {
@@ -696,7 +696,7 @@ func (d *DB) callRecords(page, pageSize int, from, to int64, imei string) ([]Cal
 	rows, err := d.sql.Query(
 		`SELECT c.id, c.imei, c.number, c.direction, c.status, c.duration,
 		        c.started_at, c.connected_at, c.ended_at, c.reason,
-		        c.notify_status, c.spam, c.spam_rule, d.name
+		        c.notify_status, c.spam, c.spam_rule, COALESCE(d.name, '')
 		 FROM call_records c LEFT JOIN devices d ON d.imei = c.imei
 		 WHERE 1=1`+where+`
 		 ORDER BY c.id DESC LIMIT ? OFFSET ?`,
@@ -761,7 +761,7 @@ func (d *DB) smsRecords(page, pageSize int, from, to int64, imei string) ([]SmsR
 	}
 	rows, err := d.sql.Query(
 		`SELECT s.id, s.imei, s.number, s.direction, s.content, s.created_at,
-		        s.notify_status, s.spam, s.spam_rule, d.name
+		        s.notify_status, s.spam, s.spam_rule, COALESCE(d.name, '')
 		 FROM sms_records s LEFT JOIN devices d ON d.imei = s.imei
 		 WHERE 1=1`+where+`
 		 ORDER BY s.id DESC LIMIT ? OFFSET ?`,
@@ -1131,7 +1131,7 @@ func (d *DB) deviceLogs(page, pageSize int, from, to int64, imei, logType, keywo
 		args = append(args, kw, kw)
 	}
 	rows, err := d.sql.Query(
-		`SELECT l.id, l.imei, l.topic, l.log_type, l.payload, l.created_at, d.name
+		`SELECT l.id, l.imei, l.topic, l.log_type, l.payload, l.created_at, COALESCE(d.name, '')
 		 FROM device_logs l LEFT JOIN devices d ON d.imei = l.imei
 		 WHERE 1=1`+where+`
 		 ORDER BY l.id DESC LIMIT ? OFFSET ?`,
