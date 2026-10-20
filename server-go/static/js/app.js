@@ -2502,10 +2502,12 @@
         return `<tr>
           <td class="px-4 py-3 font-medium text-slate-700 truncate max-w-[16rem]" title="${esc(f.name)}">${esc(f.name)}</td>
           <td class="px-4 py-3 text-slate-500">${fmtSize(f.size)}</td>
-          <td class="px-4 py-3 text-slate-500 whitespace-nowrap">${fmtTime(f.modTime)}</td>
+          <td class="px-4 py-3 text-slate-500 whitespace-nowrap">${fmtHttpTime(f.modTime)}</td>
           <td class="px-4 py-3">
             <div class="rec-row flex items-center gap-2" data-play="${esc(f.url)}">
-              <button type="button" class="rec-play-btn flex items-center justify-center w-8 h-8 shrink-0 rounded-full bg-indigo-600 text-white text-xs hover:bg-indigo-700" title="播放/暂停">▶</button>
+              <button type="button" class="rec-play-btn flex items-center justify-center w-8 h-8 shrink-0 rounded-full bg-indigo-600 text-white hover:bg-indigo-700" title="播放/暂停">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2l10 6-10 6V2z"/></svg>
+              </button>
               <div class="rec-track relative flex-1 h-1.5 rounded-full bg-slate-200 cursor-pointer overflow-hidden">
                 <div class="rec-fill absolute inset-y-0 left-0 w-0 bg-indigo-600"></div>
               </div>
@@ -2528,7 +2530,7 @@
   }
 
   // HTTP 日期（如 "Sat, 17 Oct 2026 02:47:14 GMT"）→ 本地时区 yyyy-MM-dd HH:mm:ss
-  function fmtTime(s) {
+  function fmtHttpTime(s) {
     if (!s) return '';
     const d = new Date(s);
     if (isNaN(d.getTime())) return String(s);
@@ -2536,8 +2538,8 @@
     return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
   }
 
-  // 秒 → mm:ss
-  function fmtDur(s) {
+  // 播放时长（秒）→ mm:ss
+  function fmtPlayDur(s) {
     if (!isFinite(s)) return '00:00';
     const m = Math.floor(s / 60);
     const ss = Math.floor(s % 60);
@@ -2648,6 +2650,8 @@
     $('#notify-settings-form').addEventListener('submit', handleNotifySettings);
     $('#recordings-refresh').addEventListener('click', loadRecordings);
     // 播放录音：点击播放按钮/进度条时懒加载带认证音频，由自定义进度条驱动
+    const ICON_PLAY = '<svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2l10 6-10 6V2z"/></svg>';
+    const ICON_PAUSE = '<svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor"><path d="M3 2h3v12H3zM10 2h3v12h-3z"/></svg>';
     async function ensureRecLoaded(row) {
       const a = row.querySelector('audio');
       if (a.dataset.loaded === '1') return a;
@@ -2671,13 +2675,13 @@
       if (!a) return;
       if (btn) {
         const b = row.querySelector('.rec-play-btn');
-        if (a.paused) { b.textContent = '⏸'; a.play().catch(() => { b.textContent = '▶'; }); }
-        else { b.textContent = '▶'; a.pause(); }
+        if (a.paused) { b.innerHTML = ICON_PAUSE; a.play().catch(() => { b.innerHTML = ICON_PLAY; }); }
+        else { b.innerHTML = ICON_PLAY; a.pause(); }
       } else if (track) {
         const rect = track.getBoundingClientRect();
         const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
         if (a.duration && isFinite(a.duration)) a.currentTime = a.duration * ratio;
-        if (a.paused) { row.querySelector('.rec-play-btn').textContent = '⏸'; a.play().catch(() => {}); }
+        if (a.paused) { row.querySelector('.rec-play-btn').innerHTML = ICON_PAUSE; a.play().catch(() => {}); }
       }
     });
     // 进度条与时间随播放更新
@@ -2688,14 +2692,14 @@
       if (!row) return;
       const dur = a.duration || 0, cur = a.currentTime || 0;
       row.querySelector('.rec-fill').style.width = dur ? (cur / dur * 100) + '%' : '0%';
-      row.querySelector('.rec-time').textContent = fmtDur(cur) + (dur ? '/' + fmtDur(dur) : '');
+      row.querySelector('.rec-time').textContent = fmtPlayDur(cur) + (dur ? '/' + fmtPlayDur(dur) : '');
     });
     $('#recordings-tbody').addEventListener('ended', (e) => {
       const a = e.target;
       if (a.tagName !== 'AUDIO') return;
       const row = a.closest('.rec-row');
       if (row) {
-        row.querySelector('.rec-play-btn').textContent = '▶';
+        row.querySelector('.rec-play-btn').innerHTML = ICON_PLAY;
         row.querySelector('.rec-fill').style.width = '0%';
       }
     });
