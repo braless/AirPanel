@@ -537,12 +537,10 @@
 
   function renderDeviceSelect(selected) {
     const sel = $('#task-imei');
-    const setLedSel = $('#set-led-imei');
     const count = $('#task-device-count');
     if (!sel) return;
     if (!devices.length) {
       sel.innerHTML = '<option value="">暂无设备</option>';
-      if (setLedSel) setLedSel.innerHTML = '<option value="">暂无设备</option>';
       if (count) count.textContent = '0 台设备';
       return;
     }
@@ -550,8 +548,7 @@
     const opts = '<option value="">请选择设备</option>' + devices.map((d) =>
       `<option value="${esc(d.imei)}" ${d.imei === selected ? 'selected' : ''}>${d.name ? esc(d.name) + ' · ' : ''}${esc(d.imei)}（${esc(d.phone || '未知号码')}）${d.connected ? '' : ' [离线]'}</option>`).join('');
     sel.innerHTML = opts;
-    if (setLedSel) setLedSel.innerHTML = opts;
-    if (selected) { sel.value = selected; if (setLedSel) setLedSel.value = selected; }
+    if (selected) sel.value = selected;
     if (count) count.textContent = `${devices.length} 台设备 · ${online} 台在线`;
   }
 
@@ -562,7 +559,6 @@
     get_config: '读取配置',
     set_config: '写入配置',
     edit_config: '编辑配置',
-    set_led: '灯光控制',
   };
 
   // 命令详细说明（任务说明弹窗内容）
@@ -606,17 +602,6 @@
       params: [],
       result: '读取时返回 nvm_para.lua 全文；保存时返回 <code class="font-mono">{"success": true}</code>，立即生效。',
       note: '选择本类型后自动读取最新配置到编辑器，修改完成后点击右侧"保存配置"即可写回设备。设备离线时无法读取/保存。',
-    },
-    set_led: {
-      title: '灯光控制',
-      desc: '远程控制设备的 RGB 三色氛围灯（GPIO24/25/26）。可开关灯、循环切换 6 种灯效模式、指定模式或指定颜色。',
-      params: [
-        ['action', '动作：toggle(开关)/on(开灯)/off(关灯)/next(下一灯效)/prev(上一灯效)/set_mode(指定模式)/color(指定颜色)/status(查询状态)'],
-        ['mode', '当 action=set_mode 时必填，1~6 对应 6 种灯效模式'],
-        ['color', '当 action=color 时必填：off/red/green/blue/yellow/purple/cyan/white'],
-      ],
-      result: '成功返回灯效状态对象（含 mode/on/temp）；未知 action 返回错误。',
-      note: '设备需在线（MQTT 已连接）才能收到指令；灯效模式带断电记忆，重启后保持。',
     },
     get_status: {
       title: '查询状态',
@@ -796,12 +781,10 @@
     const checked = document.querySelector('input[name="task-type"]:checked');
     if (!checked) return;
     const type = checked.value;
-    ['params-send_sms', 'params-dial_call', 'params-set_config', 'params-set_led', 'params-__custom__'].forEach((id) => {
+    ['params-send_sms', 'params-dial_call', 'params-set_config', 'params-__custom__'].forEach((id) => {
       const el = $('#' + id);
       if (el) el.classList.toggle('hidden', id !== 'params-' + type);
     });
-    // 灯光动作联动：仅 set_led 时调用一次（按当前动作显示/隐藏模式与颜色）
-    if (type === 'set_led') onLedActionChange();
     // 配置编辑器：仅"编辑配置"任务类型时显示，并自动读取最新配置
     const editor = $('#config-editor');
     if (editor) {
@@ -865,15 +848,6 @@
     }
   }
 
-  // 灯光动作联动：set_mode 显示模式选择，color 显示颜色选择，其余隐藏
-  function onLedActionChange() {
-    const action = $('#task-led-action').value;
-    const modeWrap = $('#led-mode-wrap');
-    const colorWrap = $('#led-color-wrap');
-    if (modeWrap) modeWrap.classList.toggle('hidden', action !== 'set_mode');
-    if (colorWrap) colorWrap.classList.toggle('hidden', action !== 'color');
-  }
-
   // 终端控制台输出
   function consoleLine(box, text, cls) {
     const div = document.createElement('div');
@@ -926,11 +900,6 @@
       if (!text.trim()) { toast('请先读取或填写配置内容', false); return; }
       payload.task = 'set_config';
       payload.configText = text;
-    } else if (type === 'set_led') {
-      const action = $('#task-led-action').value;
-      payload.action = action;
-      if (action === 'set_mode') payload.mode = $('#task-led-mode').value;
-      else if (action === 'color') payload.color = $('#task-led-color').value;
     }
 
     const extra = $('#task-extra').value.trim();
@@ -2173,45 +2142,6 @@
     }
   }
 
-  // ---------------- 下发灯光控制（设置页实时下发 set_led） ----------------
-  function onSetLedActionChange() {
-    const action = $('#set-led-action').value;
-    const modeWrap = $('#set-led-mode-wrap');
-    const colorWrap = $('#set-led-color-wrap');
-    if (modeWrap) modeWrap.classList.toggle('hidden', action !== 'set_mode');
-    if (colorWrap) colorWrap.classList.toggle('hidden', action !== 'color');
-  }
-
-  async function sendSetLed() {
-    const imei = $('#set-led-imei').value;
-    if (!imei) { toast('请选择目标设备', false); return; }
-    const action = $('#set-led-action').value;
-    const payload = { imei, task: 'set_led', action };
-    if (action === 'set_mode') payload.mode = $('#set-led-mode').value;
-    else if (action === 'color') payload.color = $('#set-led-color').value;
-    const btn = $('#set-led-send');
-    const box = $('#set-led-result');
-    const hint = $('#set-led-hint');
-    btn.disabled = true;
-    btn.textContent = '下发中...';
-    if (hint) hint.textContent = '';
-    box.className = 'hidden text-sm sm:col-span-2';
-    try {
-      const data = await API.executeTask(payload);
-      const result = data.result;
-      if (result && typeof result === 'object' && result.error) throw new Error(result.error);
-      const pretty = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
-      box.className = 'text-sm sm:col-span-2 rounded-lg bg-slate-50 px-3 py-2 font-mono text-xs text-slate-700 whitespace-pre-wrap break-all';
-      box.textContent = pretty;
-      toast('灯光指令已下发');
-    } catch (err) {
-      toast('下发失败：' + err.message, false);
-    } finally {
-      btn.disabled = false;
-      btn.textContent = '下发灯光指令';
-    }
-  }
-
   // ---------------- 省电模式设置 ----------------
 
   // 解析 Lua 配置文本中的顶层键值
@@ -2270,14 +2200,17 @@
     if (e.options.length === 0) e.innerHTML = opts.join('');
   }
 
-  // 设置"省电模式"开关按钮状态（绿=关闭，黄=开启），data-state: off/on
-  // 设置"省电模式"开关按钮状态（关闭=绿，开启=黄），data-state: off/on
+  // 设置"省电模式"开/关选择按钮选中态：开=绿高亮，关=红高亮，data-state: on/off
   function setPowerSaveToggle(en) {
-    const btn = $('#powersave-toggle-btn');
-    if (!btn) return;
-    btn.dataset.state = en ? 'on' : 'off';
-    btn.style.background = en ? '#f59e0b' : '#16a34a';
-    btn.style.color = en ? '#1f2937' : '#fff';
+    const on = $('#powersave-on-btn');
+    const off = $('#powersave-off-btn');
+    if (!on || !off) return;
+    on.dataset.state = en ? 'on' : 'off';
+    off.dataset.state = en ? 'off' : 'on';
+    on.style.background = en ? '#16a34a' : '#e2e8f0';
+    on.style.color = en ? '#fff' : '#94a3b8';
+    off.style.background = en ? '#e2e8f0' : '#dc2626';
+    off.style.color = en ? '#94a3b8' : '#fff';
   }
 
   // 读取设备省电配置
@@ -2340,9 +2273,9 @@
   // 收集省电表单的配置键值
   function collectPowersaveKv() {
     const deepRadio = $$('input[name="powersave-deep"]:checked')[0];
-    const toggle = $('#powersave-toggle-btn');
+    const on = $('#powersave-on-btn');
     return {
-      POWERSAVE_ENABLE: toggle ? toggle.dataset.state === 'on' : false,
+      POWERSAVE_ENABLE: on ? on.dataset.state === 'on' : false,
       POWERSAVE_START_HOUR: parseInt($('#powersave-start').value, 10) || 1,
       POWERSAVE_END_HOUR: parseInt($('#powersave-end').value, 10) || 8,
       POWERSAVE_DEEP: deepRadio ? deepRadio.value === 'true' : false,
@@ -2445,24 +2378,33 @@
     }
   }
 
-  // 立即退出省电
-  async function powersaveExitNow() {
+  // 开/关选择按钮：立即启用/停用省电，并同步选择状态（失败回滚）
+  async function powersaveSetNow(en) {
     const msg = $('#powersave-msg');
     const imei = $('#powersave-device').value;
     if (!imei) { toast('请先选择目标设备', false); return; }
-    const btn = $('#powersave-exit-btn');
-    const oldText = btn.textContent;
-    btn.disabled = true; btn.textContent = '退出中...';
+    setPowerSaveToggle(en); // 先切选择状态
     try {
-      const res = await API.executeTask({ imei, task: 'powersave', action: 'exit' });
-      const info = res && res.result && res.result.message ? res.result.message : '已立即退出省电';
-      if (msg) { msg.textContent = info; msg.className = 'text-sm text-emerald-600'; }
-      toast(info);
+      if (en) {
+        const kv = collectPowersaveKv();
+        kv.POWERSAVE_ENABLE = true;
+        const data = await API.executeTask({ imei, task: 'get_config' });
+        const patched = patchLuaConfig(powersaveCfgText(data), kv);
+        await API.executeTask({ imei, task: 'set_config', configText: patched });
+        const res = await API.executeTask({ imei, task: 'powersave', action: 'enter' });
+        const info = res && res.result && res.result.message ? res.result.message : '已立即进入省电';
+        if (msg) { msg.textContent = info; msg.className = 'text-sm text-emerald-600'; }
+        toast(info);
+      } else {
+        const res = await API.executeTask({ imei, task: 'powersave', action: 'exit' });
+        const info = res && res.result && res.result.message ? res.result.message : '已立即退出省电';
+        if (msg) { msg.textContent = info; msg.className = 'text-sm text-emerald-600'; }
+        toast(info);
+      }
     } catch (err) {
+      setPowerSaveToggle(!en); // 失败回滚选择状态
       if (msg) { msg.textContent = err.message; msg.className = 'text-sm text-red-600'; }
       toast(err.message, false);
-    } finally {
-      btn.disabled = false; btn.textContent = oldText;
     }
   }
 
@@ -2515,17 +2457,13 @@
         tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-10 text-center text-slate-400">暂无录音文件</td></tr>';
         return;
       }
-      tbody.innerHTML = files.map((f, i) => {
-        const aid = 'rec-audio-' + i;
+      tbody.innerHTML = files.map((f) => {
         return `<tr>
           <td class="px-4 py-3 font-medium text-slate-700 truncate max-w-[16rem]" title="${esc(f.name)}">${esc(f.name)}</td>
           <td class="px-4 py-3 text-slate-500">${fmtSize(f.size)}</td>
-          <td class="px-4 py-3 text-slate-500">${esc(f.modTime || '')}</td>
+          <td class="px-4 py-3 text-slate-500 whitespace-nowrap">${fmtTime(f.modTime)}</td>
           <td class="px-4 py-3">
-            <div class="flex items-center gap-2">
-              <button type="button" class="btn btn-primary !px-3 !py-1.5 text-xs" data-play="${esc(f.url)}" data-audio="${aid}">播放</button>
-              <audio id="${aid}" controls preload="none" class="hidden w-52 h-8"></audio>
-            </div>
+            <audio controls preload="none" class="rec-audio w-56 h-8" data-play="${esc(f.url)}"></audio>
           </td>
         </tr>`;
       }).join('');
@@ -2539,6 +2477,15 @@
     if (n < 1024) return n + ' B';
     if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
     return (n / 1024 / 1024).toFixed(1) + ' MB';
+  }
+
+  // HTTP 日期（如 "Sat, 17 Oct 2026 02:47:14 GMT"）→ 本地时区 yyyy-MM-dd HH:mm:ss
+  function fmtTime(s) {
+    if (!s) return '';
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return String(s);
+    const p = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
   }
 
   // ---------------- 存储配置（WebDAV） ----------------
@@ -2644,18 +2591,17 @@
     $('#settings-form').addEventListener('submit', handleSettings);
     $('#notify-settings-form').addEventListener('submit', handleNotifySettings);
     $('#recordings-refresh').addEventListener('click', loadRecordings);
-    // 播放录音：点击带认证拉取音频为 Blob 后播放
+    // 播放录音：点击进度条（audio controls）时懒加载带认证音频，之后由原生控件播放
     $('#recordings-tbody').addEventListener('click', async (e) => {
-      const btn = e.target.closest('[data-play]');
-      if (!btn) return;
-      const audio = document.getElementById(btn.dataset.audio);
-      if (!audio) return;
+      const a = e.target.closest('audio.rec-audio');
+      if (!a) return;
+      if (a.dataset.loaded === '1') return; // 已加载，交给原生播放/进度条
+      a.dataset.loaded = '1';
       try {
-        const url = await API.fetchAudio(btn.dataset.play);
-        audio.src = url;
-        audio.classList.remove('hidden');
-        audio.play().catch(() => {});
-      } catch (err) { toast(err.message, false); }
+        const url = await API.fetchAudio(a.dataset.play);
+        a.src = url;
+        a.play().catch(() => {});
+      } catch (err) { toast(err.message, false); a.dataset.loaded = '0'; }
     });
     $('#store-form').addEventListener('submit', handleStoreSettings);
     $('#store-push-btn').addEventListener('click', pushStoreToDevice);
@@ -2664,12 +2610,9 @@
     $('#led-settings-form').addEventListener('submit', handleLedSettings);
     $('#powersave-form').addEventListener('submit', handlePowersaveSettings);
     $('#powersave-enter-btn').addEventListener('click', powersaveEnterNow);
-    $('#powersave-exit-btn').addEventListener('click', powersaveExitNow);
-    // "省电模式"开关按钮：点击切换启用/停用并变色（保存由"保存设置"提交）
-    $('#powersave-toggle-btn').addEventListener('click', () => {
-      const cur = $('#powersave-toggle-btn').dataset.state === 'on';
-      setPowerSaveToggle(!cur);
-    });
+    // "省电模式"开/关选择按钮：开=立即进入并启用，关=立即退出并停用
+    $('#powersave-on-btn').addEventListener('click', () => powersaveSetNow(true));
+    $('#powersave-off-btn').addEventListener('click', () => powersaveSetNow(false));
     // 设置页 Tab 切换
     $$('.set-tab-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -2869,7 +2812,6 @@
     $('#task-library-overlay').addEventListener('click', closeTaskLibrary);
     $('#config-save').addEventListener('click', saveConfig);
     $('#config-reload').addEventListener('click', loadConfigForEdit);
-    $('#task-led-action').addEventListener('change', onLedActionChange);
     // 命令大全内点击分组标题 -> 切换手风琴展开（关闭其他组）
     $('#task-library-body').addEventListener('click', (ev) => {
       const group = ev.target.closest('.task-lib-group');
@@ -2921,10 +2863,6 @@
       const remarkBtn = e.target.closest('[data-remark]');
       if (remarkBtn) startEditRemark(remarkBtn.dataset.remark);
     });
-
-    // 设置页·下发灯光控制
-    $('#set-led-action').addEventListener('change', onSetLedActionChange);
-    $('#set-led-send').addEventListener('click', sendSetLed);
   }
 
   function init() {

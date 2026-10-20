@@ -354,14 +354,6 @@
                       </span>
                     </label>
                     <label class="task-card">
-                      <input type="radio" name="task-type" value="set_led" class="task-radio">
-                      <span class="task-card-inner">
-                        <span class="text-2xl">💡</span>
-                        <span class="task-card-title">灯光控制</span>
-                        <small>RGB 氛围灯远程控制</small>
-                      </span>
-                    </label>
-                    <label class="task-card">
                       <input type="radio" name="task-type" value="__custom__" class="task-radio">
                       <span class="task-card-inner">
                         <span class="text-2xl">⌨️</span>
@@ -409,48 +401,6 @@
                     <div>
                       <label class="label" for="task-config-text">配置内容（Lua 格式，将写入设备 /nvm_para.lua）</label>
                       <textarea id="task-config-text" rows="8" class="input font-mono text-xs" placeholder="module(..., package.seeall)&#10;..."></textarea>
-                    </div>
-                  </div>
-
-                  <!-- 灯光控制参数 -->
-                  <div id="params-set_led" class="hidden mt-5 space-y-4 border-t border-slate-100 pt-5">
-                    <div>
-                      <label class="label" for="task-led-action">动作</label>
-                      <select id="task-led-action" class="input">
-                        <option value="toggle">切换开关</option>
-                        <option value="on">开灯</option>
-                        <option value="off">关灯</option>
-                        <option value="next">切换下一个灯效</option>
-                        <option value="prev">切换上一个灯效</option>
-                        <option value="set_mode">指定灯效模式</option>
-                        <option value="color">指定颜色</option>
-                        <option value="status">查询当前灯效状态</option>
-                      </select>
-                      <p class="text-xs text-slate-400 mt-1.5">切换开关/开灯/关灯/上下切换无需额外参数；指定模式或颜色时在下方选择</p>
-                    </div>
-                    <div id="led-mode-wrap" class="hidden">
-                      <label class="label" for="task-led-mode">灯效模式</label>
-                      <select id="task-led-mode" class="input">
-                        <option value="1">1 · 黄灯常亮</option>
-                        <option value="2">2 · 霓虹呼吸渐变</option>
-                        <option value="3">3 · 青灯常亮</option>
-                        <option value="4">4 · 黄紫青循环</option>
-                        <option value="5">5 · 绿灯常亮</option>
-                        <option value="6">6 · 红绿蓝循环</option>
-                      </select>
-                    </div>
-                    <div id="led-color-wrap" class="hidden">
-                      <label class="label" for="task-led-color">颜色</label>
-                      <select id="task-led-color" class="input">
-                        <option value="red">🔴 红</option>
-                        <option value="green">🟢 绿</option>
-                        <option value="blue">🔵 蓝</option>
-                        <option value="yellow">🟡 黄</option>
-                        <option value="purple">🟣 紫</option>
-                        <option value="cyan">🩵 青</option>
-                        <option value="white">⚪ 白</option>
-                        <option value="off">熄灭</option>
-                      </select>
                     </div>
                   </div>
 
@@ -1097,60 +1047,6 @@
                   </div>
                 </div>
 
-                <!-- 下发灯光控制（服务端实时下发 set_led，需设备在线） -->
-                <div class="border-t border-slate-100 pt-5 mt-5">
-                  <h3 class="font-semibold text-slate-900 mb-1">下发灯光控制</h3>
-                  <p class="text-xs text-slate-400 mb-3">远程实时控制设备 RGB 氛围灯（需设备在线，指令经服务端下发）</p>
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div class="sm:col-span-2">
-                      <label class="label" for="set-led-imei">目标设备</label>
-                      <select id="set-led-imei" class="input"></select>
-                    </div>
-                    <div class="sm:col-span-2">
-                      <label class="label" for="set-led-action">动作</label>
-                      <select id="set-led-action" class="input">
-                        <option value="toggle">开/关切换</option>
-                        <option value="on">开灯</option>
-                        <option value="off">关灯</option>
-                        <option value="next">切换下一灯效</option>
-                        <option value="prev">切换上一灯效</option>
-                        <option value="set_mode">指定灯效模式</option>
-                        <option value="color">指定颜色</option>
-                        <option value="status">查询灯效状态</option>
-                      </select>
-                    </div>
-                    <div id="set-led-mode-wrap" class="hidden">
-                      <label class="label" for="set-led-mode">灯效模式</label>
-                      <select id="set-led-mode" class="input">
-                        <option value="1">1 · 黄色常亮</option>
-                        <option value="2">2 · 霓虹呼吸</option>
-                        <option value="3">3 · 青色常亮</option>
-                        <option value="4">4 · 三色轮换</option>
-                        <option value="5">5 · 绿色常亮</option>
-                        <option value="6">6 · 红绿蓝轮换</option>
-                      </select>
-                    </div>
-                    <div id="set-led-color-wrap" class="hidden">
-                      <label class="label" for="set-led-color">颜色</label>
-                      <select id="set-led-color" class="input">
-                        <option value="red">🔴 红</option>
-                        <option value="green">🟢 绿</option>
-                        <option value="blue">🔵 蓝</option>
-                        <option value="yellow">🟡 黄</option>
-                        <option value="purple">🟣 紫</option>
-                        <option value="cyan">🩵 青</option>
-                        <option value="white">⚪ 白</option>
-                        <option value="off">熄灭</option>
-                      </select>
-                    </div>
-                    <div class="flex items-center gap-3 sm:col-span-2">
-                      <button type="button" id="set-led-send" class="btn btn-primary">下发灯光指令</button>
-                      <span id="set-led-hint" class="text-xs text-slate-400"></span>
-                    </div>
-                    <div id="set-led-result" class="hidden text-sm sm:col-span-2"></div>
-                  </div>
-                </div>
-
                 <p id="led-settings-msg" class="hidden text-sm"></p>
                 <button type="submit" class="btn btn-primary">保存设置</button>
               </form>
@@ -1159,11 +1055,14 @@
             <!-- 省电模式 -->
             <div id="set-tab-powersave" class="card p-6 mt-6 hidden">
               <form id="powersave-form" class="space-y-6">
-                <div class="flex items-center gap-3 rounded-lg bg-slate-50 px-4 py-3">
-                  <button type="button" id="powersave-toggle-btn" class="btn shrink-0"
-                    style="min-width:8.5rem;color:#fff;background:#16a34a" data-state="off">省电模式</button>
-                  <button type="button" id="powersave-exit-btn" class="btn shrink-0"
-                    style="background:#dc2626;color:#fff">立即退出</button>
+                <div class="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3">
+                  <span class="font-medium text-sm text-slate-700">省电模式</span>
+                  <div class="flex rounded-lg overflow-hidden border border-slate-200">
+                    <button type="button" id="powersave-on-btn" class="btn rounded-none border-0 px-8"
+                      style="background:#16a34a;color:#fff" data-state="on">开</button>
+                    <button type="button" id="powersave-off-btn" class="btn rounded-none border-0 px-8"
+                      style="background:#fff;color:#64748b" data-state="off">关</button>
+                  </div>
                 </div>
                 <p class="text-xs text-slate-400 mt-1">在设定时段进入低功耗，降低待机功耗</p>
 
@@ -1390,6 +1289,6 @@
   </div>
 
   <script src="/js/api.js?v=20260830d"></script>
-  <script src="/js/app.js?v=20261020b"></script>
+  <script src="/js/app.js?v=20261020d"></script>
 </body>
 </html>

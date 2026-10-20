@@ -3,11 +3,13 @@ package main
 // WebDAV 客户端：通话录音列表（PROPFIND）与播放（GET 代理流）
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -39,8 +41,48 @@ type davMultistatus struct {
 }
 
 // webdavClient 构造带 Basic 认证的 WebDAV 请求客户端
+// 解析策略：IPv4 优先（兼容纯 IPv4 网络/容器）；若域名无 A 记录则回退 IPv6。
 func webdavHTTPClient() *http.Client {
-	return &http.Client{Timeout: 30 * time.Second}
+	dialer := &net.Dialer{Timeout: 10 * time.Second, KeepAlive: 30 * time.Second}
+	transport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			host, port, err := net.SplitHostPort(addr)
+			if err != nil {
+				return nil, err
+			}
+			v4, err4 := net.DefaultResolver.LookupIP(ctx, "ip4", host)
+			if err4 == nil && len(v4) > 0 {
+				var last error
+				for _, ip := range v4 {
+					c, e := dialer.DialContext(ctx, "tcp", net.JoinHostPort(ip.String(), port))
+					if e == nil {
+						return c, nil
+					}
+					last = e
+				}
+				// IPv4 全部连接失败：尝试 IPv6 兜底
+				v6, e6 := net.DefaultResolver.LookupIP(ctx, "ip6", host)
+				if e6 != nil || len(v6) == 0 {
+					return nil, last
+				}
+			}
+			ips, err := net.DefaultResolver.LookupIP(ctx, "ip6", host)
+			if err != nil || len(ips) == 0 {
+				return nil, fmt.Errorf("resolve %s: %v", host, err)
+			}
+			var last error
+			for _, ip := range ips {
+				c, e := dialer.DialContext(ctx, "tcp", net.JoinHostPort(ip.String(), port))
+				if e == nil {
+					return c, nil
+				}
+				last = e
+			}
+			return nil, last
+		},
+	}
+	return &http.Client{Transport: transport, Timeout: 30 * time.Second}
 }
 
 // webdavBrowserUA：绕过 Cloudflare 按 UA 的机器人拦截（默认 Go-http-client UA 会被 1010 拦）
