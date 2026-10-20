@@ -2100,9 +2100,33 @@
       $('#led-call-color').value = call.color || 'red';
       $('#led-call-blink').checked = !!call.blink;
       $('#led-call-duration').value = call.duration || 5000;
+      fillSetLedDevice();
+      onSetLedActionChange();
     } catch (err) {
       toast(err.message, false);
     }
+  }
+
+  // 填充"灯光切换"目标设备下拉
+  function fillSetLedDevice() {
+    const sel = $('#set-led-imei');
+    if (!sel) return;
+    const prev = sel.value;
+    sel.innerHTML = devices.map((d) =>
+      `<option value="${esc(d.imei)}">${d.name ? esc(d.name) + ' · ' : ''}${esc(d.imei)}</option>`).join('');
+    if (prev) sel.value = prev;
+    else if (devices.length === 1) sel.value = devices[0].imei;
+  }
+
+  // 按"灯光切换"动作显示/隐藏灯效模式与颜色选择
+  function onSetLedActionChange() {
+    const a = $('#set-led-action');
+    if (!a) return;
+    const v = a.value;
+    const mw = $('#set-led-mode-wrap');
+    const cw = $('#set-led-color-wrap');
+    if (mw) mw.classList.toggle('hidden', v !== 'set_mode');
+    if (cw) cw.classList.toggle('hidden', v !== 'color');
   }
 
   // 保存灯光控制设置
@@ -2133,9 +2157,26 @@
       };
       await API.saveSettings(payload);
       notifySettings = Object.assign({}, notifySettings, { smsLed: smsLed, callLed: callLed });
-      msg.textContent = '设置已保存';
+      // 灯光切换：若已选择目标设备与动作，随保存一并下发
+      let ledHint = '';
+      const setImei = $('#set-led-imei') && $('#set-led-imei').value;
+      const setAction = $('#set-led-action') && $('#set-led-action').value;
+      if (setImei && setAction) {
+        const lp = { imei: setImei, task: 'set_led', action: setAction };
+        if (setAction === 'set_mode') lp.mode = $('#set-led-mode').value;
+        else if (setAction === 'color') lp.color = $('#set-led-color').value;
+        try {
+          const data = await API.executeTask(lp);
+          const res = data.result;
+          if (res && typeof res === 'object' && res.error) throw new Error(res.error);
+          ledHint = '，灯光切换指令已下发';
+        } catch (ledErr) {
+          ledHint = '，灯光切换下发失败：' + ledErr.message;
+        }
+      }
+      msg.textContent = '设置已保存' + ledHint;
       msg.className = 'text-sm text-emerald-600';
-      toast('灯光设置已保存');
+      toast('灯光设置已保存' + (ledHint || ''));
     } catch (err) {
       msg.textContent = err.message;
       msg.className = 'text-sm text-red-600';
@@ -2463,7 +2504,14 @@
           <td class="px-4 py-3 text-slate-500">${fmtSize(f.size)}</td>
           <td class="px-4 py-3 text-slate-500 whitespace-nowrap">${fmtTime(f.modTime)}</td>
           <td class="px-4 py-3">
-            <audio controls preload="none" class="rec-audio w-56 h-8" data-play="${esc(f.url)}"></audio>
+            <div class="rec-row flex items-center gap-2" data-play="${esc(f.url)}">
+              <button type="button" class="rec-play-btn flex items-center justify-center w-8 h-8 shrink-0 rounded-full bg-indigo-600 text-white text-xs hover:bg-indigo-700" title="播放/暂停">▶</button>
+              <div class="rec-track relative flex-1 h-1.5 rounded-full bg-slate-200 cursor-pointer overflow-hidden">
+                <div class="rec-fill absolute inset-y-0 left-0 w-0 bg-indigo-600"></div>
+              </div>
+              <span class="rec-time text-xs text-slate-500 w-24 text-right shrink-0">00:00</span>
+              <audio preload="none" class="hidden"></audio>
+            </div>
           </td>
         </tr>`;
       }).join('');
@@ -2486,6 +2534,14 @@
     if (isNaN(d.getTime())) return String(s);
     const p = (n) => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+  }
+
+  // 秒 → mm:ss
+  function fmtDur(s) {
+    if (!isFinite(s)) return '00:00';
+    const m = Math.floor(s / 60);
+    const ss = Math.floor(s % 60);
+    return String(m).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
   }
 
   // ---------------- 存储配置（WebDAV） ----------------
@@ -2591,23 +2647,64 @@
     $('#settings-form').addEventListener('submit', handleSettings);
     $('#notify-settings-form').addEventListener('submit', handleNotifySettings);
     $('#recordings-refresh').addEventListener('click', loadRecordings);
-    // 播放录音：点击进度条（audio controls）时懒加载带认证音频，之后由原生控件播放
-    $('#recordings-tbody').addEventListener('click', async (e) => {
-      const a = e.target.closest('audio.rec-audio');
-      if (!a) return;
-      if (a.dataset.loaded === '1') return; // 已加载，交给原生播放/进度条
+    // 播放录音：点击播放按钮/进度条时懒加载带认证音频，由自定义进度条驱动
+    async function ensureRecLoaded(row) {
+      const a = row.querySelector('audio');
+      if (a.dataset.loaded === '1') return a;
       a.dataset.loaded = '1';
       try {
-        const url = await API.fetchAudio(a.dataset.play);
-        a.src = url;
-        a.play().catch(() => {});
-      } catch (err) { toast(err.message, false); a.dataset.loaded = '0'; }
+        a.src = await API.fetchAudio(row.dataset.play);
+        return a;
+      } catch (err) {
+        a.dataset.loaded = '0';
+        toast(err.message, false);
+        return null;
+      }
+    }
+    $('#recordings-tbody').addEventListener('click', async (e) => {
+      const row = e.target.closest('.rec-row');
+      if (!row) return;
+      const btn = e.target.closest('.rec-play-btn');
+      const track = e.target.closest('.rec-track');
+      if (!btn && !track) return;
+      const a = await ensureRecLoaded(row);
+      if (!a) return;
+      if (btn) {
+        const b = row.querySelector('.rec-play-btn');
+        if (a.paused) { b.textContent = '⏸'; a.play().catch(() => { b.textContent = '▶'; }); }
+        else { b.textContent = '▶'; a.pause(); }
+      } else if (track) {
+        const rect = track.getBoundingClientRect();
+        const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        if (a.duration && isFinite(a.duration)) a.currentTime = a.duration * ratio;
+        if (a.paused) { row.querySelector('.rec-play-btn').textContent = '⏸'; a.play().catch(() => {}); }
+      }
+    });
+    // 进度条与时间随播放更新
+    $('#recordings-tbody').addEventListener('timeupdate', (e) => {
+      const a = e.target;
+      if (a.tagName !== 'AUDIO') return;
+      const row = a.closest('.rec-row');
+      if (!row) return;
+      const dur = a.duration || 0, cur = a.currentTime || 0;
+      row.querySelector('.rec-fill').style.width = dur ? (cur / dur * 100) + '%' : '0%';
+      row.querySelector('.rec-time').textContent = fmtDur(cur) + (dur ? '/' + fmtDur(dur) : '');
+    });
+    $('#recordings-tbody').addEventListener('ended', (e) => {
+      const a = e.target;
+      if (a.tagName !== 'AUDIO') return;
+      const row = a.closest('.rec-row');
+      if (row) {
+        row.querySelector('.rec-play-btn').textContent = '▶';
+        row.querySelector('.rec-fill').style.width = '0%';
+      }
     });
     $('#store-form').addEventListener('submit', handleStoreSettings);
     $('#store-push-btn').addEventListener('click', pushStoreToDevice);
     $('#notify-test-btn').addEventListener('click', sendTestNotify);
     $('#notify-channels-list').addEventListener('change', onNotifyChannelChange);
     $('#led-settings-form').addEventListener('submit', handleLedSettings);
+    $('#set-led-action').addEventListener('change', onSetLedActionChange);
     $('#powersave-form').addEventListener('submit', handlePowersaveSettings);
     $('#powersave-enter-btn').addEventListener('click', powersaveEnterNow);
     // "省电模式"开/关选择按钮：开=立即进入并启用，关=立即退出并停用

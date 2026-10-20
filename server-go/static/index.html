@@ -1047,6 +1047,55 @@
                   </div>
                 </div>
 
+                <!-- 灯光切换（手动下发，随保存设置一并执行） -->
+                <div class="border-t border-slate-100 pt-5 mt-5">
+                  <h3 class="font-semibold text-slate-900 mb-1">灯光切换</h3>
+                  <p class="text-xs text-slate-400 mb-3">手动切换设备 RGB 灯光，随下方「保存设置」一并下发</p>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="sm:col-span-2">
+                      <label class="label" for="set-led-imei">目标设备</label>
+                      <select id="set-led-imei" class="input"></select>
+                    </div>
+                    <div class="sm:col-span-2">
+                      <label class="label" for="set-led-action">动作</label>
+                      <select id="set-led-action" class="input">
+                        <option value="toggle">开/关切换</option>
+                        <option value="on">开灯</option>
+                        <option value="off">关灯</option>
+                        <option value="next">切换下一灯效</option>
+                        <option value="prev">切换上一灯效</option>
+                        <option value="set_mode">指定灯效模式</option>
+                        <option value="color">指定颜色</option>
+                        <option value="status">查询灯效状态</option>
+                      </select>
+                    </div>
+                    <div id="set-led-mode-wrap" class="hidden sm:col-span-2">
+                      <label class="label" for="set-led-mode">灯效模式</label>
+                      <select id="set-led-mode" class="input">
+                        <option value="1">1 · 黄灯常亮</option>
+                        <option value="2">2 · 霓虹呼吸渐变</option>
+                        <option value="3">3 · 青灯常亮</option>
+                        <option value="4">4 · 黄紫青循环</option>
+                        <option value="5">5 · 绿灯常亮</option>
+                        <option value="6">6 · 红绿蓝循环</option>
+                      </select>
+                    </div>
+                    <div id="set-led-color-wrap" class="hidden sm:col-span-2">
+                      <label class="label" for="set-led-color">颜色</label>
+                      <select id="set-led-color" class="input">
+                        <option value="red">🔴 红</option>
+                        <option value="green">🟢 绿</option>
+                        <option value="blue">🔵 蓝</option>
+                        <option value="yellow">🟡 黄</option>
+                        <option value="purple">🟣 紫</option>
+                        <option value="cyan">🩵 青</option>
+                        <option value="white">⚪ 白</option>
+                        <option value="off">熄灭</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
                 <p id="led-settings-msg" class="hidden text-sm"></p>
                 <button type="submit" class="btn btn-primary">保存设置</button>
               </form>
@@ -1289,6 +1338,6 @@
   </div>
 
   <script src="/js/api.js?v=20260830d"></script>
-  <script src="/js/app.js?v=20261020d"></script>
+  <script src="/js/app.js?v=20261020e"></script>
 </body>
 </html>
