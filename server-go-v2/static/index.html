@@ -113,9 +113,10 @@
 
     <main class="content" id="content"></main>
   </div>
-</div>
 
-<div class="scrim" id="scrim"></div>
+  <!-- 遮罩放在 .app 内部：与侧栏同处一个层叠上下文，才能盖住内容而盖不住抽屉 -->
+  <div class="scrim" id="scrim"></div>
+</div>
 
 <div class="popover" id="appearancePop">
   <div class="pop-head">外观</div>

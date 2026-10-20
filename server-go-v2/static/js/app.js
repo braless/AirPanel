@@ -163,6 +163,11 @@ function bindShell() {
   });
   $('#scrim').addEventListener('click', closeSidebar);
 
+  // 视口变宽（横屏 / 平板）时收起抽屉，避免残留遮罩
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 980) closeSidebar();
+  });
+
   // 顶栏设备切换
   $('#topDevice').addEventListener('click', () => {
     if (!state.devices.length) {

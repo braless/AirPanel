@@ -17,6 +17,13 @@ const LED_COLORS = [
 
 const ACCENTS = ['#0A84FF', '#34C759', '#AF52DE', '#FF9F0A', '#FF2D55', '#5856D6'];
 
+/* 设备端 set_led 支持的动作（util_mqtt.lua） */
+const LED_ACTIONS = [
+  ['on', '开灯'], ['off', '关灯'], ['toggle', '切换开关'],
+  ['color', '指定颜色'], ['set_mode', '切换灯效'],
+  ['next', '下一个灯效'], ['prev', '上一个灯效'], ['status', '查询当前状态']
+];
+
 const SECTIONS = [
   { k: 'account', label: '账号与安全', ic: 'key' },
   { k: 'notify', label: '通知推送', ic: 'bell' },
@@ -32,7 +39,13 @@ let s = null;
 let channels = [];
 let draftUI = null;
 
-export async function render(root) {
+/* 灯光控制（随「保存设置」一起下发） */
+const ledCtl = { imei: '', action: 'on', color: 'blue', mode: '1' };
+let ledDirty = false;
+let ledMsg = '尚未下发；选择动作后点右上角「保存设置」生效';
+
+export async function render(root, opts) {
+  if (opts && opts.section && SECTIONS.some((x) => x.k === opts.section)) tab = opts.section;
   root.innerHTML = '<div class="skeleton" style="height:360px"></div>';
   try {
     s = JSON.parse(JSON.stringify(await loadSettings(true)));
@@ -47,6 +60,7 @@ export async function render(root) {
   if (!s.callLed) s.callLed = { enabled: true, color: 'green', blink: true, duration: 5000 };
   if (!s.webdav) s.webdav = { url: '', username: '', password: '', dir: '通话录音' };
   draftUI = JSON.parse(localStorage.getItem(UI_KEY) || '{}');
+  if (!ledCtl.imei) ledCtl.imei = state.imei || '';
 
   root.innerHTML = shell();
   paintIcons(root);
@@ -268,14 +282,44 @@ function ledBlock(key, title, sub) {
 
 function renderLED() {
   panel('led').innerHTML =
-    card('灯光指示', '收到短信 / 来电时设备 RGB 灯的反馈效果',
+    card('灯光控制', '远程控制设备 RGB 氛围灯 · 与右上角「保存设置」一起下发',
+      `<div class="form-grid">
+        <div class="field"><label class="label">目标设备</label>
+          <div class="select-wrap"><select class="select" id="ledDevice">${deviceOptions(ledCtl.imei || state.imei)}</select></div></div>
+        <div class="field"><label class="label">动作</label>
+          <div class="select-wrap"><select class="select" id="ledAction">
+            ${LED_ACTIONS.map(([v, l]) => `<option value="${v}"${ledCtl.action === v ? ' selected' : ''}>${l}</option>`).join('')}
+          </select></div></div>
+      </div>
+
+      <div id="ledColorBox" style="margin-top:12px">
+        <div class="label">颜色</div>
+        <div class="color-row" id="ledColors">
+          ${LED_COLORS.map(([c, label, hex]) => `<button class="swatch ${ledCtl.color === c ? 'on' : ''}" data-color="${c}"
+            title="${label}" style="background:${hex}"></button>`).join('')}
+        </div>
+      </div>
+
+      <div id="ledModeBox" style="margin-top:12px">
+        <div class="label">灯效</div>
+        <div class="seg" id="ledModes">
+          ${[1, 2, 3, 4, 5, 6].map((n) => `<button data-mode="${n}" class="${ledCtl.mode === String(n) ? 'on' : ''}">灯效 ${n}</button>`).join('')}
+        </div>
+      </div>
+
+      <div style="display:flex;gap:7px;margin-top:12px;font-size:9.5px;color:var(--ink3);line-height:1.6">
+        ${icon('info')}<span>修改后点右上角「保存设置」下发；设备离线时只保存配置，指令不会送达。</span>
+      </div>
+      <div id="ledMsg" style="font-size:10px;color:var(--ink3);margin-top:8px">${esc(ledMsg)}</div>`)
+    + card('事件灯效', '收到短信 / 来电时设备 RGB 灯的反馈效果',
       `${ledBlock('smsLed', '来短信', '收到短信时点亮指定颜色')}
        ${ledBlock('callLed', '来电话', '来电振铃时点亮指定颜色')}
        <div style="display:flex;gap:7px;margin-top:10px;font-size:9.5px;color:var(--ink3);line-height:1.6">
-         ${icon('info')}<span>灯效由服务端通过 set_led feedback 下发，触发后到期自动恢复原有灯效。</span>
+         ${icon('info')}<span>事件灯效由服务端通过 set_led feedback 下发，触发后到期自动恢复原有灯效。</span>
        </div>`);
   paintIcons(panel('led'));
 
+  // 事件灯效
   $$('[data-led-colors]').forEach((box) => {
     const key = box.dataset.ledColors;
     $$('.swatch', box).forEach((b) => b.addEventListener('click', () => {
@@ -288,6 +332,43 @@ function renderLED() {
     const f = el.dataset.f;
     s[key][f] = el.type === 'checkbox' ? el.checked : Number(el.value) || 5000;
   }));
+
+  // 灯光控制
+  const syncCtl = () => {
+    const colorBox = $('#ledColorBox');
+    const modeBox = $('#ledModeBox');
+    if (colorBox) colorBox.style.display = ledCtl.action === 'color' ? '' : 'none';
+    if (modeBox) modeBox.style.display = ledCtl.action === 'set_mode' ? '' : 'none';
+  };
+  const markDirty = () => { ledDirty = true; ledMsg = '有未下发的改动，点右上角「保存设置」生效'; };
+
+  $('#ledDevice').addEventListener('change', (e) => { ledCtl.imei = e.target.value; markDirty(); renderLedMsg(); });
+  $('#ledAction').addEventListener('change', (e) => {
+    ledCtl.action = e.target.value;
+    markDirty();
+    syncCtl();
+    renderLedMsg();
+  });
+  $$('#ledColors .swatch').forEach((b) => b.addEventListener('click', () => {
+    ledCtl.color = b.dataset.color;
+    $$('#ledColors .swatch').forEach((x) => x.classList.toggle('on', x === b));
+    markDirty();
+    renderLedMsg();
+  }));
+  $$('#ledModes button').forEach((b) => b.addEventListener('click', () => {
+    ledCtl.mode = b.dataset.mode;
+    $$('#ledModes button').forEach((x) => x.classList.toggle('on', x === b));
+    markDirty();
+    renderLedMsg();
+  }));
+  syncCtl();
+}
+
+function renderLedMsg() {
+  const el = $('#ledMsg');
+  if (!el) return;
+  el.textContent = ledMsg;
+  el.style.color = ledDirty ? 'var(--accent)' : 'var(--ink3)';
 }
 
 /* ---------------- 省电模式 ---------------- */
@@ -632,8 +713,56 @@ async function saveAll(btn) {
         callLed: s.callLed,
         webdav: s.webdav
       });
-      toast('设置已保存');
       await loadSettings(true);
+      await applyLedControl();
     } catch (err) { toast(err.message, true); }
   });
+}
+
+/** 保存设置后，把灯光控制指令下发到设备（仅在用户改过灯光控制时） */
+async function applyLedControl() {
+  if (!ledDirty) { toast('设置已保存'); return; }
+  const imei = ledCtl.imei || state.imei;
+  if (!imei) {
+    ledMsg = '设置已保存，但没有可下发的设备';
+    renderLedMsg();
+    toast(ledMsg, true);
+    return;
+  }
+  const dev = state.devices.find((d) => d.imei === imei);
+  if (!dev || !dev.connected) {
+    ledMsg = '设置已保存；设备离线，灯光指令未下发';
+    renderLedMsg();
+    toast('设置已保存，设备离线未下发灯光指令', true);
+    return;
+  }
+
+  const payload = { imei, task: 'set_led', action: ledCtl.action };
+  if (ledCtl.action === 'color') payload.color = ledCtl.color;
+  if (ledCtl.action === 'set_mode') payload.mode = Number(ledCtl.mode);
+
+  try {
+    const res = await api.executeTask(payload);
+    if (!res || res.success === false) {
+      ledMsg = '设置已保存，灯光指令下发失败：' + ((res && res.message) || '未知错误');
+      renderLedMsg();
+      toast(ledMsg, true);
+      return;
+    }
+    if (res.result && res.result.error) {
+      ledMsg = '设置已保存，设备返回错误：' + res.result.error;
+      renderLedMsg();
+      toast(ledMsg, true);
+      return;
+    }
+    ledDirty = false;
+    const detail = typeof res.result === 'string' ? res.result : JSON.stringify(res.result || {});
+    ledMsg = '已下发到 ' + (dev.name || imei) + ' · ' + detail;
+    renderLedMsg();
+    toast('设置与灯光指令均已生效');
+  } catch (err) {
+    ledMsg = '设置已保存，灯光指令下发失败：' + err.message;
+    renderLedMsg();
+    toast(ledMsg, true);
+  }
 }

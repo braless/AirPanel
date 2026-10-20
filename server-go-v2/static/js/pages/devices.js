@@ -141,7 +141,7 @@ async function renderDetail() {
       <div class="quick-grid" style="margin-top:7px">
         <button class="quick" data-task="get_temperature"><span class="tile" style="--qt:rgba(255,159,10,.14);--qf:#FF9F0A">${icon('temp')}</span>查询温度</button>
         <button class="quick" data-task="get_config"><span class="tile" style="--qt:rgba(90,200,250,.16);--qf:#32ADE6">${icon('doc')}</span>读取配置</button>
-        <button class="quick" data-task="set_led"><span class="tile" style="--qt:rgba(175,82,222,.14);--qf:#AF52DE">${icon('lightbulb')}</span>灯光控制</button>
+        <button class="quick" data-led="1"><span class="tile" style="--qt:rgba(175,82,222,.14);--qf:#AF52DE">${icon('lightbulb')}</span>灯光控制</button>
         <button class="quick" data-task="get_status"><span class="tile" style="--qt:rgba(10,132,255,.14);--qf:#0A84FF">${icon('signal')}</span>查询状态</button>
       </div>
     </div>`;
@@ -149,6 +149,7 @@ async function renderDetail() {
 
   $('#devGoTask', box).addEventListener('click', () => goto('tasks'));
   $$('[data-task]', box).forEach((b) => b.addEventListener('click', () => goto('tasks', { task: b.dataset.task })));
+  $$('[data-led]', box).forEach((b) => b.addEventListener('click', () => goto('settings', { section: 'led' })));
   $('#devRename', box).addEventListener('click', () => renameDevice(dev));
   $('#devDelete', box).addEventListener('click', () => removeDevice(dev));
 }

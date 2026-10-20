@@ -113,35 +113,11 @@ export const TASKS = {
     label: '重启设备', icon: 'restart', group: '配置与系统',
     desc: '软重启设备', hint: '重启后约 1-2 分钟恢复在线。',
     fields: []
-  },
-  set_led: {
-    label: '灯光控制', icon: 'lightbulb', group: '配置与系统',
-    desc: 'RGB 氛围灯远程控制',
-    hint: '灯光控制会覆盖短信 / 来电事件灯，直到下一次事件触发。',
-    fields: [
-      {
-        k: 'action', label: '动作', type: 'select', value: 'on',
-        options: [
-          { v: 'on', label: '开灯' }, { v: 'off', label: '关灯' },
-          { v: 'toggle', label: '切换开关' }, { v: 'color', label: '指定颜色' },
-          { v: 'set_mode', label: '切换灯效' }, { v: 'next', label: '下一个灯效' },
-          { v: 'prev', label: '上一个灯效' }, { v: 'status', label: '查询状态' }
-        ]
-      },
-      {
-        k: 'color', label: '颜色', type: 'select', value: 'blue', showIf: (v) => v.action === 'color',
-        options: ['red', 'green', 'blue', 'yellow', 'purple', 'cyan', 'white', 'off'].map((c) => ({ v: c, label: c }))
-      },
-      {
-        k: 'mode', label: '灯效编号', type: 'select', value: '1', showIf: (v) => v.action === 'set_mode',
-        options: [1, 2, 3, 4, 5, 6].map((n) => ({ v: String(n), label: '灯效 ' + n }))
-      }
-    ]
   }
 };
 
 /* 卡片网格默认展示的常用任务 */
-const PRIMARY = ['send_sms', 'dial_call', 'get_config', 'set_config', 'edit_config', 'set_led', '__custom__'];
+const PRIMARY = ['send_sms', 'dial_call', 'get_config', 'set_config', 'edit_config', '__custom__'];
 
 const TONES = {
   send_sms: ['rgba(10,132,255,.14)', '#0A84FF'],
@@ -149,7 +125,6 @@ const TONES = {
   get_config: ['rgba(90,200,250,.16)', '#32ADE6'],
   set_config: ['rgba(175,82,222,.14)', '#AF52DE'],
   edit_config: ['rgba(175,82,222,.14)', '#AF52DE'],
-  set_led: ['rgba(255,159,10,.14)', '#FF9F0A'],
   __custom__: ['rgba(120,120,128,.18)', 'var(--ink2)']
 };
 
@@ -160,7 +135,9 @@ let configText = '';
 
 export async function render(root, opts) {
   imei = (opts && opts.imei) || state.imei || (activeDevice() || {}).imei || '';
-  if (opts && opts.task) current = opts.task;
+  // 灯光控制已迁至「基本设置 → 灯光指示」，旧入口回落到默认任务
+  if (opts && opts.task && (TASKS[opts.task] || opts.task === '__custom__')) current = opts.task;
+  else if (!TASKS[current] && current !== '__custom__') current = 'send_sms';
 
   root.innerHTML = shell();
   paintIcons(root);
@@ -363,7 +340,7 @@ function renderParams() {
   wrap.innerHTML = html;
   paintIcons(wrap);
 
-  // 条件字段显隐（如 set_led 的 color / mode）
+  // 条件字段显隐（如 set_gpio 的 level）
   const applyCond = () => {
     const vals = fieldValues();
     def.fields.filter((f) => f.showIf).forEach((f) => {
