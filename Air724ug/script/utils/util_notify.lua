@@ -525,7 +525,8 @@ end
 -- @param channels 通知渠道
 -- @param title 可选，主标题（发件人/来电号码等），供 Bark 等渠道作为标题
 -- @param onResult 可选，发送结果回调 function(success:boolean)，成功或最终失败时调用一次
-function add(msg, channels, title, onResult)
+-- @param priority 可选，是否优先发送（短信/来电等新通知插队首，避免排在积压队列后无法及时送达）
+function add(msg, channels, title, onResult, priority)
     if type(msg) == "table" then
         msg = table.concat(msg, "\n")
     end
@@ -536,8 +537,23 @@ function add(msg, channels, title, onResult)
         channels = { channels }
     end
 
+    -- 队列上限：超过则丢弃最早入队的消息（队首），防止设备长时间运行后积压
+    -- 导致新短信/来电通知排不上、无法及时送达
+    local qmax = config.NOTIFY_QUEUE_MAX or 20
     for _, channel in ipairs(channels) do
-        table.insert(msg_queue, { channel = channel, msg = msg, retry = 0, title = title, onResult = onResult })
+        -- 队列已满：丢弃队首最旧消息，并回填发送失败，避免无限积压
+        while #msg_queue >= qmax do
+            local dropped = table.remove(msg_queue, 1)
+            if dropped and dropped.onResult then
+                dropped.onResult(false)
+            end
+        end
+        local item = { channel = channel, msg = msg, retry = 0, title = title, onResult = onResult }
+        if priority then
+            table.insert(msg_queue, 1, item)
+        else
+            table.insert(msg_queue, item)
+        end
     end
     sys.publish("NEW_MSG")
     log.info("util_notify.add", "添加到消息队列, 当前队列长度:", #msg_queue)
@@ -556,7 +572,7 @@ local function poll()
             item = msg_queue[1]
             table.remove(msg_queue, 1)
 
-            if item.retry > (config.NOTIFY_RETRY_MAX or 100) then
+            if item.retry > (config.NOTIFY_RETRY_MAX or 10) then
                 log.error("util_notify.poll", "超过最大重发次数", "msg:", item.msg)
                 -- 最终失败：通知调用方（用于回填记录通知状态）
                 if item.onResult then
@@ -576,7 +592,7 @@ local function poll()
                 else
                     -- 发送失败, 移到队尾
                     table.insert(msg_queue, item)
-                    sys.wait(5000)
+                    sys.wait(1000)
                 end
             end
             sys.wait(50)

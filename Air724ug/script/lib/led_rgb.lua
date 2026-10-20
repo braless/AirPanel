@@ -240,12 +240,8 @@ sys.subscribe("SMS_ADD", function() blue_feedback(1200) end)
 -- ============ 启动（渲染协程 + 开机动画） ============
 function start()
     current_mode = load_mode()
-    -- 读取持久化的关灯标记：远程/菜单关灯后重启保持关闭，避免灯又亮起
-    local f = io.open(OFF_FLAG_FILE, "r")
-    if f then
-        is_light_off = true
-        f:close()
-    end
+    -- 开机默认关灯：刷入脚本后默认灯光关闭，用户可通过服务端 set_led / 电源键菜单手动开灯
+    is_light_off = true
     -- 开启 GPIO 供电电压域（GPIO24-28 属 LDO_VMMC）
     pmd.ldoset(2, pmd.LDO_VMMC)
     -- 默认先视为无网，等待网络事件置位

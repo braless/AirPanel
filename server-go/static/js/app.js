@@ -537,17 +537,21 @@
 
   function renderDeviceSelect(selected) {
     const sel = $('#task-imei');
+    const setLedSel = $('#set-led-imei');
     const count = $('#task-device-count');
     if (!sel) return;
     if (!devices.length) {
       sel.innerHTML = '<option value="">暂无设备</option>';
+      if (setLedSel) setLedSel.innerHTML = '<option value="">暂无设备</option>';
       if (count) count.textContent = '0 台设备';
       return;
     }
     const online = devices.filter((d) => d.connected).length;
-    sel.innerHTML = '<option value="">请选择设备</option>' + devices.map((d) =>
+    const opts = '<option value="">请选择设备</option>' + devices.map((d) =>
       `<option value="${esc(d.imei)}" ${d.imei === selected ? 'selected' : ''}>${d.name ? esc(d.name) + ' · ' : ''}${esc(d.imei)}（${esc(d.phone || '未知号码')}）${d.connected ? '' : ' [离线]'}</option>`).join('');
-    if (selected) sel.value = selected;
+    sel.innerHTML = opts;
+    if (setLedSel) setLedSel.innerHTML = opts;
+    if (selected) { sel.value = selected; if (setLedSel) setLedSel.value = selected; }
     if (count) count.textContent = `${devices.length} 台设备 · ${online} 台在线`;
   }
 
@@ -2169,6 +2173,45 @@
     }
   }
 
+  // ---------------- 下发灯光控制（设置页实时下发 set_led） ----------------
+  function onSetLedActionChange() {
+    const action = $('#set-led-action').value;
+    const modeWrap = $('#set-led-mode-wrap');
+    const colorWrap = $('#set-led-color-wrap');
+    if (modeWrap) modeWrap.classList.toggle('hidden', action !== 'set_mode');
+    if (colorWrap) colorWrap.classList.toggle('hidden', action !== 'color');
+  }
+
+  async function sendSetLed() {
+    const imei = $('#set-led-imei').value;
+    if (!imei) { toast('请选择目标设备', false); return; }
+    const action = $('#set-led-action').value;
+    const payload = { imei, task: 'set_led', action };
+    if (action === 'set_mode') payload.mode = $('#set-led-mode').value;
+    else if (action === 'color') payload.color = $('#set-led-color').value;
+    const btn = $('#set-led-send');
+    const box = $('#set-led-result');
+    const hint = $('#set-led-hint');
+    btn.disabled = true;
+    btn.textContent = '下发中...';
+    if (hint) hint.textContent = '';
+    box.className = 'hidden text-sm sm:col-span-2';
+    try {
+      const data = await API.executeTask(payload);
+      const result = data.result;
+      if (result && typeof result === 'object' && result.error) throw new Error(result.error);
+      const pretty = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+      box.className = 'text-sm sm:col-span-2 rounded-lg bg-slate-50 px-3 py-2 font-mono text-xs text-slate-700 whitespace-pre-wrap break-all';
+      box.textContent = pretty;
+      toast('灯光指令已下发');
+    } catch (err) {
+      toast('下发失败：' + err.message, false);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '下发灯光指令';
+    }
+  }
+
   // ---------------- 省电模式设置 ----------------
 
   // 解析 Lua 配置文本中的顶层键值
@@ -2878,6 +2921,10 @@
       const remarkBtn = e.target.closest('[data-remark]');
       if (remarkBtn) startEditRemark(remarkBtn.dataset.remark);
     });
+
+    // 设置页·下发灯光控制
+    $('#set-led-action').addEventListener('change', onSetLedActionChange);
+    $('#set-led-send').addEventListener('click', sendSetLed);
   }
 
   function init() {

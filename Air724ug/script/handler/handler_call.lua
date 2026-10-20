@@ -165,7 +165,7 @@ local function recordUploadResultNotify(result, url, msg)
         -- 通话（含录音）通知结果回填：匹配最近一次上报的通话记录
         local num, t = util_record.getLastCallKey()
         util_record.reportNotifyResult("call", num, t, ok and "sent" or "failed")
-    end)
+    end, true)
 end
 
 ------------------------------------------------- 录音上传相关 (WebDAV) --------------------------------------------------
@@ -334,7 +334,7 @@ local function callIncomingCallback(num)
         -- 发通知（通知结果回填记录）
         util_notify.add({ "来电号码: " .. num, "来电动作: 挂断" }, nil, num, function(ok)
             util_record.reportNotifyResult("call", num, incomingTime, ok and "sent" or "failed")
-        end)
+        end, true)
         return
     end
 
@@ -362,7 +362,7 @@ local function callIncomingCallback(num)
     local action_desc = { [0] = "无操作", [1] = "自动接听", [2] = "挂断", [3] = "自动接听后挂断", [4] = "等待30秒后自动接听" }
     util_notify.add({ "来电号码: " .. num, "来电动作: " .. action_desc[getCallInAction()] }, nil, num, function(ok)
         util_record.reportNotifyResult("call", num, incomingTime, ok and "sent" or "failed")
-    end)
+    end, true)
 end
 
 -- 电话接通回调

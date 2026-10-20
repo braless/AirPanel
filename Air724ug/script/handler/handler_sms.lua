@@ -183,7 +183,7 @@ local function smsCallback(sender_number, sms_content, datetime)
     if not blocked then
         util_notify.add({ sms_content }, nil, sender_number, function(ok)
             util_record.reportNotifyResult("sms", sender_number, recordTime, ok and "sent" or "failed")
-        end)
+        end, true)
     end
     -- 短信内容匹配
     sys.taskInit(smsContentMatcher, sender_number, sms_content)

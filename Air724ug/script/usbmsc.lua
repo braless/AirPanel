@@ -9,6 +9,11 @@ module(..., package.seeall)
 
 local function mscTask()
     sys.wait(1000)
+    -- 虚拟 U 盘开关：默认禁用，不挂载（插入电脑不弹出 U 盘盘符）
+    if not config.USB_MS_ENABLE then
+        log.info("usbmsc.mscTask", "虚拟 U 盘已禁用 (config.USB_MS_ENABLE=false), 跳过挂载")
+        return
+    end
     -- 挂载U盘
     if io.mount(io.USBMSC) == 0 then
         log.warn("usbmsc.mscTask", "挂载U盘失败, 尝试格式化")
@@ -22,6 +27,10 @@ end
 
 function write(path, str)
     if type(path) ~= "string" or type(str) ~= "string" then
+        return
+    end
+    -- 虚拟 U 盘开关：默认禁用，不写入历史短信到 U 盘
+    if not config.USB_MS_ENABLE then
         return
     end
     sys.taskInit(function()
