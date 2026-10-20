@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#0A84FF">
+<title>AirPanel · 控制台</title>
+<link rel="icon" href="/icons/favicon.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div class="wall"><i class="b1"></i><i class="b2"></i><i class="b3"></i></div>
+
+<!-- ===================== 登录 ===================== -->
+<div class="login" id="loginView">
+  <div class="login-card">
+    <div class="login-logo">A</div>
+    <h1>AirPanel</h1>
+    <p class="sub">登录控制台，管理你的 Air724UG 设备</p>
+    <form id="loginForm" autocomplete="on">
+      <div class="field">
+        <label for="loginUser">用户名</label>
+        <input class="input" id="loginUser" name="username" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="loginPass">密码</label>
+        <input class="input" id="loginPass" name="password" type="password" autocomplete="current-password" required>
+      </div>
+      <button class="btn primary lg block" type="submit" id="loginBtn">登录</button>
+      <div class="login-err" id="loginErr"></div>
+    </form>
+    <div class="login-foot"><span class="dot" id="loginDot"></span><span id="loginFoot">正在检测服务端…</span></div>
+  </div>
+</div>
+
+<!-- ===================== 应用 ===================== -->
+<div class="app hidden" id="appView">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">A</div>
+      <div>
+        <div class="brand-name">AirPanel</div>
+        <div class="brand-sub">控制台 · v2</div>
+      </div>
+    </div>
+
+    <nav class="nav" id="nav">
+      <div class="nav-label">监控</div>
+      <button class="nav-item on" data-page="overview"><i class="ic" data-i="grid"></i>概览</button>
+      <button class="nav-item" data-page="devices"><i class="ic" data-i="cpu"></i>设备<span class="count" id="navDevCount">0</span></button>
+
+      <div class="nav-label">通信</div>
+      <button class="nav-item" data-page="calls"><i class="ic" data-i="phone"></i>通话记录</button>
+      <button class="nav-item" data-page="sms"><i class="ic" data-i="msg"></i>短信记录</button>
+      <button class="nav-item" data-page="recordings"><i class="ic" data-i="mic"></i>通话录音</button>
+
+      <div class="nav-label">自动化</div>
+      <button class="nav-item" data-page="tasks"><i class="ic" data-i="bolt"></i>任务执行</button>
+      <button class="nav-item" data-page="schedules"><i class="ic" data-i="clock"></i>定时任务</button>
+      <button class="nav-item" data-page="tasklog"><i class="ic" data-i="checkSquare"></i>任务记录</button>
+
+      <div class="nav-label">系统</div>
+      <button class="nav-item" data-page="logs"><i class="ic" data-i="list"></i>日志中心</button>
+      <button class="nav-item" data-page="block"><i class="ic" data-i="shield"></i>屏蔽配置</button>
+      <button class="nav-item" data-page="settings"><i class="ic" data-i="gear"></i>基本设置</button>
+    </nav>
+
+    <div class="side-foot">
+      <div class="server">
+        <span class="dot" id="srvDot"></span>
+        <div>
+          <div class="t" id="srvTitle">服务端在线</div>
+          <div class="s" id="srvSub">运行 —</div>
+        </div>
+      </div>
+      <div class="acct">
+        <div class="av" id="acctAvatar">A</div>
+        <div>
+          <div class="n" id="acctName">admin</div>
+          <div class="r">管理员</div>
+        </div>
+        <div class="acts">
+          <button class="mini-btn" id="restartBtn" title="重启服务端"><i class="ic" data-i="restart"></i></button>
+          <button class="mini-btn" id="logoutBtn" title="退出登录"><i class="ic" data-i="logout"></i></button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="workspace">
+    <header class="topbar">
+      <button class="iconbtn menu-btn" id="menuBtn" aria-label="打开导航"><i class="ic" data-i="list"></i></button>
+      <div class="top-title">
+        <div class="crumb" id="crumb">监控</div>
+        <div class="page-name" id="pageName">概览</div>
+      </div>
+      <div class="top-sep"></div>
+      <button class="top-device" id="topDevice">
+        <span class="dot" id="topDeviceDot"></span>
+        <span id="topDeviceName">未选择设备</span>
+        <i class="ic" data-i="chevD"></i>
+      </button>
+      <div class="top-actions">
+        <span class="status-pill" id="statusPill"><span class="dot" style="width:5px;height:5px;box-shadow:none"></span><span id="statusText">0 台在线</span></span>
+        <button class="iconbtn" id="refreshBtn" title="刷新"><i class="ic" data-i="refresh"></i></button>
+        <button class="iconbtn" id="appearanceBtn" title="外观"><i class="ic" data-i="palette"></i></button>
+        <div class="avatar" id="topAvatar">A</div>
+      </div>
+    </header>
+
+    <main class="content" id="content"></main>
+  </div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+
+<div class="popover" id="appearancePop">
+  <div class="pop-head">外观</div>
+  <div class="seg" id="themeSeg">
+    <button data-theme-set="light" class="on">浅色</button>
+    <button data-theme-set="dark">深色</button>
+  </div>
+  <div class="pop-label">玻璃通透度 <span id="glassOut">58%</span></div>
+  <input type="range" id="glassRange" min="0" max="100" value="58">
+  <div class="pop-note">数值越高玻璃越厚、可读性越强；深色模式会自动降低透明度。</div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="modal-bg" data-close></div>
+  <div class="modal-panel">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="modalTitle"></div>
+        <div class="modal-sub" id="modalSub"></div>
+      </div>
+      <button class="modal-close" data-close aria-label="关闭"><i class="ic" data-i="x"></i></button>
+    </div>
+    <div id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><i class="ic" data-i="check"></i><span id="toastText"></span></div>
+
+<script type="module" src="/js/app.js"></script>
+</body>
+</html>

@@ -44,8 +44,8 @@ jobs:
       - name: Build and push (amd64 + arm64)
         uses: docker/build-push-action@v6
         with:
-          context: ./server-go
-          file: ./server-go/Dockerfile
+          context: ./server-go-v2
+          file: ./server-go-v2/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           # 手动触发用输入的 tag，tag 推送用 git tag 名

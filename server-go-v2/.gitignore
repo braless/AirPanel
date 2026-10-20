@@ -1,0 +1,6 @@
+# 本地运行产物（含凭据的 config.json、SQLite 数据库、日志）不入库
+_run/
+*.db
+*.log
+*.db-shm
+*.db-wal
