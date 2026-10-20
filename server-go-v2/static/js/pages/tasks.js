@@ -153,7 +153,7 @@ export async function render(root, opts) {
 function shell() {
   return `
   <div class="hero">
-    <div><h1>任务执行</h1><p>选择设备与指令，实时查看下发结果 · 命令库覆盖设备全部 19 条远程命令</p></div>
+    <div><h1>任务执行</h1><p>选择设备与指令，实时查看下发结果 · 命令库覆盖设备全部 ${Object.keys(TASKS).length} 条远程命令</p></div>
     <div class="hero-actions">
       <button class="btn ghost" id="taskLib">${icon('doc')}命令库</button>
       <button class="btn" id="taskClear">${icon('trash')}清空控制台</button>

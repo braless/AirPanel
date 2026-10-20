@@ -24,10 +24,85 @@ const PAGES = {
 
 /* ==================== 外观 ==================== */
 const UI_KEY = 'airpanel.v2.ui';
+const BRAND_KEY = 'airpanel.v2.brand';
+const DEFAULT_TITLE = 'AirPanel';
+
+/* 内置默认 Logo（信号波形 + 渐变底），作为 favicon 与品牌位兜底 */
+const DEFAULT_LOGO = 'data:image/svg+xml,' + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">'
+  + '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">'
+  + '<stop offset="0" stop-color="#0A84FF"/><stop offset="1" stop-color="#5E5CE6"/></linearGradient></defs>'
+  + '<rect width="64" height="64" rx="16" fill="url(#g)"/>'
+  + '<path d="M19 45a3.2 3.2 0 1 0 6.4 0 3.2 3.2 0 0 0-6.4 0Zm0-11.5A14.7 14.7 0 0 1 33.7 48.2h6.1A20.8 20.8 0 0 0 19 27.4v6.1Zm0-11.5A26.2 26.2 0 0 1 45.2 48.2H51A32 32 0 0 0 19 16.2v5.8Z" fill="#fff"/>'
+  + '</svg>'
+);
+
 const ui = Object.assign(
   { theme: 'light', glass: 58, density: 'standard', accent: '#0A84FF' },
   JSON.parse(localStorage.getItem(UI_KEY) || '{}')
 );
+
+/* 品牌：优先服务端设置，未登录时用本地缓存，避免刷新瞬间闪回默认标题 */
+function brandOf() {
+  const remote = (state.settings && state.settings.brand) || {};
+  const cached = JSON.parse(localStorage.getItem(BRAND_KEY) || '{}');
+  const title = (remote.title || cached.title || '').trim();
+  const logo = remote.logo || cached.logo || '';
+  return { title: title || DEFAULT_TITLE, logo: logo || DEFAULT_LOGO };
+}
+
+/** 把品牌应用到网页标题、标签页图标、侧栏与登录页 */
+function applyBrand() {
+  const { title, logo } = brandOf();
+  localStorage.setItem(BRAND_KEY, JSON.stringify({ title, logo: logo === DEFAULT_LOGO ? '' : logo }));
+
+  const pageName = ($('#pageName') || {}).textContent || '';
+  document.title = pageName ? `${pageName} · ${title}` : title;
+
+  const fav = $('#favicon');
+  if (fav) fav.href = logo;
+  const apple = $('#appleIcon');
+  if (apple) apple.href = logo;
+
+  const nameEl = $('#brandName');
+  if (nameEl) nameEl.textContent = title;
+  const loginTitle = $('#loginTitle');
+  if (loginTitle) loginTitle.textContent = title;
+
+  // 有自定义 Logo 时替换字母占位块
+  const custom = logo !== DEFAULT_LOGO;
+  [['brandMark', 'brand-mark'], ['loginLogo', 'login-logo']].forEach(([id]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (custom) {
+      el.classList.add('has-img');
+      el.style.backgroundImage = `url("${logo}")`;
+      el.textContent = '';
+    } else {
+      el.classList.remove('has-img');
+      el.style.backgroundImage = '';
+      el.textContent = (title || DEFAULT_TITLE).slice(0, 1).toUpperCase();
+    }
+  });
+}
+
+/** 侧栏底部：服务端在线状态与运行时长 */
+async function syncServerStatus() {
+  const titleEl = $('#srvTitle');
+  const subEl = $('#srvSub');
+  const dot = $('#srvDot');
+  try {
+    const h = await api.health();
+    state.health = h;
+    if (dot) dot.classList.remove('off');
+    if (titleEl) titleEl.textContent = '服务端在线';
+    if (subEl) subEl.textContent = `已运行 ${fmtDurationCN(h.uptimeSec)}`;
+  } catch {
+    if (dot) dot.classList.add('off');
+    if (titleEl) titleEl.textContent = '服务端离线';
+    if (subEl) subEl.textContent = '无法连接';
+  }
+}
 
 function applyUI() {
   document.documentElement.dataset.theme = ui.theme;
@@ -104,6 +179,8 @@ async function enterApp() {
   } catch { /* 设置失败仅影响设置页 */ }
 
   applyAccount();
+  applyBrand();
+  await syncServerStatus();
   await showPage(location.hash.replace('#', '') || 'overview');
 }
 
@@ -130,7 +207,7 @@ async function showPage(key, opts) {
   if (mod.meta) {
     $('#crumb').textContent = mod.meta.crumb || '';
     $('#pageName').textContent = mod.meta.name || '';
-    document.title = `${mod.meta.name || '控制台'} · AirPanel`;
+    applyBrand();
   }
   if (location.hash !== '#' + key) history.replaceState(null, '', '#' + key);
   closeSidebar();
@@ -253,6 +330,14 @@ function bindShell() {
     applyUI();
   });
 
+  // 设置页修改品牌（标题 / Logo）
+  window.addEventListener('app:brand', (e) => {
+    const d = e.detail || {};
+    if (!state.settings) state.settings = {};
+    state.settings.brand = { title: d.title || '', logo: d.logo || '' };
+    applyBrand();
+  });
+
   // 登录失效
   window.addEventListener('auth:expired', () => {
     $('#appView').classList.add('hidden');
@@ -269,10 +354,17 @@ function bindShell() {
       syncShell();
     } catch { /* 静默 */ }
   }, 30000);
+
+  // 左下角运行时长：每分钟与服务端校准一次
+  setInterval(() => {
+    if ($('#appView').classList.contains('hidden')) return;
+    syncServerStatus();
+  }, 60000);
 }
 
 /* ==================== 启动 ==================== */
 applyUI();
+applyBrand();
 bootLogin();
 bindShell();
 paintIcons(document);

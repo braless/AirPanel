@@ -6,8 +6,8 @@
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#0A84FF">
 <title>AirPanel · 控制台</title>
-<link rel="icon" href="/icons/favicon.png">
-<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="icon" id="favicon" href="/icons/favicon.png">
+<link rel="apple-touch-icon" id="appleIcon" href="/icons/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="stylesheet" href="/css/app.css">
 </head>
@@ -17,8 +17,8 @@
 <!-- ===================== 登录 ===================== -->
 <div class="login" id="loginView">
   <div class="login-card">
-    <div class="login-logo">A</div>
-    <h1>AirPanel</h1>
+    <div class="login-logo" id="loginLogo">A</div>
+    <h1 id="loginTitle">AirPanel</h1>
     <p class="sub">登录控制台，管理你的 Air724UG 设备</p>
     <form id="loginForm" autocomplete="on">
       <div class="field">
@@ -40,9 +40,9 @@
 <div class="app hidden" id="appView">
   <aside class="sidebar" id="sidebar">
     <div class="brand">
-      <div class="brand-mark">A</div>
+      <div class="brand-mark" id="brandMark">A</div>
       <div>
-        <div class="brand-name">AirPanel</div>
+        <div class="brand-name" id="brandName">AirPanel</div>
         <div class="brand-sub">控制台 · v2</div>
       </div>
     </div>

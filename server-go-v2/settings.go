@@ -26,7 +26,13 @@ type WebDAVConfig struct {
 	Dir      string `json:"dir"`      // 录音目录（设备上传 + 列表浏览），如 通话录音
 }
 
-// Settings 面板设置（账号 / 离线通知 / 事件灯光 / WebDAV）
+// BrandConfig 品牌配置（自定义站点标题与 Logo，同时作用于网页标题与标签页图标）
+type BrandConfig struct {
+	Title string `json:"title"` // 站点标题，空表示使用默认 AirPanel
+	Logo  string `json:"logo"`  // Logo 图片 data URL（PNG/SVG），空表示使用内置图标
+}
+
+// Settings 面板设置（账号 / 离线通知 / 事件灯光 / WebDAV / 品牌）
 type Settings struct {
 	Username       string                       `json:"username"`
 	Password       string                       `json:"-"` // bcrypt 哈希，不返回给前端
@@ -36,6 +42,7 @@ type Settings struct {
 	SMSEventLED    EventLED                     `json:"smsLed"`         // 来短信灯光
 	CallEventLED   EventLED                     `json:"callLed"`        // 来电话灯光
 	WebDAV         WebDAVConfig                 `json:"webdav"`         // WebDAV 存储
+	Brand          BrandConfig                  `json:"brand"`          // 品牌（标题 / Logo）
 }
 
 // settings 表的键名
@@ -48,6 +55,7 @@ const (
 	settingSMSEventLED    = "sms_led"
 	settingCallEventLED   = "call_led"
 	settingWebDAV         = "webdav"
+	settingBrand          = "brand"
 )
 
 // defaultOfflineTimeout 固定离线判定超时（秒）= 5 分钟，不支持远程修改。
@@ -109,6 +117,9 @@ func (d *DB) loadSettings() (*Settings, error) {
 	if s.WebDAV.Dir == "" {
 		s.WebDAV.Dir = "通话录音"
 	}
+	if v := all[settingBrand]; v != "" {
+		_ = json.Unmarshal([]byte(v), &s.Brand)
+	}
 	return s, nil
 }
 
@@ -131,6 +142,7 @@ func (d *DB) saveSettings(s *Settings) error {
 	sled, _ := json.Marshal(s.SMSEventLED)
 	cled, _ := json.Marshal(s.CallEventLED)
 	wd, _ := json.Marshal(s.WebDAV)
+	br, _ := json.Marshal(s.Brand)
 	pairs := [][2]string{
 		{settingUsername, s.Username},
 		{settingPassword, s.Password},
@@ -140,6 +152,7 @@ func (d *DB) saveSettings(s *Settings) error {
 		{settingSMSEventLED, string(sled)},
 		{settingCallEventLED, string(cled)},
 		{settingWebDAV, string(wd)},
+		{settingBrand, string(br)},
 	}
 	for _, kv := range pairs {
 		if err := d.setSetting(kv[0], kv[1]); err != nil {

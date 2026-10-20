@@ -2,7 +2,7 @@
 
 import { api } from '../api.js';
 import { state, loadSettings, loadDevices } from '../store.js';
-import { $, $$, esc, fmtSize, emptyState, toast, confirmDialog, goto, withBusy, badge } from '../ui.js';
+import { $, $$, esc, fmtSize, fmtDateTimeStr, emptyState, toast, confirmDialog, goto, withBusy, badge } from '../ui.js';
 import { icon, paintIcons } from '../icons.js';
 
 export const meta = { crumb: '通信', name: '通话录音' };
@@ -152,7 +152,7 @@ function renderGrid() {
       <button class="rec-play" data-play="${esc(f.name)}" title="播放">${icon('play')}</button>
       <div class="rec-main">
         <div class="rec-name" title="${esc(f.name)}">${esc(f.name)}</div>
-        <div class="rec-meta">${esc(f.modTime || '')} · ${fmtSize(f.size)}</div>
+        <div class="rec-meta">${esc(fmtDateTimeStr(f.modTime))} · ${fmtSize(f.size)}</div>
         <div class="wave">${waveBars(f.name)}</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:3px">

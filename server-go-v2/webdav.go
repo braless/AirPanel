@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 	"time"
 )
@@ -161,14 +162,22 @@ func listRecordings(cfg *WebDAVConfig) ([]Recording, error) {
 		}
 		var size int64
 		fmt.Sscanf(strings.TrimSpace(r.PropStat.Prop.ContentLength), "%d", &size)
+		// WebDAV 的 getlastmodified 是 RFC1123（Sat, 17 Oct 2026 10:40:00 GMT），
+		// 直接透传前端只会显示原始英文串；这里统一转成本地时区的 RFC3339，供前端格式化。
+		modTime := strings.TrimSpace(r.PropStat.Prop.LastModified)
+		if t, perr := http.ParseTime(modTime); perr == nil {
+			modTime = t.Local().Format(time.RFC3339)
+		}
 		out = append(out, Recording{
 			Name:    name,
 			Size:    size,
-			ModTime: strings.TrimSpace(r.PropStat.Prop.LastModified),
+			ModTime: modTime,
 			URL:     "/api/recordings/play?file=" + url.QueryEscape(name),
 		})
 	}
 	_ = dirPrefix
+	// 最新的录音排在前面
+	sort.Slice(out, func(i, j int) bool { return out[i].ModTime > out[j].ModTime })
 	return out, nil
 }
 

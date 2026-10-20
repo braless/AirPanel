@@ -28,6 +28,7 @@ func (api *API) handleSaveSettings(w http.ResponseWriter, r *http.Request) {
 		SMSEventLED    EventLED                     `json:"smsLed"`
 		CallEventLED   EventLED                     `json:"callLed"`
 		WebDAV         *WebDAVConfig                `json:"webdav"`
+		Brand          *BrandConfig                 `json:"brand"`
 	}
 	if err := decodeJSON(r, &body); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"message": "请求体格式错误"})
@@ -47,6 +48,15 @@ func (api *API) handleSaveSettings(w http.ResponseWriter, r *http.Request) {
 	s.CallEventLED = body.CallEventLED
 	if body.WebDAV != nil {
 		s.WebDAV = *body.WebDAV
+	}
+	if body.Brand != nil {
+		// 标题去首尾空白；超长 Logo（>512KB base64）直接拒绝，避免撑爆 settings 表
+		body.Brand.Title = strings.TrimSpace(body.Brand.Title)
+		if len(body.Brand.Logo) > 512*1024 {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"message": "Logo 图片过大，请使用 512KB 以内的图片"})
+			return
+		}
+		s.Brand = *body.Brand
 	}
 
 	if err := api.app.saveSettings(s); err != nil {

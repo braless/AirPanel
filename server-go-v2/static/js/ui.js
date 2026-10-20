@@ -33,6 +33,18 @@ export function fmtClock(ts) {
   return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
+/**
+ * 任意可解析的时间字符串（RFC3339 / RFC1123）→ YYYY-MM-DD HH:mm
+ * 用于 WebDAV 等外部来源的时间字段；解析失败时原样返回，避免出现 Invalid Date
+ */
+export function fmtDateTimeStr(v) {
+  if (!v) return '—';
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return String(v);
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
 export function fmtDur(sec) {
   if (!sec || sec < 0) return '—';
   const m = Math.floor(sec / 60);
@@ -41,7 +53,8 @@ export function fmtDur(sec) {
 }
 
 export function fmtDurationCN(sec) {
-  if (!sec || sec < 0) return '—';
+  if (sec == null || sec < 0) return '—';
+  if (sec < 60) return `${Math.floor(sec)} 秒`;
   const d = Math.floor(sec / 86400);
   const h = Math.floor((sec % 86400) / 3600);
   const m = Math.floor((sec % 3600) / 60);
