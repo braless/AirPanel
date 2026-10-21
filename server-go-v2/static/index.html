@@ -9,7 +9,7 @@
 <link rel="icon" id="favicon" href="/icons/favicon.png">
 <link rel="apple-touch-icon" id="appleIcon" href="/icons/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/app.css?v=__VER__">
 <script>
 /* 首帧视图判定：在 CSS 生效前就决定显示登录页还是应用，避免刷新时登录窗口一闪而过。
    与 app.js 的 showAppView() / showLoginView() 共用 has-token / no-token 两个类。 */
@@ -172,6 +172,6 @@
 
 <div class="toast" id="toast"><i class="ic" data-i="check"></i><span id="toastText"></span></div>
 
-<script type="module" src="/js/app.js"></script>
+<script type="module" src="/js/app.js?v=__VER__"></script>
 </body>
 </html>

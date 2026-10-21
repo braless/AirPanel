@@ -1,13 +1,18 @@
 package main
 
 import (
+	"crypto/sha256"
 	"crypto/subtle"
 	"embed"
+	"encoding/hex"
 	"encoding/json"
 	"io/fs"
 	"net/http"
 	"os"
 	"path"
+	"regexp"
+	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -18,6 +23,51 @@ import (
 
 //go:embed static
 var staticFS embed.FS
+
+// assetVersion 前端资源的内容指纹：static/ 下所有文件内容的 sha256 前 10 位。
+// 每次改动前端重新编译，版本号就会变，index.html 里的 ?v= 与模块 import 的 ?v=
+// 随之变化，CDN（Cloudflare 等）缓存必然失效，不会再出现「部署了但没生效」。
+var assetVersion = computeAssetVersion()
+
+func computeAssetVersion() string {
+	sub, err := fs.Sub(staticFS, "static")
+	if err != nil {
+		return "0"
+	}
+	var files []string
+	_ = fs.WalkDir(sub, ".", func(p string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return nil
+		}
+		files = append(files, p)
+		return nil
+	})
+	sort.Strings(files)
+	h := sha256.New()
+	for _, p := range files {
+		b, err := fs.ReadFile(sub, p)
+		if err != nil {
+			continue
+		}
+		h.Write([]byte(p))
+		h.Write(b)
+	}
+	return hex.EncodeToString(h.Sum(nil))[:10]
+}
+
+// ES 模块的相对导入：from './ui.js' / from "../ui.js"
+var jsImportRe = regexp.MustCompile(`(from\s*["'])(\.{1,2}/[^"'\s?]+\.js)(["'])`)
+
+// rewriteJSImports 给模块导入路径追加版本号，避免 CDN 缓存旧的子模块
+func rewriteJSImports(src []byte, ver string) []byte {
+	return jsImportRe.ReplaceAllFunc(src, func(m []byte) []byte {
+		s := jsImportRe.FindSubmatch(m)
+		if len(s) != 4 {
+			return m
+		}
+		return []byte(string(s[1]) + string(s[2]) + "?v=" + ver + string(s[3]))
+	})
+}
 
 // 认证相关状态
 var (
@@ -303,14 +353,39 @@ func (api *API) handleStatic(w http.ResponseWriter, r *http.Request) {
 
 	// 前端资源不缓存，避免升级后仍加载旧版本
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	// 明确告诉 CDN 不要缓存：CF 等会改写上面的 Cache-Control，但认这两个头
+	w.Header().Set("CDN-Cache-Control", "no-store")
+	w.Header().Set("Cloudflare-CDN-Cache-Control", "no-store")
 
-	if f, err := sub.Open(p); err == nil {
-		_ = f.Close()
+	data, err := fs.ReadFile(sub, p)
+	if err != nil {
+		// SPA 回退
+		data, err = fs.ReadFile(sub, "index.html")
+		if err != nil {
+			http.Error(w, "静态资源不可用", http.StatusInternalServerError)
+			return
+		}
+		p = "index.html"
+	}
+
+	switch {
+	case p == "index.html":
+		// 把资源引用里的占位符换成当前版本号
+		data = []byte(strings.ReplaceAll(string(data), "__VER__", assetVersion))
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	case strings.HasSuffix(p, ".js"):
+		data = rewriteJSImports(data, assetVersion)
+		w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
+	case strings.HasSuffix(p, ".css"):
+		w.Header().Set("Content-Type", "text/css; charset=utf-8")
+	default:
+		// 图片 / 字体 / manifest 等交给 ServeFileFS（保留 Range 与 MIME 推断）
 		http.ServeFileFS(w, r, sub, p)
 		return
 	}
-	// SPA 回退
-	http.ServeFileFS(w, r, sub, "index.html")
+
+	w.Header().Set("Content-Length", strconv.Itoa(len(data)))
+	_, _ = w.Write(data)
 }
 
 // ---------------- 工具 ----------------
