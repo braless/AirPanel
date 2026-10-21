@@ -158,7 +158,6 @@ local function recordUploadResultNotify(result, url, msg)
         "通话时长: " .. (CALL_DISCONNECTED_TIME - CALL_CONNECTED_TIME) / 1000 .. " S",
         "录音时长: " .. (result and ((CALL_DISCONNECTED_TIME - CALL_RECORD_START_TIME) / 1000) or 0) .. " S",
         "录音结果: " .. (result and "成功" or ("失败, " .. (msg or ""))),
-        result and ("录音文件: " .. url) or "",
     }
 
     util_notify.add(lines, nil, CALL_NUMBER, function(ok)
