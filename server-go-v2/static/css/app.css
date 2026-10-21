@@ -93,6 +93,11 @@ html[data-theme="dark"] .wall i { opacity: .7; }
 
 /* ---------- 基础 ---------- */
 .hidden { display: none !important; }
+/* 首帧视图判定：由 index.html 的内联脚本在 CSS 生效前打好类，
+   已登录用户不会再看到登录窗口闪一下 */
+html.has-token #loginView { display: none !important; }
+html.no-token #appView { display: none !important; }
+.boot-skeleton { padding: 2px 0; }
 button { font-family: inherit; }
 ::selection { background: rgba(10, 132, 255, .22); }
 .ic { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; flex: none; color: inherit; }

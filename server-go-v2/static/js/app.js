@@ -121,8 +121,39 @@ function applyUI() {
 }
 
 /* ==================== 登录 ==================== */
+/* 视图切换：has-token / no-token 同时被首帧内联脚本与 CSS 使用，
+   两边必须一致，否则会出现「登录页永远不显示」或「应用显示不出来」 */
+function showAppView() {
+  const root = document.documentElement;
+  root.classList.remove('no-token');
+  root.classList.add('has-token');
+  $('#loginView').classList.add('hidden');
+  $('#appView').classList.remove('hidden');
+}
+
+function showLoginView() {
+  const root = document.documentElement;
+  root.classList.remove('has-token');
+  root.classList.add('no-token');
+  $('#appView').classList.add('hidden');
+  $('#loginView').classList.remove('hidden');
+}
+
 async function bootLogin() {
   applyUI();
+
+  // 已登录：跳过登录页直接进入。登录页全程不出现，也不再重复请求 health
+  if (getToken()) {
+    applyBrand(); // 先用本地缓存应用自定义标题 / Logo，避免闪回默认值
+    try {
+      await enterApp();
+      return;
+    } catch {
+      clearToken();
+      showLoginView();
+    }
+  }
+
   const form = $('#loginForm');
   const btn = $('#loginBtn');
   const errBox = $('#loginErr');
@@ -155,21 +186,10 @@ async function bootLogin() {
       }
     });
   });
-
-  // 已登录则直接进入
-  if (getToken()) {
-    try {
-      await api.health();
-      await enterApp();
-    } catch {
-      clearToken();
-    }
-  }
 }
 
 async function enterApp() {
-  $('#loginView').classList.add('hidden');
-  $('#appView').classList.remove('hidden');
+  showAppView();
 
   try {
     await loadDevices();
@@ -340,8 +360,7 @@ function bindShell() {
 
   // 登录失效
   window.addEventListener('auth:expired', () => {
-    $('#appView').classList.add('hidden');
-    $('#loginView').classList.remove('hidden');
+    showLoginView();
     const errBox = $('#loginErr');
     if (errBox) errBox.textContent = '登录已失效，请重新登录';
   });

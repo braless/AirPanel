@@ -160,7 +160,8 @@ func (api *API) authenticate(next http.HandlerFunc) http.HandlerFunc {
 		authMu.Lock()
 		if exp, ok := invalidTokens[token]; ok && exp > time.Now().UnixMilli() {
 			authMu.Unlock()
-			writeJSON(w, http.StatusForbidden, map[string]any{"message": "token 已失效"})
+			// 令牌失效统一用 401：前端据此清除本地 token 并回到登录页
+			writeJSON(w, http.StatusUnauthorized, map[string]any{"message": "token 已失效"})
 			return
 		}
 		authMu.Unlock()
@@ -170,13 +171,13 @@ func (api *API) authenticate(next http.HandlerFunc) http.HandlerFunc {
 			return []byte(api.cfg.JWTSecret), nil
 		})
 		if err != nil || !parsed.Valid {
-			writeJSON(w, http.StatusForbidden, map[string]any{"message": "无效的认证令牌"})
+			writeJSON(w, http.StatusUnauthorized, map[string]any{"message": "无效的认证令牌"})
 			return
 		}
 		if v, ok := claims["version"]; ok {
 			ver, _ := v.(float64)
 			if int(ver) != api.cfg.TokenVersion {
-				writeJSON(w, http.StatusForbidden, map[string]any{"message": "token 已过期，请重新登录"})
+				writeJSON(w, http.StatusUnauthorized, map[string]any{"message": "token 已过期，请重新登录"})
 				return
 			}
 		}
