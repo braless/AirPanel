@@ -762,6 +762,13 @@ func (a *App) ExecuteTask(imei, task string, extra map[string]any) (any, error) 
 	}
 	data, _ := json.Marshal(payload)
 
+	// 下发日志：set_config 打印 configText，用于排查设备端 Lua 解析失败
+	if task == "set_config" {
+		if ct, ok := payload["configText"].(string); ok {
+			log.Printf("set_config 下发 configText(%d chars) tail: %q", len(ct), ct[max(0, len(ct)-120):])
+		}
+	}
+
 	if err := a.broker.Publish(topicPrefixCmd+imei, data, false, 1); err != nil {
 		timeout.Stop()
 		a.pending.Delete(taskID)

@@ -671,16 +671,30 @@ function parseLuaConfig(text) {
 }
 
 function patchLuaConfig(text, kv) {
-  let out = text;
-  Object.keys(kv).forEach((k) => {
-    const v = kv[k];
-    const valStr = typeof v === 'number' ? String(v) : typeof v === 'boolean' ? (v ? 'true' : 'false') : '"' + v + '"';
-    const re = new RegExp('^(\\s*)(' + k + '\\s*=\\s*)[^\\n]*', 'm');
-    const before = out;
-    out = out.replace(re, (_, lead, pre) => lead + pre + valStr);
-    if (out === before) out = out.replace(/\s*$/, '\n') + k + ' = ' + valStr + '\n';
-  });
-  return out;
+  // 按行处理：已存在的键就地替换（绝不重复追加），不存在的键追加到末尾并保证换行
+  const valStr = (v) => typeof v === 'number' ? String(v)
+    : typeof v === 'boolean' ? (v ? 'true' : 'false') : '"' + v + '"';
+  const lines = (text || '').split('\n');
+  const want = Object.keys(kv);
+  const done = new Set();
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(/^(\s*)(\w+)\s*=\s*/);
+    if (m && want.includes(m[2])) {
+      const k = m[2];
+      if (!done.has(k)) { // 多个同名键只替换第一个，避免产生重复
+        lines[i] = m[1] + k + ' = ' + valStr(kv[k]);
+        done.add(k);
+      }
+    }
+  }
+  const missing = want.filter((k) => !done.has(k));
+  if (missing.length) {
+    let out = lines.join('\n');
+    out = out.replace(/[ \t\r\n]+$/, '') + '\n'; // 清理末尾空白后补一个换行
+    out += missing.map((k) => k + ' = ' + valStr(kv[k])).join('\n') + '\n';
+    return out;
+  }
+  return lines.join('\n');
 }
 
 function cfgText(res) {
