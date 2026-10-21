@@ -58,7 +58,8 @@ local notify = {
                 if type(v) == "table" then
                     traverse_and_replace(v)
                 elseif type(v) == "string" then
-                    t[k] = string.gsub(v, "{msg}", msg)
+                    -- 用函数作为替换值, 避免 msg 中的 % 字符（如 URL 百分号编码）被 gsub 当作捕获引用而报 invalid capture index
+                    t[k] = string.gsub(v, "{msg}", function() return msg end)
                 end
             end
         end
