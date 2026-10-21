@@ -188,24 +188,24 @@ local function handleTask(imei, json_data)
                 if not json_data.configText or type(json_data.configText) ~= "string" then
                     error = "缺少必要参数: configText (必须是字符串)"
                 else
-                    local file = io.open("/nvm_para.lua", "w+")
-                    if file then
-                        file:write(json_data.configText)
-                        file:close()
-                        local newcfg, cerr = parse_lua_config_string(json_data.configText)
-                        if newcfg then
-                            for k, v in pairs(newcfg) do
-                                config[k] = v
-                                if v ~= nil then
-                                    nvm.set(k, v)
-                                end
-                            end
-                            result = { success = true }
-                        else
-                            error = "解析配置字符串失败: " .. cerr
+                    -- 先解析并校验 configText，成功后才写文件，避免坏文本覆盖 /nvm_para.lua
+                    local newcfg, cerr = parse_lua_config_string(json_data.configText)
+                    if newcfg then
+                        local file = io.open("/nvm_para.lua", "w+")
+                        if file then
+                            file:write(json_data.configText)
+                            file:close()
                         end
+                        for k, v in pairs(newcfg) do
+                            config[k] = v
+                            if v ~= nil then
+                                nvm.set(k, v)
+                            end
+                        end
+                        result = { success = true }
                     else
-                        error = "无法写入/nvm_para.lua文件"
+                        log.error("set_config.parse_fail", json_data.configText)
+                        error = "解析配置字符串失败: " .. cerr
                     end
                 end
             elseif json_data.task == "powersave" then
