@@ -26,10 +26,11 @@ type WebDAVConfig struct {
 	Dir      string `json:"dir"`      // 录音目录（设备上传 + 列表浏览），如 通话录音
 }
 
-// BrandConfig 品牌配置（自定义站点标题与 Logo，同时作用于网页标题与标签页图标）
+// BrandConfig 品牌配置（站点标题 / Logo URL / 管理员头像 URL）
 type BrandConfig struct {
-	Title string `json:"title"` // 站点标题，空表示使用默认 AirPanel
-	Logo  string `json:"logo"`  // Logo 图片 data URL（PNG/SVG），空表示使用内置图标
+	Title  string `json:"title"`  // 站点标题，空表示使用默认 AirPanel
+	Logo   string `json:"logo"`   // Logo 图片 URL：侧栏左上角、登录页 Logo、浏览器标签页图标共用
+	Avatar string `json:"avatar"` // 管理员头像 URL：右上角与侧栏左下角头像共用
 }
 
 // Settings 面板设置（账号 / 离线通知 / 事件灯光 / WebDAV / 品牌）

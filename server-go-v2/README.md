@@ -105,7 +105,7 @@
 <img src="docs/screenshots/15-settings-storage.png" alt="存储配置"></td>
 </tr>
 <tr>
-<td colspan="2"><b>界面设置</b> —— 自定义站点标题与 Logo（同时作为浏览器标签页图标），以及主题、玻璃通透度、信息密度、强调色<br>
+<td colspan="2"><b>界面设置</b> —— 自定义站点标题、Logo URL 与管理员头像 URL，以及主题、玻璃通透度、信息密度、强调色<br>
 <img src="docs/screenshots/16-settings-ui.png" alt="界面设置" width="880"></td>
 </tr>
 </table>
@@ -147,7 +147,7 @@
 - 通知推送：Message-Pusher、Server酱、钉钉、飞书、企业微信、Bark、PushDeer、Pushover、Telegram、Gotify、自定义 HTTP POST、iNotify、SMTP 邮件转发
 
 **外观**
-- 自定义站点标题与 Logo，Logo 同时作为 favicon
+- 站点标题、Logo URL、管理员头像 URL 均可自定义：Logo 一个地址同时作用于侧栏左上角、登录页与 favicon，头像一个地址同时作用于右上角与左下角
 - 浅色 / 深色主题、玻璃通透度、信息密度、强调色，实时生效
 - Liquid Glass 视觉：浮动玻璃侧栏、玻璃顶栏、弥散光斑背景
 

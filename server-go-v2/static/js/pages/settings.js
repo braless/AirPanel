@@ -39,17 +39,10 @@ let s = null;
 let channels = [];
 let draftUI = null;
 
-/* 品牌标识（标题 / Logo），随「保存设置」一起提交到服务端 */
+/* 品牌标识（标题 / Logo URL / 头像 URL），随「保存设置」一起提交到服务端 */
 const DEFAULT_TITLE = 'AirPanel';
-const DEFAULT_LOGO = 'data:image/svg+xml,' + encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">'
-  + '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">'
-  + '<stop offset="0" stop-color="#0A84FF"/><stop offset="1" stop-color="#5E5CE6"/></linearGradient></defs>'
-  + '<rect width="64" height="64" rx="16" fill="url(#g)"/>'
-  + '<path d="M19 45a3.2 3.2 0 1 0 6.4 0 3.2 3.2 0 0 0-6.4 0Zm0-11.5A14.7 14.7 0 0 1 33.7 48.2h6.1A20.8 20.8 0 0 0 19 27.4v6.1Zm0-11.5A26.2 26.2 0 0 1 45.2 48.2H51A32 32 0 0 0 19 16.2v5.8Z" fill="#fff"/>'
-  + '</svg>'
-);
 let brandLogo = '';
+let brandAvatar = '';
 
 /* 灯光控制（随「保存设置」一起下发） */
 const ledCtl = { imei: '', action: 'on', color: 'blue', mode: '1' };
@@ -72,8 +65,9 @@ export async function render(root, opts) {
   if (!s.callLed) s.callLed = { enabled: true, color: 'green', blink: true, duration: 5000 };
   if (!s.webdav) s.webdav = { url: '', username: '', password: '', dir: '通话录音' };
   draftUI = JSON.parse(localStorage.getItem(UI_KEY) || '{}');
-  if (!s.brand) s.brand = { title: '', logo: '' };
+  if (!s.brand) s.brand = { title: '', logo: '', avatar: '' };
   brandLogo = s.brand.logo || '';
+  brandAvatar = s.brand.avatar || '';
   if (!ledCtl.imei) ledCtl.imei = state.imei || '';
 
   root.innerHTML = shell();
@@ -499,28 +493,42 @@ function renderUI() {
   const density = draftUI.density || 'standard';
   const accent = draftUI.accent || '#0A84FF';
   const title = (s.brand && s.brand.title) || '';
-  const logo = brandLogo || DEFAULT_LOGO;
 
   panel('ui').innerHTML =
-    card('品牌标识', '自定义站点标题与 Logo · 保存后同步到所有设备，并作为网页标签页图标',
-      `<div class="brand-row">
-        <div class="brand-logo" id="brandLogoBox">
-          <img id="brandLogoImg" src="${esc(logo)}" alt="站点 Logo">
+    card('品牌标识', '站点标题、Logo 与管理员头像 · 保存后同步到所有设备',
+      `<div class="brand-previews">
+        <div class="brand-preview">
+          <div class="brand-logo" id="brandLogoBox"></div>
+          <span>Logo</span>
         </div>
-        <div class="grow">
-          <div class="field">
-            <label class="label">站点标题</label>
-            <input class="input" id="brandTitle" maxlength="24" value="${esc(title)}" placeholder="${DEFAULT_TITLE}">
-          </div>
-          <div style="display:flex;gap:6px;margin-top:9px;flex-wrap:wrap">
-            <button class="btn sm" id="brandPick">${icon('upload')}上传 Logo</button>
-            <button class="btn sm ghost" id="brandClear">${icon('refresh')}恢复默认</button>
-            <input type="file" id="brandFile" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
-          </div>
+        <div class="brand-preview">
+          <div class="brand-avatar" id="brandAvatarBox"></div>
+          <span>头像</span>
         </div>
       </div>
-      <div style="display:flex;gap:7px;margin-top:12px;font-size:9.5px;color:var(--ink3);line-height:1.6">
-        ${icon('info')}<span>建议使用正方形图片（≥128×128），上传后会自动压缩；标题留空则显示「${DEFAULT_TITLE}」。</span>
+
+      <div class="field" style="margin-top:14px">
+        <label class="label">站点标题</label>
+        <input class="input" id="brandTitle" maxlength="24" value="${esc(title)}" placeholder="${DEFAULT_TITLE}">
+      </div>
+
+      <div class="field" style="margin-top:12px">
+        <label class="label">Logo 图片 URL</label>
+        <input class="input" id="brandLogoUrl" value="${esc(brandLogo)}" placeholder="https://example.com/logo.png" spellcheck="false">
+      </div>
+      <div class="brand-hint">侧栏左上角、登录页 Logo 与浏览器标签页图标共用这一个地址；留空则使用内置图标。</div>
+
+      <div class="field" style="margin-top:14px">
+        <label class="label">管理员头像 URL</label>
+        <input class="input" id="brandAvatarUrl" value="${esc(brandAvatar)}" placeholder="https://example.com/avatar.png" spellcheck="false">
+      </div>
+      <div class="brand-hint">右上角与左下角头像共用这一个地址；留空则显示用户名首字母。</div>
+
+      <div style="display:flex;gap:6px;margin-top:14px;flex-wrap:wrap">
+        <button class="btn sm ghost" id="brandClear">${icon('refresh')}恢复默认</button>
+      </div>
+      <div style="display:flex;gap:7px;margin-top:10px;font-size:9.5px;color:var(--ink3);line-height:1.6">
+        ${icon('info')}<span>建议使用正方形图片；支持 http(s) 链接、站内绝对路径（如 /icons/logo.png）与 data URL。</span>
       </div>`)
     + card('界面设置', '仅影响当前浏览器，不会同步到其他设备',
       `<div class="label">主题</div>
@@ -575,63 +583,75 @@ function renderUI() {
   }));
 }
 
-/* ---------------- 品牌：标题 / Logo ---------------- */
-function bindBrand() {
-  const fileInput = $('#brandFile');
-  if (!fileInput) return;
+/* ---------------- 品牌：标题 / Logo / 头像 ---------------- */
+/** 去掉会破坏 CSS url("…") 的字符 */
+function safeUrl(u) {
+  return String(u || '').trim().replace(/["'\\\n\r\t]/g, '');
+}
 
-  $('#brandPick').addEventListener('click', () => fileInput.click());
-  fileInput.addEventListener('change', async () => {
-    const file = fileInput.files && fileInput.files[0];
-    fileInput.value = '';
-    if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { toast('图片不能超过 2MB', true); return; }
-    try {
-      brandLogo = await compressLogo(file, 160);
-      $('#brandLogoImg').src = brandLogo;
-      toast('已选择新 Logo，点右上角「保存设置」生效');
-    } catch (err) {
-      toast('图片处理失败：' + err.message, true);
+/** 刷新两张预览：Logo 方形（空则标题首字母）、头像圆形（空则用户名首字母） */
+function paintBrandPreview() {
+  const titleEl = $('#brandTitle');
+  const title = (titleEl ? titleEl.value : (s.brand && s.brand.title)) || DEFAULT_TITLE;
+  const initial = String(title).trim().slice(0, 1).toUpperCase() || 'A';
+  const userInitial = String((s && s.username) || 'admin').slice(0, 1).toUpperCase();
+
+  const lb = $('#brandLogoBox');
+  if (lb) {
+    const u = safeUrl(brandLogo);
+    if (u) {
+      lb.classList.add('has-img');
+      lb.style.backgroundImage = `url("${u}")`;
+      lb.textContent = '';
+    } else {
+      lb.classList.remove('has-img');
+      lb.style.backgroundImage = '';
+      lb.textContent = initial;
     }
+  }
+
+  const ab = $('#brandAvatarBox');
+  if (ab) {
+    const u = safeUrl(brandAvatar);
+    if (u) {
+      ab.classList.add('has-img');
+      ab.style.backgroundImage = `url("${u}")`;
+      ab.textContent = '';
+    } else {
+      ab.classList.remove('has-img');
+      ab.style.backgroundImage = '';
+      ab.textContent = userInitial;
+    }
+  }
+}
+
+function bindBrand() {
+  const logoInput = $('#brandLogoUrl');
+  if (!logoInput) return;
+
+  paintBrandPreview();
+
+  logoInput.addEventListener('input', (e) => {
+    brandLogo = e.target.value.trim();
+    paintBrandPreview();
   });
 
-  $('#brandClear').addEventListener('click', () => {
-    brandLogo = '';
-    $('#brandLogoImg').src = DEFAULT_LOGO;
-    $('#brandTitle').value = '';
-    toast('已恢复默认，点右上角「保存设置」生效');
+  $('#brandAvatarUrl').addEventListener('input', (e) => {
+    brandAvatar = e.target.value.trim();
+    paintBrandPreview();
   });
 
   // 标题即时预览（不必等保存）
-  $('#brandTitle').addEventListener('input', (e) => {
-    const v = e.target.value.trim();
-    const mark = $('#brandMark');
-    if (mark && !brandLogo) mark.textContent = (v || DEFAULT_TITLE).slice(0, 1).toUpperCase();
-  });
-}
+  $('#brandTitle').addEventListener('input', () => paintBrandPreview());
 
-/** 把图片等比缩放到 max 边长并转 PNG dataURL；SVG 直接内联保留矢量 */
-function compressLogo(file, max) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error('读取文件失败'));
-    reader.onload = () => {
-      if (file.type === 'image/svg+xml') { resolve(String(reader.result)); return; }
-      const img = new Image();
-      img.onerror = () => reject(new Error('不是有效的图片文件'));
-      img.onload = () => {
-        const scale = Math.min(1, max / Math.max(img.width, img.height));
-        const w = Math.max(1, Math.round(img.width * scale));
-        const h = Math.max(1, Math.round(img.height * scale));
-        const canvas = document.createElement('canvas');
-        canvas.width = w;
-        canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL('image/png'));
-      };
-      img.src = String(reader.result);
-    };
-    reader.readAsDataURL(file);
+  $('#brandClear').addEventListener('click', () => {
+    brandLogo = '';
+    brandAvatar = '';
+    $('#brandLogoUrl').value = '';
+    $('#brandAvatarUrl').value = '';
+    $('#brandTitle').value = '';
+    paintBrandPreview();
+    toast('已恢复默认，点右上角「保存设置」生效');
   });
 }
 
@@ -801,7 +821,11 @@ async function saveAll(btn) {
     };
   }
   if ($('#brandTitle')) {
-    s.brand = { title: $('#brandTitle').value.trim(), logo: brandLogo };
+    s.brand = {
+      title: $('#brandTitle').value.trim(),
+      logo: safeUrl(brandLogo),
+      avatar: safeUrl(brandAvatar)
+    };
   }
 
   await withBusy(btn, async () => {

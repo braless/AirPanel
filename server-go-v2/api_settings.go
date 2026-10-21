@@ -50,10 +50,16 @@ func (api *API) handleSaveSettings(w http.ResponseWriter, r *http.Request) {
 		s.WebDAV = *body.WebDAV
 	}
 	if body.Brand != nil {
-		// 标题去首尾空白；超长 Logo（>512KB base64）直接拒绝，避免撑爆 settings 表
+		// 标题去首尾空白；Logo / 头像支持 URL（也兼容旧版 base64），超长直接拒绝，避免撑爆 settings 表
 		body.Brand.Title = strings.TrimSpace(body.Brand.Title)
+		body.Brand.Logo = strings.TrimSpace(body.Brand.Logo)
+		body.Brand.Avatar = strings.TrimSpace(body.Brand.Avatar)
 		if len(body.Brand.Logo) > 512*1024 {
-			writeJSON(w, http.StatusBadRequest, map[string]any{"message": "Logo 图片过大，请使用 512KB 以内的图片"})
+			writeJSON(w, http.StatusBadRequest, map[string]any{"message": "Logo 地址过长，请改用图片 URL"})
+			return
+		}
+		if len(body.Brand.Avatar) > 512*1024 {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"message": "头像地址过长，请改用图片 URL"})
 			return
 		}
 		s.Brand = *body.Brand

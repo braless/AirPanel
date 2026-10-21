@@ -165,12 +165,32 @@ button { font-family: inherit; }
 
 /* 品牌设置行（基本设置 → 界面设置） */
 .brand-row { display: flex; gap: 14px; align-items: flex-start; }
+.brand-previews { display: flex; gap: 12px; flex: none; }
+.brand-preview { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.brand-preview > span { font-size: 9px; color: var(--ink3); }
 .brand-logo {
   width: 62px; height: 62px; flex: none; border-radius: 17px; overflow: hidden;
   display: grid; place-items: center; background: var(--fill);
   border: .5px solid var(--stroke);
+  font-size: 22px; font-weight: 700; color: var(--ink2);
+}
+.brand-avatar {
+  width: 62px; height: 62px; flex: none; border-radius: 50%; overflow: hidden;
+  display: grid; place-items: center;
+  font-size: 22px; font-weight: 700; color: #fff;
+  background: linear-gradient(145deg, #57b0ff, #0a6fe0);
+  border: .5px solid var(--stroke);
+}
+.brand-logo.has-img,
+.brand-avatar.has-img {
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: transparent;
+  color: transparent;
 }
 .brand-logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.brand-hint { font-size: 9px; color: var(--ink3); margin-top: 5px; line-height: 1.55; }
 .brand-row .grow { flex: 1; min-width: 0; }
 .nav { flex: 1; min-height: 0; overflow-y: auto; padding-bottom: 4px; }
 .nav::-webkit-scrollbar { width: 0; }
@@ -230,6 +250,14 @@ html[data-theme="dark"] .status-pill { color: #6ee7a0; }
 .iconbtn:hover { background: var(--fill); color: var(--ink); }
 .iconbtn .ic { width: 15px; height: 15px; }
 .avatar { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 700; color: #fff; background: linear-gradient(145deg, #57b0ff, #0a6fe0); }
+/* 自定义头像：右上角与左下角共用同一个 URL */
+.avatar.has-img,
+.acct .av.has-img {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  color: transparent;
+}
 
 .content { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 4px 4px 40px; scrollbar-width: thin; }
 .content::-webkit-scrollbar { width: 8px; }

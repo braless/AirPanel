@@ -42,21 +42,31 @@ const ui = Object.assign(
   JSON.parse(localStorage.getItem(UI_KEY) || '{}')
 );
 
-/* 品牌：优先服务端设置，未登录时用本地缓存，避免刷新瞬间闪回默认标题 */
+/* 品牌：服务端已加载则以服务端为准（含「清空」），未加载时用本地缓存兜底，避免刷新闪回默认 */
 function brandOf() {
-  const remote = (state.settings && state.settings.brand) || {};
+  const remote = state.settings && state.settings.brand;
+  if (remote) {
+    const title = (remote.title || '').trim();
+    const logo = (remote.logo || '').trim();
+    const avatar = (remote.avatar || '').trim();
+    return { title: title || DEFAULT_TITLE, logo: logo || DEFAULT_LOGO, avatar };
+  }
   const cached = JSON.parse(localStorage.getItem(BRAND_KEY) || '{}');
-  const title = (remote.title || cached.title || '').trim();
-  const logo = remote.logo || cached.logo || '';
-  return { title: title || DEFAULT_TITLE, logo: logo || DEFAULT_LOGO };
+  const title = (cached.title || '').trim();
+  const logo = (cached.logo || '').trim();
+  const avatar = (cached.avatar || '').trim();
+  return { title: title || DEFAULT_TITLE, logo: logo || DEFAULT_LOGO, avatar };
 }
 
 /** 把品牌应用到网页标题、标签页图标、侧栏与登录页 */
 function applyBrand() {
-  const { title, logo } = brandOf();
-  localStorage.setItem(BRAND_KEY, JSON.stringify({ title, logo: logo === DEFAULT_LOGO ? '' : logo }));
+  const { title, logo, avatar } = brandOf();
+  localStorage.setItem(BRAND_KEY, JSON.stringify({ title, logo: logo === DEFAULT_LOGO ? '' : logo, avatar }));
 
-  const pageName = ($('#pageName') || {}).textContent || '';
+  // 登录页只显示站点标题；应用内才带当前页面名
+  const appEl = $('#appView');
+  const appVisible = appEl ? !appEl.classList.contains('hidden') : false;
+  const pageName = appVisible ? (($('#pageName') || {}).textContent || '') : '';
   document.title = pageName ? `${pageName} · ${title}` : title;
 
   const fav = $('#favicon');
@@ -76,12 +86,40 @@ function applyBrand() {
     if (!el) return;
     if (custom) {
       el.classList.add('has-img');
-      el.style.backgroundImage = `url("${logo}")`;
+      el.style.backgroundImage = `url("${safeUrl(logo)}")`;
       el.textContent = '';
     } else {
       el.classList.remove('has-img');
       el.style.backgroundImage = '';
       el.textContent = (title || DEFAULT_TITLE).slice(0, 1).toUpperCase();
+    }
+  });
+
+  applyAvatar(avatar);
+}
+
+/** 去掉会破坏 CSS url("…") 的字符 */
+function safeUrl(u) {
+  return String(u || '').trim().replace(/["'\\\n\r\t]/g, '');
+}
+
+/** 管理员头像：右上角与侧栏左下角共用同一个 URL，为空时回落为用户名首字母 */
+function applyAvatar(url) {
+  const src = safeUrl(url === undefined ? brandOf().avatar : url);
+  const name = (state.settings && state.settings.username) || state.username || 'admin';
+  const initials = String(name).slice(0, 1).toUpperCase();
+
+  ['topAvatar', 'acctAvatar'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (src) {
+      el.classList.add('has-img');
+      el.style.backgroundImage = `url("${src}")`;
+      el.textContent = '';
+    } else {
+      el.classList.remove('has-img');
+      el.style.backgroundImage = '';
+      el.textContent = initials;
     }
   });
 }
@@ -206,13 +244,9 @@ async function enterApp() {
 
 function applyAccount() {
   const name = (state.settings && state.settings.username) || state.username || 'admin';
-  const ch = name.slice(0, 1).toUpperCase();
-  const avatar = $('#topAvatar');
-  const acctAvatar = $('#acctAvatar');
-  if (avatar) avatar.textContent = ch;
-  if (acctAvatar) acctAvatar.textContent = ch;
   const acctName = $('#acctName');
   if (acctName) acctName.textContent = name;
+  applyAvatar();
 }
 
 /* ==================== 路由 ==================== */
@@ -350,11 +384,11 @@ function bindShell() {
     applyUI();
   });
 
-  // 设置页修改品牌（标题 / Logo）
+  // 设置页修改品牌（标题 / Logo / 头像）
   window.addEventListener('app:brand', (e) => {
     const d = e.detail || {};
     if (!state.settings) state.settings = {};
-    state.settings.brand = { title: d.title || '', logo: d.logo || '' };
+    state.settings.brand = { title: d.title || '', logo: d.logo || '', avatar: d.avatar || '' };
     applyBrand();
   });
 
