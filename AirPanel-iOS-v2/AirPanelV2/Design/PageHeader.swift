@@ -7,7 +7,7 @@ import SwiftUI
 // 避免顶栏堆按钮。
 //
 // `titleAccessory` 是贴在标题右边的挂件（概览用它挂服务端运行时长），
-// 和标题按 firstTextBaseline 对齐，小字正好落在大标题的基线上。
+// 和标题上下居中——按基线对齐小字会沉到标题脚下，看着像两行。
 
 struct PageHeader<TitleAccessory: View, Trailing: View>: View {
     let title: String
@@ -28,7 +28,9 @@ struct PageHeader<TitleAccessory: View, Trailing: View>: View {
     var body: some View {
         HStack(alignment: .center, spacing: Theme.Space.s) {
             VStack(alignment: .leading, spacing: 3) {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                // 挂件跟标题**上下居中**对齐：按基线对齐时小字会整体沉下去一截，
+                // 看起来像贴在标题脚下。center 让图标/时长跟大标题视觉居中。
+                HStack(alignment: .center, spacing: 6) {
                     Text(title)
                         .font(Theme.display(30))
                         .tracking(-0.8)
