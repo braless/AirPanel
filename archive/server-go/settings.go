@@ -20,7 +20,7 @@ type EventLED struct {
 
 // WebDAVConfig WebDAV 存储配置（通话录音上传/浏览/播放）
 type WebDAVConfig struct {
-	URL      string `json:"url"`      // WebDAV 服务器根地址，如 https://web.oaife.com
+	URL      string `json:"url"`      // WebDAV 服务器根地址，如 https://dav.example.com
 	Username string `json:"username"` // 账号
 	Password string `json:"password"` // 密码
 	Dir      string `json:"dir"`      // 录音目录（设备上传 + 列表浏览），如 通话录音
