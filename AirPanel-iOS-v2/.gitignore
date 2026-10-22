@@ -1,0 +1,20 @@
+# Xcode / 构建产物
+build/
+build-sim/
+build-ipa/
+dist/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# 本地验证产物（截图、图标候选稿）：不进库，README 里有说明
+shots/
+tools/icon-variants/
+
+# macOS
+.DS_Store
