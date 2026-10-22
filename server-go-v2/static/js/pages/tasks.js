@@ -116,8 +116,11 @@ export const TASKS = {
   },
   set_flymode: {
     label: '飞行模式', icon: 'signal', group: '配置与系统',
-    desc: '开启/关闭设备飞行模式（射频）', hint: '飞行模式下设备断网离线，短信存 SIM 卡，来电丢失。',
-    fields: [{ k: 'mode', label: '开关', type: 'select', options: [{ v: 'true', label: '开启飞行模式' }, { v: 'false', label: '关闭飞行模式' }], value: 'true' }]
+    desc: '开启/关闭设备飞行模式（射频）', hint: '飞行模式下设备断网离线，短信存 SIM 卡，来电丢失；开飞行时可指定“自动恢复”分钟数，设备本地到点自恢复，无需服务端下发。',
+    fields: [
+      { k: 'mode', label: '开关', type: 'select', options: [{ v: 'true', label: '开启飞行模式' }, { v: 'false', label: '关闭飞行模式' }], value: 'true' },
+      { k: 'resume_min', label: '自动恢复（分钟，开飞行时可选）', ph: '如 480 = 8 小时后自动恢复', required: false }
+    ]
   }
 };
 

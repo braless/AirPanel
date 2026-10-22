@@ -18,6 +18,8 @@ local config = require "config"
 local nvm = require "nvm"
 
 local mqttc = nil
+-- 飞行模式本地自动恢复定时器：开启飞行时若带 resume_min，到点自动退出飞行恢复网络
+local resumeTimer = nil
 
 -- 看门狗状态（rtos.tick()*5 为开机起毫秒数的单调时钟）
 -- lastAliveMs：MQTT 主循环仍在运转（所有阻塞调用都正常返回）的最新时刻
@@ -233,7 +235,21 @@ local function handleTask(imei, json_data)
                     local on = json_data.mode == true or json_data.mode == 1
                         or json_data.mode == "on" or json_data.mode == "true"
                     net.switchFly(on)
-                    result = { success = true, mode = on, message = on and "飞行模式已开启" or "飞行模式已关闭" }
+                    -- 开启飞行 + 指定恢复分钟：设备本地定时到点自动退出飞行恢复网络。
+                    -- （飞行离线期间服务端定时任务送不到，必须靠设备本地定时器自唤醒）
+                    if on and json_data.resume_min then
+                        local mins = tonumber(json_data.resume_min)
+                        if mins and mins > 0 then
+                            if resumeTimer then sys.timerStop(resumeTimer) end
+                            resumeTimer = sys.timerStart(function()
+                                resumeTimer = nil
+                                net.switchFly(false)
+                                log.info("set_flymode", "飞行模式已本地自动恢复")
+                            end, mins * 60 * 1000)
+                        end
+                    end
+                    result = { success = true, mode = on, resume_min = tonumber(json_data.resume_min) or nil,
+                        message = on and "飞行模式已开启" or "飞行模式已关闭" }
                 end
             elseif json_data.task == "get_status" then
                 -- 设备状态汇总（电压/温度/信号/运营商/本机号码/SIM卡槽）
