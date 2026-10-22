@@ -23,7 +23,7 @@ xcrun simctl install booted build/Build/Products/Debug-iphonesimulator/AirPanelV
 xcrun simctl launch booted com.oaife.airpanel.v2
 ```
 
-首次启动停在登录页：填服务器地址（`sim.oaife.com` 或 `192.168.1.9:9527` 都行，
+首次启动停在登录页：填服务器地址（域名或 `主机:端口` 都行，
 没写 scheme 会按私网/公网自动补 `http`/`https`）、账号、密码，勾「记住密码」下次自动填。
 
 启动参数（截图与联调用，仅 Debug 构建存在）：
@@ -168,7 +168,7 @@ find dist/Payload -name "_CodeSignature" -type d -exec rm -rf {} +
 
 ## 与真实服务端对齐时踩到的坑
 
-这些是本地 mock 全绿、接上 `https://sim.oaife.com` 才暴露的：
+这些是本地 mock 全绿、接上真实服务端才暴露的：
 
 | 现象 | 原因 | 修法 |
 | --- | --- | --- |
@@ -326,9 +326,9 @@ python3 tools/mock_server.py --port 9527 --user admin --password admin123
 - 弱化文字对比度保持在 4.5:1 以上；玻璃上的文字不用纯灰，用提高对比的次级墨色。
 - 所有列表行有 `contentShape(Rectangle())`，扩大点击区。
 
-## 验证（真实服务端 `https://sim.oaife.com`）
+## 验证（真实服务端）
 
-逐页对照真实数据跑过一遍，实测读数：1 台设备（`866250068004906` 中国移动，在线）、
+逐页对照真实数据跑过一遍，实测读数：1 台设备（中国移动，在线）、
 电量 53～62%、电压 3.75～3.82 V、温度 30.9～34.3 ℃、RSSI 29～31、
 通话 43 条、短信 204 条、录音 18 个、任务 424 条、定时 2 个、屏蔽规则 84 条。
 
@@ -353,7 +353,7 @@ python3 tools/mock_server.py --port 9527 --user admin --password admin123
 | 外观切换 | ✅ 设置 → 外观与界面：自动 / 白天 / 黑夜，切换即时生效并持久化 |
 | 主题配色 | ✅ 六色实测（蓝/紫/青/绿/橙/粉），整套界面（TabBar、图标、背景光晕）一起换 |
 | 录音删除 | ✅ 左滑出红底垃圾桶，删除走乐观更新；正在播放的那条会先停播 |
-| 账户头像 | ✅ 服务端 `brand.avatar` = `https://i.postimg.cc/28Bwf4m8/QQ.jpg`，账户卡正常渲染；界面设置可改 |
+| 账户头像 | ✅ 服务端 `brand.avatar` 有值时账户卡正常渲染（图床直链 / 站内相对路径 / base64 三种都支持）；界面设置可改 |
 | 服务端运行时间 | ✅ 概览标题右边显示「· 🖥 1 天 1 小时」（只留图标 + 时长），取自 `/api/stats/summary` 的 `uptimeSec` |
 | 定时任务手动执行 | ✅ `-runschedule 1` 实测：按钮 → 转圈「执行中」→ 绿色 `{"temp":33.8,"unit":"C"}`，4 秒后收起；把 mock 设备置离线后同一按钮回红色「设备当前离线」 |
 

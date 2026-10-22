@@ -275,7 +275,7 @@ SETTINGS = {
     },
     "smsLed": {"enabled": True, "color": "green", "blink": True, "duration": 5000},
     "callLed": {"enabled": True, "color": "blue", "blink": True, "duration": 5000},
-    "webdav": {"url": "https://web.oaife.com", "username": "oaife",
+    "webdav": {"url": "https://dav.example.com", "username": "demo",
                "password": "secret", "dir": "通话录音"},
     "brand": {"title": "AirPanel", "logo": "", "avatar": ""},
 }

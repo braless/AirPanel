@@ -52,7 +52,7 @@ final class APIClient: @unchecked Sendable {
 
     // MARK: 地址归一化
     //
-    // 用户手输地址，什么都可能出现：`web.oaife.com`、`192.168.1.9:9527`、
+    // 用户手输地址，什么都可能出现：`panel.example.com`、`192.168.1.9:9527`、
     // `http://nas.local`。规则：
     //   · 已有 scheme 就照用
     //   · 私网 / 环回 / .local / 带端口的裸主机 → http（面板多数跑在局域网明文端口）
