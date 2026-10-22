@@ -69,6 +69,13 @@ func (d *DB) init() error {
 			value      TEXT NOT NULL DEFAULT '',
 			updated_at INTEGER DEFAULT 0
 		)`,
+		`CREATE TABLE IF NOT EXISTS login_logs (
+			id         INTEGER PRIMARY KEY AUTOINCREMENT,
+			username   TEXT DEFAULT '',             -- 登录用户名
+			ip         TEXT DEFAULT '',             -- 登录来源 IP
+			user_agent TEXT DEFAULT '',             -- 客户端 User-Agent
+			login_at   INTEGER DEFAULT 0            -- 登录时间（Unix 秒）
+		)`,
 		`CREATE TABLE IF NOT EXISTS call_records (
 			id          INTEGER PRIMARY KEY AUTOINCREMENT,
 			imei        TEXT DEFAULT '',
@@ -530,6 +537,68 @@ func (d *DB) markScheduleProcessed(id int64, executed bool) error {
 func jsonBytes(v any) string {
 	b, _ := json.Marshal(v)
 	return string(b)
+}
+
+// ---------------- 登录日志 ----------------
+
+// LoginLog 登录日志记录
+type LoginLog struct {
+	ID        int64  `json:"id"`
+	Username  string `json:"username"`
+	IP        string `json:"ip"`
+	UserAgent string `json:"userAgent"`
+	LoginAt   int64  `json:"loginAt"`
+}
+
+// addLoginLog 新增一条登录日志
+func (d *DB) addLoginLog(username, ip, userAgent string) error {
+	_, err := d.sql.Exec(
+		`INSERT INTO login_logs (username, ip, user_agent, login_at) VALUES (?, ?, ?, ?)`,
+		username, ip, userAgent, time.Now().Unix())
+	return err
+}
+
+// listLoginLogs 分页返回登录日志（按 id 倒序）
+func (d *DB) listLoginLogs(page, pageSize int) ([]LoginLog, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 15
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+	rows, err := d.sql.Query(
+		`SELECT id, username, ip, user_agent, login_at FROM login_logs ORDER BY id DESC LIMIT ? OFFSET ?`,
+		pageSize, (page-1)*pageSize)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out = make([]LoginLog, 0)
+	for rows.Next() {
+		var l LoginLog
+		if err := rows.Scan(&l.ID, &l.Username, &l.IP, &l.UserAgent, &l.LoginAt); err != nil {
+			return nil, err
+		}
+		out = append(out, l)
+	}
+	return out, rows.Err()
+}
+
+// countLoginLogs 统计登录日志总数
+func (d *DB) countLoginLogs() (int64, error) {
+	var n int64
+	err := d.sql.QueryRow(`SELECT COUNT(*) FROM login_logs`).Scan(&n)
+	return n, err
+}
+
+// clearLoginLogs 清空全部登录日志
+func (d *DB) clearLoginLogs() error {
+	_, err := d.sql.Exec(`DELETE FROM login_logs`)
+	return err
 }
 
 // ---------------- 通话记录 ----------------

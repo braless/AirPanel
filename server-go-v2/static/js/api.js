@@ -101,6 +101,8 @@ export const api = {
   clearLogs: (days) => request('/api/logs/clear', { method: 'POST', body: { days } }),
   serverLogs: (params) => request('/api/server-logs', { params }),
   clearServerLogs: () => request('/api/server-logs/clear', { method: 'POST' }),
+  loginLogs: (params) => request('/api/login-logs', { params }),
+  clearLoginLogs: () => request('/api/login-logs/clear', { method: 'POST' }),
 
   /* 屏蔽 */
   blockRules: (params) => request('/api/block-rules', { params }),

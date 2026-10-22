@@ -31,12 +31,16 @@ const dev = { page: 1, total: 0, list: [], from: '', to: '', imei: '', type: '',
 /* 服务端日志状态 */
 const srv = { level: '', keyword: '', lines: [], total: 0, timer: null, auto: true };
 
+/* 登录日志状态 */
+const lg = { page: 1, total: 0, list: [], keyword: '' };
+
 export async function render(root) {
   stopAuto();
   root.innerHTML = shell();
   paintIcons(root);
   bind(root);
   if (tab === 'device') await loadDevice();
+  else if (tab === 'login') await loadLogin();
   else { await loadServer(); if (srv.auto) startAuto(); }
 }
 
@@ -48,6 +52,7 @@ function shell() {
       <div class="seg-tabs" id="logTabs">
         <button data-t="device" class="${tab === 'device' ? 'on' : ''}">设备日志</button>
         <button data-t="server" class="${tab === 'server' ? 'on' : ''}">服务端日志</button>
+        <button data-t="login" class="${tab === 'login' ? 'on' : ''}">登录日志</button>
       </div>
       <button class="btn" id="logRefresh">${icon('refresh')}刷新</button>
     </div>
@@ -110,6 +115,29 @@ function shell() {
     <div class="card" style="padding:12px">
       <div class="console" id="srvConsole" style="min-height:420px;max-height:calc(100vh - 320px)"></div>
     </div>
+  </div>
+
+  <div id="loginPanel" class="${tab === 'login' ? '' : 'hidden'}">
+    <div class="card filter-card" style="margin-bottom:12px">
+      <div class="field grow"><label class="label" for="loginKeyword">关键字（IP / 用户名 / 客户端）</label>
+        <input class="input" id="loginKeyword" placeholder="按 IP / 用户名 / 客户端信息过滤" value="${esc(lg.keyword)}"></div>
+      <button class="btn primary" id="loginSearch">${icon('search')}查询</button>
+      <button class="btn ghost" id="loginReset">重置</button>
+      <button class="btn danger" id="loginClear">${icon('trash')}清空</button>
+      <span class="badge" id="loginCount" style="margin-left:auto">—</span>
+    </div>
+    <div class="card data-card">
+      <div class="data-scroll">
+        <div class="data-head" style="--cols:160px minmax(0,.8fr) minmax(0,1.6fr)">
+          <span>登录时间</span><span>来源 IP</span><span>客户端信息</span>
+        </div>
+        <div id="loginBody">${loadingState(4)}</div>
+      </div>
+      <div class="pager">
+        <span id="loginPageInfo">—</span>
+        <div class="pager-btns" id="loginPager"></div>
+      </div>
+    </div>
   </div>`;
 }
 
@@ -119,13 +147,17 @@ function bind(root) {
     $$('#logTabs button', root).forEach((x) => x.classList.toggle('on', x === b));
     $('#devicePanel').classList.toggle('hidden', tab !== 'device');
     $('#serverPanel').classList.toggle('hidden', tab !== 'server');
+    $('#loginPanel').classList.toggle('hidden', tab !== 'login');
     if (tab === 'device') { stopAuto(); await loadDevice(); }
+    else if (tab === 'login') { stopAuto(); await loadLogin(); }
     else { await loadServer(); if (srv.auto) startAuto(); }
   }));
 
   $('#logRefresh', root).addEventListener('click', async (e) => {
     await withBusy(e.currentTarget, async () => {
-      if (tab === 'device') await loadDevice(); else await loadServer();
+      if (tab === 'device') await loadDevice();
+      else if (tab === 'login') await loadLogin();
+      else await loadServer();
       toast('已刷新');
     });
   });
@@ -175,6 +207,23 @@ function bind(root) {
       await loadServer();
     } catch (err) { toast(err.message, true); }
   });
+
+  /* 登录日志 */
+  $('#loginSearch', root).addEventListener('click', () => {
+    lg.keyword = $('#loginKeyword').value.trim();
+    lg.page = 1;
+    loadLogin();
+  });
+  $('#loginKeyword', root).addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { lg.keyword = e.target.value.trim(); lg.page = 1; loadLogin(); }
+  });
+  $('#loginReset', root).addEventListener('click', () => {
+    lg.keyword = '';
+    $('#loginKeyword').value = '';
+    lg.page = 1;
+    loadLogin();
+  });
+  $('#loginClear', root).addEventListener('click', clearLoginLogs);
 }
 
 /* ---------------- 设备日志 ---------------- */
@@ -355,4 +404,80 @@ function startAuto() {
 
 function stopAuto() {
   if (srv.timer) { clearInterval(srv.timer); srv.timer = null; }
+}
+
+/* ---------------- 登录日志 ---------------- */
+async function loadLogin() {
+  const box = $('#loginBody');
+  if (!box) return;
+  box.innerHTML = loadingState(4);
+  try {
+    const res = await api.loginLogs({ page: lg.page, pageSize: 15, keyword: lg.keyword });
+    lg.list = res.logs || [];
+    lg.total = res.total || 0;
+    const size = res.pageSize || 15;
+    const maxPage = Math.max(1, Math.ceil(lg.total / size));
+    if (lg.page > maxPage) { lg.page = maxPage; return loadLogin(); }
+    renderLogin();
+  } catch (err) {
+    box.innerHTML = emptyState('加载失败：' + err.message, 'info');
+    paintIcons(box);
+  }
+}
+
+function renderLogin() {
+  const box = $('#loginBody');
+  $('#loginCount').textContent = `共 ${lg.total} 条`;
+  if (!lg.list.length) {
+    box.innerHTML = emptyState('暂无登录日志', 'clock');
+    paintIcons(box);
+    renderLoginPager();
+    return;
+  }
+  box.innerHTML = lg.list.map((l) => `
+    <div class="data-row" style="--cols:160px minmax(0,.8fr) minmax(0,1.6fr)">
+      <div class="cell">${fmtTime(l.loginAt)}<span class="sub">${esc(l.username)}</span></div>
+      <div class="cell">${esc(l.ip || '—')}</div>
+      <div class="cell" title="${esc(l.userAgent || '')}">${esc(l.userAgent || '—')}</div>
+    </div>`).join('');
+  paintIcons(box);
+  renderLoginPager();
+}
+
+function renderLoginPager() {
+  const size = 15;
+  const maxPage = Math.max(1, Math.ceil(lg.total / size));
+  $('#loginPageInfo').textContent = `第 ${lg.page} / ${maxPage} 页 · 共 ${lg.total} 条`;
+  const box = $('#loginPager');
+  let html = `<button data-p="prev"${lg.page <= 1 ? ' disabled' : ''}>‹</button>`;
+  for (let i = 1; i <= maxPage; i++) html += `<button data-p="${i}" class="${i === lg.page ? 'on' : ''}">${i}</button>`;
+  html += `<button data-p="next"${lg.page >= maxPage ? ' disabled' : ''}>›</button>`;
+  box.innerHTML = html;
+  $$('button', box).forEach((b) => b.addEventListener('click', () => {
+    const v = b.dataset.p;
+    if (v === 'prev') lg.page = Math.max(1, lg.page - 1);
+    else if (v === 'next') lg.page = Math.min(maxPage, lg.page + 1);
+    else lg.page = Number(v);
+    loadLogin();
+  }));
+}
+
+async function clearLoginLogs() {
+  openModal({
+    title: '清空登录日志',
+    sub: '删除后不可恢复',
+    body: `<div style="font-size:11.5px;color:var(--ink3);line-height:1.7">确认清空全部登录日志？当前共 <b>${lg.total}</b> 条。</div>`,
+    foot: `<button class="btn ghost" data-close>取消</button><button class="btn danger" id="loginClearOk">确认清空</button>`
+  });
+  $('#loginClearOk').addEventListener('click', async (e) => {
+    await withBusy(e.currentTarget, async () => {
+      try {
+        await api.clearLoginLogs();
+        $('#modal').classList.remove('open');
+        toast('登录日志已清空');
+        lg.page = 1;
+        await loadLogin();
+      } catch (err) { toast(err.message, true); }
+    });
+  });
 }

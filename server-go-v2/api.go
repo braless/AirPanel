@@ -136,6 +136,8 @@ func (api *API) routes() http.Handler {
 	mux.HandleFunc("/api/logs/clear", api.authenticate(api.handleClearLogs))
 	mux.HandleFunc("/api/server-logs", api.authenticate(api.handleServerLogs))
 	mux.HandleFunc("/api/server-logs/clear", api.authenticate(api.handleClearServerLogs))
+	mux.HandleFunc("/api/login-logs", api.authenticate(api.handleLoginLogs))
+	mux.HandleFunc("/api/login-logs/clear", api.authenticate(api.handleClearLoginLogs))
 
 	// 屏蔽规则
 	mux.HandleFunc("/api/block-rules", api.authenticate(api.handleBlockRules))
@@ -254,6 +256,9 @@ func (api *API) handleLogin(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusUnauthorized, map[string]any{"message": "用户名或密码错误"})
 		return
 	}
+
+	// 记录登录日志：IP + 客户端信息
+	_ = api.app.db.addLoginLog(s.Username, clientIP(r), r.Header.Get("User-Agent"))
 
 	claims := jwt.MapClaims{
 		"username": body.Username,
