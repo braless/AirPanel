@@ -28,7 +28,7 @@
 - **断线自愈**：设备端连接失败指数退避重连（5s→60s 封顶），内置双重看门狗，服务端重部署后设备自动恢复连接
 - **单二进制部署**：前端静态资源通过 `go:embed` 内嵌进 Go 二进制，支持 Docker 一键部署
 - **PWA 现代 UI**：Tailwind 现代化界面、移动端适配，支持 **iOS「添加到主屏幕」** 以全屏方式运行
-- **原生 iOS 客户端**：`AirPanel-iOS`，配置服务端 API 地址 + 账号密码登录，作为独立客户端操作面板全部功能
+- **原生 iOS 客户端**：`AirPanel-iOS-v2`（iOS 26+，当前版本；旧版 `archive/AirPanel-iOS`），配置服务端 API 地址 + 账号密码登录，作为独立客户端操作面板全部功能
 
 ## 界面预览
 
@@ -87,22 +87,11 @@ AirPanel/
 │       ├── utils/        # 功能模块（util_mqtt / util_notify / util_mobile / util_record / util_block / util_powersave / util_temperature / util_http 等）
 │       ├── handler/      # 事件处理（handler_sms 短信 / handler_call 来电 / handler_powerkey 电源键菜单）
 │       └── audio/        # 语音 / 提示音资源
-├── server-go/            # Go 服务端（当前主版本）
-│   ├── main.go           # 入口：加载配置、启动 HTTP + MQTT + 定时任务调度器
-│   ├── api.go            # REST API 与静态资源（go:embed）
-│   ├── broker.go         # MQTT Broker、设备在线管理、任务下发、遥测/日志接收
-│   ├── notify.go         # 离线通知渠道 + Bark 推送（标题/icon/分组/声音）
-│   ├── db.go             # SQLite 持久化（设备/任务/通话/短信/屏蔽规则/遥测/日志）
-│   ├── scheduler.go      # 定时任务调度器
-│   ├── settings.go       # 面板设置（账号/通知/概览配置，SQLite 持久化）
-│   ├── config.go         # 配置加载/保存
-│   ├── config.example.json # 服务端配置示例
-│   ├── static/           # 前端单页应用（PWA，编译进二进制，改动后重新 build）
-│   ├── sim_device_ws.py  # 模拟设备脚本（WebSocket MQTT 联调用）
-│   ├── deploy_panel.py   # 服务器部署脚本（sftp 上传 + start.sh 重启）
-│   ├── Dockerfile
-│   └── gen_icons.py      # PWA 图标生成脚本
-├── AirPanel-iOS/         # 原生 iOS 客户端（Swift，连接面板 API）
+├── server-go-v2/         # Go 服务端（当前主版本，Docker 镜像由它构建）
+├── AirPanel-iOS-v2/      # iOS 26+ 原生客户端（当前版本，SwiftUI + Liquid Glass）
+├── archive/              # 归档：已被 v2 取代的旧实现，仅留作参考
+│   ├── server-go/        # Go 服务端 v1（main.go / api.go / broker.go / static/ 前端…）
+│   └── AirPanel-iOS/     # iOS 客户端 v1（Swift，连接面板 API）
 ├── screenshots/          # 界面截图
 ├── docker-compose.yml    # Docker 一键部署
 └── README.md
@@ -110,12 +99,15 @@ AirPanel/
 
 ## 快速开始（Go 服务端）
 
+> 下面这一节讲的是**已归档**的 v1 服务端 `archive/server-go`（路径已随之调整）。
+> 当前主版本是 `server-go-v2`，构建与部署见 `server-go-v2/README.md`。
+
 ### 本地运行
 
 前置：Go 1.22+（本项目使用纯 Go 的 `modernc.org/sqlite`，无需 CGO）。
 
 ```bash
-cd server-go
+cd archive/server-go
 go build -o panel-server.exe .
 ./panel-server.exe
 ```
@@ -127,10 +119,10 @@ go build -o panel-server.exe .
 
 ### 前端修改（改动 static/ 后需重新构建）
 
-前端资源在 `server-go/static/`（页面、JS、CSS），编译时通过 `go:embed` 内嵌进二进制，改动后重新 `go build` 即生效：
+前端资源在 `archive/server-go/static/`（页面、JS、CSS），编译时通过 `go:embed` 内嵌进二进制，改动后重新 `go build` 即生效：
 
 ```powershell
-cd server-go
+cd archive/server-go
 go build -o panel-server.exe .
 ```
 
@@ -149,7 +141,7 @@ docker-compose up -d
 **方式二：Dockerfile 构建**
 
 ```bash
-cd server-go
+cd archive/server-go
 docker build -t airpanel .
 docker run -d --name airpanel --restart unless-stopped \
   -p 9527:9527 \
@@ -168,7 +160,7 @@ docker run -d --name airpanel --restart unless-stopped \
 
 ```powershell
 # 本地交叉编译 Linux amd64 二进制
-cd server-go
+cd archive/server-go
 $env:GOOS="linux"; $env:GOARCH="amd64"; $env:CGO_ENABLED="0"
 go build -o panel-server-linux .
 # 上传至服务器 /root/airpanel/panel-server（或用 deploy_panel.py 自动完成）
@@ -287,9 +279,9 @@ POWERSAVE_TELEMETRY = 0         -- 省电遥测间隔（毫秒），0 表示暂�
 - **设置**：Tab 式设置页——登录账号、离线通知（开关 / 渠道配置 / 测试通知）、Bark 推送参数、界面设置（站点标题 / Logo 自定义）
 - **顶部栏**：Logo hover 显示服务已运行时长；"重启"按钮一键重启服务端；"退出"退出登录
 
-## iOS 客户端（AirPanel-iOS）
+## iOS 客户端（archive/AirPanel-iOS，旧版）
 
-`AirPanel-iOS/` 是原生 **Swift** 客户端（非 WebView 壳），作为**服务端连接工具**：启动时配置面板 API 地址，输入账号密码登录后即可操作面板全部功能（设备概览、任务下发、通话 / 短信 / 日志记录、屏蔽配置、省电、灯光等），适配 iOS 主屏幕运行，可侧载未签名 IPA 体验。
+`archive/AirPanel-iOS/` 是原生 **Swift** 客户端（非 WebView 壳），作为**服务端连接工具**：启动时配置面板 API 地址，输入账号密码登录后即可操作面板全部功能（设备概览、任务下发、通话 / 短信 / 日志记录、屏蔽配置、省电、灯光等），适配 iOS 主屏幕运行，可侧载未签名 IPA 体验。
 
 > 客户端直接调用 Web 面板的 REST API（`/api/*`），需服务端可被 iOS 设备访问；登录 Token 有效期 2 个月。
 
@@ -353,10 +345,10 @@ POWERSAVE_TELEMETRY = 0         -- 省电遥测间隔（毫秒），0 表示暂�
 
 ## 模拟设备联调（无实体设备）
 
-`server-go/sim_device_ws.py`：通过 MQTT over WebSocket 模拟接入（验证 wss 链路），依赖 `paho-mqtt`
+`archive/server-go/sim_device_ws.py`：通过 MQTT over WebSocket 模拟接入（验证 wss 链路），依赖 `paho-mqtt`
 
 ```bash
-cd server-go
+cd archive/server-go
 python sim_device_ws.py
 ```
 

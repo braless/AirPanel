@@ -1,11 +1,13 @@
 name: iOS IPA Build
 
+# 注意：这里构建的是**已归档**的旧客户端 archive/AirPanel-iOS（v1）。
+# 当前客户端是 AirPanel-iOS-v2，按 AirPanel-iOS-v2/README.md 本地出未签名 IPA。
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths:
-      - 'AirPanel-iOS/**'
+      - 'archive/AirPanel-iOS/**'
 
 concurrency:
   group: ios-build-${{ github.ref }}
@@ -27,7 +29,7 @@ jobs:
 
       - name: Build app (unsigned)
         run: |
-          cd AirPanel-iOS
+          cd archive/AirPanel-iOS
           xcodebuild \
             -project AirPanel.xcodeproj \
             -target AirPanel \
@@ -39,7 +41,7 @@ jobs:
       - name: Locate built app
         id: app
         run: |
-          APP="AirPanel-iOS/build/Release-iphoneos/AirPanel.app"
+          APP="archive/AirPanel-iOS/build/Release-iphoneos/AirPanel.app"
           if [ ! -d "$APP" ]; then
             APP="$(find "$HOME/Library/Developer/Xcode/DerivedData" \
               -path '*Release-iphoneos/AirPanel.app' -type d 2>/dev/null | head -1)"

@@ -4,39 +4,39 @@ node_modules
 # AI 工作区数据（本地笔记 / 缓存，不入库）
 .workbuddy-ai/
 
-# 本地开发资料（不入库）
+# 本地开发资料（不入库；目录已归档到 archive/）
 开发文档-误删/
-server-go/server-go.zip
+archive/server-go/server-go.zip
 
-# Go 服务端运行产物与本地状态（不入库）
-server-go/panel-server.exe
-server-go/panel-server-linux
-server-go/panel.db
-server-go/login.json
-server-go/task.json
-server-go/config.json
-server-go/tools/
+# Go 服务端 v1（archive/server-go）运行产物与本地状态（不入库）
+archive/server-go/panel-server.exe
+archive/server-go/panel-server-linux
+archive/server-go/panel.db
+archive/server-go/login.json
+archive/server-go/task.json
+archive/server-go/config.json
+archive/server-go/tools/
 
 # 本地代码签名私钥（切勿入库）
-server-go/air724-sign.pfx
+archive/server-go/air724-sign.pfx
 
 # 本地测试残留
 Air724ug/script/lib/out.json
-server-go/run.log
-server-go/run.err.log
+archive/server-go/run.log
+archive/server-go/run.err.log
 
-# iOS 客户端（AirPanel-iOS）构建产物与本地状态（不入库）
-AirPanel-iOS/build/
-AirPanel-iOS/DerivedData/
-AirPanel-iOS/*.ipa
-AirPanel-iOS/*.log
-AirPanel-iOS/.DS_Store
-AirPanel-iOS/**/xcuserdata/
-AirPanel-iOS/**/xcuserstate
+# iOS 客户端（archive/AirPanel-iOS，旧版）构建产物与本地状态（不入库）
+archive/AirPanel-iOS/build/
+archive/AirPanel-iOS/DerivedData/
+archive/AirPanel-iOS/*.ipa
+archive/AirPanel-iOS/*.log
+archive/AirPanel-iOS/.DS_Store
+archive/AirPanel-iOS/**/xcuserdata/
+archive/AirPanel-iOS/**/xcuserstate
 
 # 服务器部署脚本与临时输出（含连接参数，禁止入库）
-server-go/deploy_panel.py
-server-go/deploy_out.txt
+archive/server-go/deploy_panel.py
+archive/server-go/deploy_out.txt
 
 # 设备端真实配置（含敏感凭据，仅本地维护，禁止提交）
 Air724ug/script/config.lua
