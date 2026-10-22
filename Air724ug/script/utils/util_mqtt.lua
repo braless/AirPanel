@@ -225,6 +225,16 @@ local function handleTask(imei, json_data)
                         result = util_powersave.status()
                     end
                 end
+            elseif json_data.task == "set_flymode" then
+                -- 飞行模式：mode 为 true / 1 / "on" / "true" 时开启，否则关闭
+                if json_data.mode == nil then
+                    error = "缺少必要参数: mode"
+                else
+                    local on = json_data.mode == true or json_data.mode == 1
+                        or json_data.mode == "on" or json_data.mode == "true"
+                    net.switchFly(on)
+                    result = { success = true, mode = on, message = on and "飞行模式已开启" or "飞行模式已关闭" }
+                end
             elseif json_data.task == "get_status" then
                 -- 设备状态汇总（电压/温度/信号/运营商/本机号码/SIM卡槽）
                 result = {

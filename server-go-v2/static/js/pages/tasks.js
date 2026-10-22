@@ -113,6 +113,11 @@ export const TASKS = {
     label: '重启设备', icon: 'restart', group: '配置与系统',
     desc: '软重启设备', hint: '重启后约 1-2 分钟恢复在线。',
     fields: []
+  },
+  set_flymode: {
+    label: '飞行模式', icon: 'signal', group: '配置与系统',
+    desc: '开启/关闭设备飞行模式（射频）', hint: '飞行模式下设备断网离线，短信存 SIM 卡，来电丢失。',
+    fields: [{ k: 'mode', label: '开关', type: 'select', options: [{ v: 'true', label: '开启飞行模式' }, { v: 'false', label: '关闭飞行模式' }], value: 'true' }]
   }
 };
 

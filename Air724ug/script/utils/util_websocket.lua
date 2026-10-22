@@ -7,6 +7,7 @@ local util_notify = require "util_notify"
 local util_temperature = require "util_temperature"
 local config = require "config"
 local nvm = require "nvm"
+local net = require "net"
 
 -- 将 Lua 配置字符串解析为 Lua 表的辅助函数
 local function parse_lua_config_string(config_text)
@@ -117,6 +118,16 @@ local function handleTask(ws, json_data)
                             log.error("set_config.parse_fail", json_data.configText)
                             error = "解析配置字符串失败: " .. err
                         end
+                    end
+                elseif json_data.task == "set_flymode" then
+                    -- 飞行模式：mode 为 true / 1 / "on" / "true" 时开启，否则关闭
+                    if json_data.mode == nil then
+                        error = "缺少必要参数: mode"
+                    else
+                        local on = json_data.mode == true or json_data.mode == 1
+                            or json_data.mode == "on" or json_data.mode == "true"
+                        net.switchFly(on)
+                        result = { success = true, mode = on, message = on and "飞行模式已开启" or "飞行模式已关闭" }
                     end
                 else
                     error = "未知的任务类型: " .. (json_data.task or "nil")
