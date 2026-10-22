@@ -5,25 +5,36 @@ import SwiftUI
 // 每个 Tab 的顶部：大标题 + 一行说明 + 右侧动作。
 // 标题用负字距（大字号需要收紧），说明用次级灰，右侧只放一个主操作，
 // 避免顶栏堆按钮。
+//
+// `titleAccessory` 是贴在标题右边的挂件（概览用它挂服务端运行时长），
+// 和标题按 firstTextBaseline 对齐，小字正好落在大标题的基线上。
 
-struct PageHeader<Trailing: View>: View {
+struct PageHeader<TitleAccessory: View, Trailing: View>: View {
     let title: String
     var subtitle: String?
+    var titleAccessory: TitleAccessory
     var trailing: Trailing
 
-    init(_ title: String, subtitle: String? = nil, @ViewBuilder trailing: () -> Trailing) {
+    init(_ title: String,
+         subtitle: String? = nil,
+         @ViewBuilder titleAccessory: () -> TitleAccessory,
+         @ViewBuilder trailing: () -> Trailing) {
         self.title = title
         self.subtitle = subtitle
+        self.titleAccessory = titleAccessory()
         self.trailing = trailing()
     }
 
     var body: some View {
         HStack(alignment: .center, spacing: Theme.Space.s) {
             VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(Theme.display(30))
-                    .tracking(-0.8)
-                    .foregroundStyle(Theme.ink)
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(title)
+                        .font(Theme.display(30))
+                        .tracking(-0.8)
+                        .foregroundStyle(Theme.ink)
+                    titleAccessory
+                }
                 if let subtitle {
                     Text(subtitle)
                         .font(Theme.caption)
@@ -38,9 +49,15 @@ struct PageHeader<Trailing: View>: View {
     }
 }
 
-extension PageHeader where Trailing == EmptyView {
+extension PageHeader where TitleAccessory == EmptyView {
+    init(_ title: String, subtitle: String? = nil, @ViewBuilder trailing: () -> Trailing) {
+        self.init(title, subtitle: subtitle, titleAccessory: { EmptyView() }, trailing: trailing)
+    }
+}
+
+extension PageHeader where TitleAccessory == EmptyView, Trailing == EmptyView {
     init(_ title: String, subtitle: String? = nil) {
-        self.init(title, subtitle: subtitle) { EmptyView() }
+        self.init(title, subtitle: subtitle, titleAccessory: { EmptyView() }, trailing: { EmptyView() })
     }
 }
 

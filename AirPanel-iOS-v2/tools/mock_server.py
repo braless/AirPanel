@@ -529,9 +529,11 @@ class Handler(BaseHTTPRequestHandler):
             return self.json(200, {"success": True, "message": "状态已更新"})
 
         if p == "/api/schedules/run":
-            return self.execute({"imei": self.state.devices[0]["imei"],
-                                 "task": next((s["task"] for s in self.state.schedules
-                                               if s["id"] == b.get("id")), "get_status")})
+            # 真服务端是「在任务自己那台设备上执行」，这里照抄：
+            # 命中离线设备时才能复现 success:false + 设备当前离线 这条分支。
+            sched = next((s for s in self.state.schedules if s["id"] == b.get("id")), None)
+            return self.execute({"imei": (sched or {}).get("imei", self.state.devices[0]["imei"]),
+                                 "task": (sched or {}).get("task", "get_status")})
 
         if p == "/api/schedules/delete":
             self.state.schedules = [s for s in self.state.schedules if s["id"] != b.get("id")]

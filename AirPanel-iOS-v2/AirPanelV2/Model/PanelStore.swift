@@ -287,6 +287,11 @@ final class PanelStore {
         } catch { handle(error) }
     }
 
+    /// 服务端进程已运行时长。
+    /// 服务端在 `/api/stats/summary` 里带 `uptimeSec`（进程启动到现在），
+    /// 不是设备在线时长——两者差得很远，别混着看。
+    var serverUptime: TimeInterval { TimeInterval(stats?.uptimeSec ?? 0) }
+
     /// 只拉设备列表：先把「有几台、哪台在线」画出来，
     /// 遥测（overview）拆到 refreshOverview() 并发去取——
     /// 原来这里串着拉，设备列表要等两轮往返才出现。
@@ -678,16 +683,28 @@ final class PanelStore {
     }
 
     /// 立即执行一次定时任务
-    func runSchedule(_ id: String) async {
-        guard let client, let raw = schedules.first(where: { $0.id == id })?.rawID else { return }
+    /// 立即执行一次定时任务。
+    ///
+    /// 服务端 `POST /api/schedules/run` 在设备离线时会明确回 `success:false` +
+    /// `message:"设备当前离线"`，所以结果要原样透给界面——
+    /// 之前这里只往控制台塞一行，用户点了「执行」什么都看不见。
+    @discardableResult
+    func runSchedule(_ id: String) async -> (ok: Bool, message: String) {
+        guard let client, let raw = schedules.first(where: { $0.id == id })?.rawID else {
+            return (false, "任务不存在")
+        }
         do {
             let resp = try await client.runSchedule(id: raw)
-            console.append(ConsoleLine(kind: resp.success ? .reply : .error,
-                                       text: resp.success ? (resp.result?.compact ?? "ok")
-                                                          : (resp.message ?? "执行失败"),
-                                       time: .now))
+            let text = resp.success ? (resp.result?.compact ?? "已执行") : (resp.message ?? "执行失败")
+            console.append(ConsoleLine(kind: resp.success ? .reply : .error, text: text, time: .now))
+            // 执行完「上次 / 下次」都会变，顺手刷一遍列表和记录
+            await refreshSchedules()
             await refreshTasks()
-        } catch { handle(error) }
+            return (resp.success, text)
+        } catch {
+            handle(error)
+            return (false, (error as? APIError)?.errorDescription ?? "执行失败")
+        }
     }
 
     func clearConsole() {

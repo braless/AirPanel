@@ -184,8 +184,8 @@ struct AutomationView: View {
                                    isLoading: store.isLoading(.schedules))
                 }
             } else {
-                ForEach(store.schedules) { schedule in
-                    ScheduleCard(schedule: schedule)
+                ForEach(Array(store.schedules.enumerated()), id: \.element.id) { idx, schedule in
+                    ScheduleCard(schedule: schedule, index: idx)
                 }
             }
         }
@@ -296,8 +296,13 @@ struct CommandRow: View {
 
 struct ScheduleCard: View {
     let schedule: Schedule
+    /// 列表里的序号，只给调试钩子定位用
+    var index: Int = 0
     @Environment(PanelStore.self) private var store
     @State private var on = false
+    @State private var running = false
+    /// 执行结果：留 4 秒后自动消失，不常驻占地方
+    @State private var result: (ok: Bool, message: String)?
 
     var body: some View {
         GlassCard(padding: Theme.Space.m) {
@@ -312,9 +317,13 @@ struct ScheduleCard: View {
                         Text(schedule.name)
                             .font(Theme.bodyStrong)
                             .foregroundStyle(schedule.enabled ? Theme.ink : Theme.ink2)
-                        Text("\(schedule.taskLabel) · \(schedule.humanSpec)")
+                        // 名字本身多数就是任务名，重复写一遍只会把设备名挤掉
+                        Text(schedule.deviceName.isEmpty
+                             ? schedule.humanSpec
+                             : "\(schedule.humanSpec) · \(schedule.deviceName)")
                             .font(Theme.micro)
                             .foregroundStyle(Theme.ink3)
+                            .lineLimit(1)
                     }
                     Spacer(minLength: 4)
                     Toggle("", isOn: Binding(
@@ -347,16 +356,78 @@ struct ScheduleCard: View {
                             .font(Theme.micro)
                             .foregroundStyle(schedule.enabled ? Theme.violet : Theme.ink3)
                     }
-                    Spacer()
-                    Text(schedule.deviceName)
-                        .font(Theme.micro)
-                        .foregroundStyle(Theme.ink3)
-                        .lineLimit(1)
+                    Spacer(minLength: 4)
+                    runButton
+                }
+
+                if let result {
+                    HStack(spacing: 4) {
+                        Image(systemName: result.ok ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
+                            .font(.system(size: 9, weight: .bold))
+                        // 成功时服务端回的是回执 JSON，用等宽字体和「记录」页保持一致；
+                        // 失败时是中文说明，用正文字体更易读。
+                        Text(result.message)
+                            .font(result.ok ? Theme.mono : Theme.micro)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                        Spacer(minLength: 0)
+                    }
+                    .foregroundStyle(result.ok ? Theme.online : Theme.danger)
+                    .transition(.opacity)
                 }
             }
         }
         .opacity(schedule.enabled ? 1 : 0.72)
         .motion(Motion.layout, value: schedule.enabled)
+        .task {
+            #if DEBUG
+            // 联调用：`-runschedule 0` 替用户点一次「执行任务」，
+            // 用来验证 执行中 → 结果行 → 4 秒消失 这条链路（本机没法模拟点击）。
+            let args = ProcessInfo.processInfo.arguments
+            guard let i = args.firstIndex(of: "-runschedule"), i + 1 < args.count,
+                  Int(args[i + 1]) == index else { return }
+            try? await Task.sleep(for: .seconds(1.5))
+            fire()
+            #endif
+        }
+    }
+
+    /// 立即执行一次：走 `POST /api/schedules/run`。
+    /// 设备离线时服务端会回「设备当前离线」，直接显示在卡片里，不用去控制台找。
+    private func fire() {
+        guard !running else { return }
+        running = true
+        Task {
+            let r = await store.runSchedule(schedule.id)
+            running = false
+            withAnimation(Motion.fade) { result = r }
+            try? await Task.sleep(for: .seconds(4))
+            guard !Task.isCancelled else { return }
+            withAnimation(Motion.fade) { result = nil }
+        }
+    }
+
+    private var runButton: some View {
+        Button(action: fire) {
+            HStack(spacing: 4) {
+                if running {
+                    ProgressView().controlSize(.mini).tint(Theme.violet)
+                } else {
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 8, weight: .bold))
+                }
+                Text(running ? "执行中" : "执行任务")
+                    .font(.system(size: 11, weight: .semibold))
+            }
+            .foregroundStyle(Theme.violet)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
+            .background(Capsule(style: .continuous).fill(Theme.violet.opacity(0.14)))
+            .contentShape(Capsule(style: .continuous))
+        }
+        .buttonStyle(.pressable(scale: 0.95))
+        .disabled(running)
+        .accessibilityLabel("立即执行 \(schedule.name)")
     }
 }
 

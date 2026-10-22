@@ -43,6 +43,7 @@ xcrun simctl launch booted com.oaife.airpanel.v2
 | `-loadmore` | 进通信页自动翻一页（跟随当前分段，通话/短信都能用），验证分页追加与去重 |
 | `-swipeopen` | 把所有记录行停在「已左滑」状态，核对红色删除底 |
 | `-deletetop` | 自动删掉第一条通话并打印前后计数，验证删除真的落到服务端 |
+| `-runschedule 1` | 自动点第 2 张定时卡片的「执行任务」，验证执行中 → 回执 → 4 秒收起 |
 | `-autorefresh 10` | 把前台自动刷新间隔改成 10 秒（默认 60） |
 | `-appearance light\|dark\|system` | 强制外观（走 UserDefaults 参数域，不改偏好） |
 | `-bottom` | 概览 / 通信页滚到底部 |
@@ -201,8 +202,9 @@ python3 tools/mock_server.py --port 9527 --user admin --password admin123
 
 ```
 概览   设备健康一屏读完：在线 + 续航、电量、电压/温度/信号、今日计数、24h 趋势、最近事件
+       （标题右边跟服务端运行时长）
 通信   通话 / 短信 / 录音（三段切换，按天分组）
-自动化 任务（18 条指令）/ 定时 / 记录
+自动化 任务（18 条指令）/ 定时（可手动执行一次）/ 记录
 设备   设备卡片列表 → 详情（遥测网格、身份信息、设为当前、删除）
 设置   通知 / 灯光 / 省电 / 录音 / 存储 / 屏蔽 / 日志 / 界面 / 运维
 ```
@@ -292,6 +294,17 @@ python3 tools/mock_server.py --port 9527 --user admin --password admin123
 - **Tab 图标**：自动化用 `wand.and.stars`（闪电读作「充电/快」，和「定时任务」没关系）；
   通信用 `phone.bubble.left`——原来的「双气泡」符号本身宽一圈，而系统会把 Tab 图标
   统一归一化，改字号没用（试过），只能换符号。
+- **服务端已运行时间**：挂在「概览」标题右边，`·` 小点接一枚 `server.rack` 图标和时长，
+  **不写「服务端已运行」这几个字**——标题行本来就窄，文案留给图标。
+  数据是 `/api/stats/summary` 的 `uptimeSec`（服务端进程启动到现在），
+  **不是**设备在线时长——设备掉线重连不影响它，服务端重启也不影响设备。
+  `PageHeader` 为此加了 `titleAccessory`（标题与副标题之间那一行，跟标题同基线）。
+- **定时任务可手动执行**：定时卡片右下角「▶ 执行任务」，走 `POST /api/schedules/run`，
+  执行中变成转圈 + 「执行中」，回执直接落在卡片里（成功绿、失败红，4 秒后自动收起）。
+  设备离线时服务端回 `success:false` + 「设备当前离线」，卡片原样显示这句话，
+  不用去「记录」里翻。执行完顺带刷新定时列表和记录，`上次` 时间立刻跟着变。
+  卡片副标题写「周期 · 设备名」而不是「任务名 · 周期 · 设备名」——
+  任务名基本等于卡片标题，重复一遍只会把设备名挤成省略号。
 - **账户头像**：设置页账户卡渲染 `settings.brand.avatar`（和网页端「界面设置」同一份数据）。
   服务端存的是字符串，三种形态都支持：图床直链、站内相对路径、旧版 base64。
   `AsyncImage` 只认 http(s)，data URI 会直接失败，所以走自己的加载器 + 首字母兜底 + 内存缓存。
@@ -341,6 +354,8 @@ python3 tools/mock_server.py --port 9527 --user admin --password admin123
 | 主题配色 | ✅ 六色实测（蓝/紫/青/绿/橙/粉），整套界面（TabBar、图标、背景光晕）一起换 |
 | 录音删除 | ✅ 左滑出红底垃圾桶，删除走乐观更新；正在播放的那条会先停播 |
 | 账户头像 | ✅ 服务端 `brand.avatar` = `https://i.postimg.cc/28Bwf4m8/QQ.jpg`，账户卡正常渲染；界面设置可改 |
+| 服务端运行时间 | ✅ 概览标题右边显示「· 🖥 1 天 1 小时」（只留图标 + 时长），取自 `/api/stats/summary` 的 `uptimeSec` |
+| 定时任务手动执行 | ✅ `-runschedule 1` 实测：按钮 → 转圈「执行中」→ 绿色 `{"temp":33.8,"unit":"C"}`，4 秒后收起；把 mock 设备置离线后同一按钮回红色「设备当前离线」 |
 
 ## 已知取舍
 
@@ -385,3 +400,7 @@ python3 tools/mock_server.py --port 9527 --user admin --password admin123
 | `25-recordings-swipe.png` | 通话录音的左滑删除 |
 | `26-account-avatar.png` | 设置页账户卡渲染服务端头像 |
 | `27-brand-avatar-edit.png` | 界面设置里的头像地址编辑 |
+| `28-overview-server-uptime.png` | 概览标题右边「· 🖥 1 天 1 小时」 |
+| `29-overview-uptime-light.png` | 浅色模式下同一位置（小点与图标跟标题同基线） |
+| `30-schedule-run-ok.png` | 定时卡片「执行任务」成功回执（绿色 `{"temp":33.8,"unit":"C"}`） |
+| `31-schedule-run-offline.png` | 定时卡片执行失败（红色「设备当前离线」） |

@@ -64,7 +64,7 @@ struct OverviewView: View {
     // MARK: 顶部
 
     private var header: some View {
-        PageHeader("概览", subtitle: subtitleText) {
+        PageHeader("概览", subtitle: subtitleText, titleAccessory: { serverUptimeTag }) {
             Button {
                 pickerOpen = true
             } label: {
@@ -93,6 +93,27 @@ struct OverviewView: View {
     private var chipName: String {
         let name = device?.displayName ?? "未选择设备"
         return name.count > 8 ? String(name.prefix(8)) + "…" : name
+    }
+
+    /// 服务端已运行时间：挂在「概览」标题右边，小点隔开，只留图标 + 时长。
+    /// 数据是 `/api/stats/summary` 的 `uptimeSec`（服务端进程启动到现在），
+    /// **不是**设备在线时长——设备掉线重连不影响这个数，反过来服务端重启也不影响设备。
+    @ViewBuilder
+    private var serverUptimeTag: some View {
+        if store.serverUptime > 0 {
+            HStack(spacing: 5) {
+                Text("·")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(Theme.ink3.opacity(0.5))
+                Image(systemName: "server.rack")
+                    .font(.system(size: 10, weight: .semibold))
+                Text(Fmt.uptime(store.serverUptime))
+                    .font(.system(size: 12, weight: .medium))
+                    .monospacedDigit()
+            }
+            .foregroundStyle(Theme.ink3)
+            .accessibilityLabel("服务端已运行 \(Fmt.uptime(store.serverUptime))")
+        }
     }
 
     private var subtitleText: String {
