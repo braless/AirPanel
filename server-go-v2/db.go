@@ -74,6 +74,8 @@ func (d *DB) init() error {
 			username   TEXT DEFAULT '',             -- 登录用户名
 			ip         TEXT DEFAULT '',             -- 登录来源 IP
 			user_agent TEXT DEFAULT '',             -- 客户端 User-Agent
+			success    INTEGER DEFAULT 1,           -- 1 成功 / 0 失败
+			reason     TEXT DEFAULT '',             -- 失败原因（成功为空）
 			login_at   INTEGER DEFAULT 0            -- 登录时间（Unix 秒）
 		)`,
 		`CREATE TABLE IF NOT EXISTS call_records (
@@ -156,6 +158,8 @@ func (d *DB) init() error {
 		{"sms_records", "notify_status", `ALTER TABLE sms_records ADD COLUMN notify_status TEXT DEFAULT ''`},
 		{"sms_records", "spam", `ALTER TABLE sms_records ADD COLUMN spam INTEGER DEFAULT 0`},
 		{"sms_records", "spam_rule", `ALTER TABLE sms_records ADD COLUMN spam_rule TEXT DEFAULT ''`},
+		{"login_logs", "success", `ALTER TABLE login_logs ADD COLUMN success INTEGER DEFAULT 1`},
+		{"login_logs", "reason", `ALTER TABLE login_logs ADD COLUMN reason TEXT DEFAULT ''`},
 	}
 	for _, m := range migrations {
 		if !d.hasColumn(m.table, m.column) {
@@ -547,14 +551,16 @@ type LoginLog struct {
 	Username  string `json:"username"`
 	IP        string `json:"ip"`
 	UserAgent string `json:"userAgent"`
+	Success   bool   `json:"success"`
+	Reason    string `json:"reason"`
 	LoginAt   int64  `json:"loginAt"`
 }
 
 // addLoginLog 新增一条登录日志
-func (d *DB) addLoginLog(username, ip, userAgent string) error {
+func (d *DB) addLoginLog(username, ip, userAgent string, success bool, reason string) error {
 	_, err := d.sql.Exec(
-		`INSERT INTO login_logs (username, ip, user_agent, login_at) VALUES (?, ?, ?, ?)`,
-		username, ip, userAgent, time.Now().Unix())
+		`INSERT INTO login_logs (username, ip, user_agent, success, reason, login_at) VALUES (?, ?, ?, ?, ?, ?)`,
+		username, ip, userAgent, b2i(success), reason, time.Now().Unix())
 	return err
 }
 
@@ -570,7 +576,7 @@ func (d *DB) listLoginLogs(page, pageSize int) ([]LoginLog, error) {
 		pageSize = 100
 	}
 	rows, err := d.sql.Query(
-		`SELECT id, username, ip, user_agent, login_at FROM login_logs ORDER BY id DESC LIMIT ? OFFSET ?`,
+		`SELECT id, username, ip, user_agent, success, reason, login_at FROM login_logs ORDER BY id DESC LIMIT ? OFFSET ?`,
 		pageSize, (page-1)*pageSize)
 	if err != nil {
 		return nil, err
@@ -580,9 +586,11 @@ func (d *DB) listLoginLogs(page, pageSize int) ([]LoginLog, error) {
 	var out = make([]LoginLog, 0)
 	for rows.Next() {
 		var l LoginLog
-		if err := rows.Scan(&l.ID, &l.Username, &l.IP, &l.UserAgent, &l.LoginAt); err != nil {
+		var success int
+		if err := rows.Scan(&l.ID, &l.Username, &l.IP, &l.UserAgent, &success, &l.Reason, &l.LoginAt); err != nil {
 			return nil, err
 		}
+		l.Success = success != 0
 		out = append(out, l)
 	}
 	return out, rows.Err()

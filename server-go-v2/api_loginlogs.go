@@ -55,7 +55,7 @@ func (api *API) handleLoginLogs(w http.ResponseWriter, r *http.Request) {
 	if keyword != "" {
 		filtered := make([]LoginLog, 0, len(list))
 		for _, l := range list {
-			if strings.Contains(l.IP, keyword) || strings.Contains(l.Username, keyword) || strings.Contains(l.UserAgent, keyword) {
+			if strings.Contains(l.IP, keyword) || strings.Contains(l.Username, keyword) || strings.Contains(l.UserAgent, keyword) || strings.Contains(l.Reason, keyword) {
 				filtered = append(filtered, l)
 			}
 		}

@@ -253,12 +253,14 @@ func (api *API) handleLogin(w http.ResponseWriter, r *http.Request) {
 	s := api.app.getSettings()
 	if subtle.ConstantTimeCompare([]byte(body.Username), []byte(s.Username)) != 1 ||
 		bcrypt.CompareHashAndPassword([]byte(s.Password), []byte(body.Password)) != nil {
+		// 记录登录失败：IP + 客户端信息 + 失败原因
+		_ = api.app.db.addLoginLog(body.Username, clientIP(r), r.Header.Get("User-Agent"), false, "用户名或密码错误")
 		writeJSON(w, http.StatusUnauthorized, map[string]any{"message": "用户名或密码错误"})
 		return
 	}
 
-	// 记录登录日志：IP + 客户端信息
-	_ = api.app.db.addLoginLog(s.Username, clientIP(r), r.Header.Get("User-Agent"))
+	// 记录登录成功：IP + 客户端信息
+	_ = api.app.db.addLoginLog(s.Username, clientIP(r), r.Header.Get("User-Agent"), true, "")
 
 	claims := jwt.MapClaims{
 		"username": body.Username,

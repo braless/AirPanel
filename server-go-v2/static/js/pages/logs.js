@@ -128,8 +128,8 @@ function shell() {
     </div>
     <div class="card data-card">
       <div class="data-scroll">
-        <div class="data-head" style="--cols:160px minmax(0,.8fr) minmax(0,1.6fr)">
-          <span>登录时间</span><span>来源 IP</span><span>客户端信息</span>
+        <div class="data-head" style="--cols:160px 62px minmax(0,.8fr) minmax(0,1.6fr)">
+          <span>登录时间</span><span>结果</span><span>来源 IP</span><span>客户端信息</span>
         </div>
         <div id="loginBody">${loadingState(4)}</div>
       </div>
@@ -435,8 +435,9 @@ function renderLogin() {
     return;
   }
   box.innerHTML = lg.list.map((l) => `
-    <div class="data-row" style="--cols:160px minmax(0,.8fr) minmax(0,1.6fr)">
-      <div class="cell">${fmtTime(l.loginAt)}<span class="sub">${esc(l.username)}</span></div>
+    <div class="data-row" style="--cols:160px 62px minmax(0,.8fr) minmax(0,1.6fr)">
+      <div class="cell">${fmtTime(l.loginAt)}<span class="sub">${esc(l.username)}${l.reason ? ' · ' + esc(l.reason) : ''}</span></div>
+      <div class="cell"><span class="badge ${l.success ? 'green' : 'red'}">${l.success ? '成功' : '失败'}</span></div>
       <div class="cell">${esc(l.ip || '—')}</div>
       <div class="cell" title="${esc(l.userAgent || '')}">${esc(l.userAgent || '—')}</div>
     </div>`).join('');
