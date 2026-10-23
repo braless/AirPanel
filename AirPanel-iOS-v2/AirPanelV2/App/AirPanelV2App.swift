@@ -172,6 +172,11 @@ struct RootView: View {
             }
         }
         .onChange(of: scenePhase) { _, phase in
+            // 离开前台时把当前这份数据落地，桌面上的小组件不必等下一次刷新
+            if phase == .background {
+                store.publishWidgetSnapshot()
+                return
+            }
             // 从后台回来立刻拉一次，别让用户先看到一段过期数据
             guard phase == .active, store.session != nil else { return }
             Task { await store.refreshLive() }

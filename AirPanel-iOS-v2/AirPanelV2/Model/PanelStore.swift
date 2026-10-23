@@ -28,6 +28,11 @@ final class PanelStore {
 
     private(set) var isRefreshing = false
     private(set) var lastRefresh: Date?
+
+    /// 小组件快照的「合并写入」任务（实现见 WidgetBridge）。
+    /// 首屏是 11 个请求并发回来的，逐个写会连打十几次 reloadAllTimelines，
+    /// WidgetKit 有刷新配额，桌面也只会白闪一下。
+    @ObservationIgnored var widgetPublishTask: Task<Void, Never>?
     /// 最近一次轻量刷新（前台定时器），页脚用它显示「刚刚更新」
     private(set) var lastLiveRefresh: Date?
     var loadError: String?
@@ -289,6 +294,7 @@ final class PanelStore {
         do {
             defer { loadedSections.insert(.stats) }
             stats = try await client.stats()
+            scheduleWidgetPublish()
         } catch { handle(error) }
     }
 
@@ -309,6 +315,7 @@ final class PanelStore {
             if !devices.contains(where: { $0.imei == activeDeviceID }) {
                 activeDeviceID = devices.first?.imei ?? ""
             }
+            scheduleWidgetPublish()
         } catch { handle(error) }
     }
 
@@ -322,6 +329,7 @@ final class PanelStore {
             if let idx = devices.firstIndex(where: { $0.imei == activeDeviceID }) {
                 devices[idx].telemetry = Self.telemetry(from: ov)
             }
+            scheduleWidgetPublish()
         } catch { handle(error) }
     }
 
@@ -396,6 +404,7 @@ final class PanelStore {
             calls = r.calls.map { CallRecord(wire: $0) }
             // 录音没有接口字段，按号码比对回填「有无录音」标记
             backfillRecordingFlags()
+            scheduleWidgetPublish()
         } catch { handle(error) }
     }
 
@@ -425,6 +434,7 @@ final class PanelStore {
             smsPage = 1
             smsTotal = r.total
             sms = r.sms.map { SmsRecord(wire: $0) }
+            scheduleWidgetPublish()
         } catch { handle(error) }
     }
 

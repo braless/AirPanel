@@ -37,6 +37,9 @@ struct SettingsView: View {
                 let selected = AccentTheme.shared.choice == option
                 Button {
                     withAnimation(Motion.fade) { AccentTheme.shared.choice = option }
+                    // 桌面小组件的光晕跟着主题配色走，换色后立刻重写快照，
+                    // 否则要等下一轮刷新（最长 60 秒）才变色
+                    store.publishWidgetSnapshot()
                 } label: {
                     Circle()
                         .fill(option.color)

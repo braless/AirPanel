@@ -238,10 +238,22 @@ python3 tools/mock_server.py --port 9527 --user admin --password admin123
 | 短信 | 今日短信数 + 收/发/拦截 + 最近一条 | 今日汇总 + 最近三条（含垃圾标记） |
 | 统计 | 2×2：通话 / 短信 / 任务 / 拦截 | 2×3：通话 / 未接 / 短信 / 任务 / 失败 / 拦截 |
 
-**数据怎么到桌面上**：小组件是独立进程，没有网络栈也没有 token，所以它不联网。
-App 每次 `refreshAll` / `refreshLive` 结束把结果压成一份 JSON 快照写进 App Group
-（`group.com.oaife.airpanel.v2`），写完立刻 `WidgetCenter.reloadAllTimelines()`；
-小组件只读这份快照，另留 20 分钟兜底刷新。退出登录会清掉快照，桌面不会残留上一台服务器的数据。
+**数据怎么到桌面上**：小组件是独立进程，没有网络栈也没有 token，所以它**完全不联网**，
+只读 App 写进 App Group（`group.com.oaife.airpanel.v2`）的一份 JSON 快照。
+
+写入时机全部由 App 侧决定：
+
+| 时机 | 行为 |
+| --- | --- |
+| 登录成功 → `refreshAll()` | 设备 / 通话 / 短信 / 统计任一接口落地就排一次写入，400 毫秒内连续到达的合并成一次 |
+| 刷新收尾、前台定时 `refreshLive()` | 立刻落地一次，顺便取消还没触发的合并写入 |
+| 切到后台（`scenePhase == .background`） | 把内存里这份直接落地，桌面不用等下一轮 |
+| 换主题配色 | 立刻重写，小组件的光晕跟着变色 |
+| 退出登录 | `WidgetSnapshotStore.clear()`，桌面不残留上一台服务器的数据 |
+
+所以「登录后桌面就有最近新增的通话和短信」不需要等整轮 11 个请求跑完——
+设备与通话/短信先到的那批已经够画一屏，统计里没到的字段有本地计数兜底。
+每次写完立刻 `WidgetCenter.reloadAllTimelines()`，小组件另留 20 分钟兜底刷新（只为更新时间戳）。
 
 几个刻意的取舍：
 

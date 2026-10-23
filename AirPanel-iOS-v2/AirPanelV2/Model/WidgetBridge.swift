@@ -9,8 +9,25 @@ import Foundation
 
 extension PanelStore {
 
-    /// 刷新结束后调用。中途写会把「一半数据」推上桌面，所以只在收尾处调。
+    /// 数据一到就排一次写入，但同一批里只落一次盘。
+    /// 登录后首屏 11 个请求是并发的：设备 1.5 秒到、通话 2 秒到、统计 4 秒到，
+    /// 每个都直接写的话桌面会连闪三四次，还白吃 WidgetKit 的刷新配额。
+    /// 400 毫秒内连续到达的合并成一次；先到的那批（设备 + 最近通话/短信）
+    /// 已经够画一屏了，不必等全量跑完——统计里没到的字段有本地兜底。
+    func scheduleWidgetPublish() {
+        widgetPublishTask?.cancel()
+        widgetPublishTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(400))
+            guard !Task.isCancelled else { return }
+            self?.publishWidgetSnapshot()
+        }
+    }
+
+    /// 立刻落地（刷新收尾、切到后台时调用），顺便取消还没触发的那次合并写入。
     func publishWidgetSnapshot() {
+        widgetPublishTask?.cancel()
+        widgetPublishTask = nil
+
         guard session != nil, client != nil else {
             // 没登录就把桌面上的旧数据清掉，否则退出登录后小组件还在显示上一台服务器
             WidgetSnapshotStore.clear()
