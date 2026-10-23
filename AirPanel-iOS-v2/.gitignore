@@ -1,7 +1,8 @@
 # Xcode / 构建产物
 build/
-build-sim/
-build-ipa/
+# 各种 -derivedDataPath 的产物目录（build-sim / build-ipa / build-dd …），
+# 统一用前缀匹配，免得每次换个目录名就往库里灌 100 多兆缓存
+build-*/
 dist/
 DerivedData/
 *.xcuserstate
