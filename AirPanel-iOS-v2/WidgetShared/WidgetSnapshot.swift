@@ -12,7 +12,7 @@ import WidgetKit
 
 enum WidgetShared {
     /// 必须在 App 与 Widget 的 entitlements 里都声明，否则两边看到的是两个沙盒
-    static let appGroup = "group.com.oaife.airpanel.v2"
+    static let appGroup = "group.0b7900bd78d571ad.1"
     /// 存储 key 带版本号：以后字段变了直接换 key，老快照自动作废，不用写迁移
     static let storageKey = "widget.snapshot.v2"
     /// Widget 的 kind，必须和 `AppIntentConfiguration(kind:)` 一致

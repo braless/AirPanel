@@ -6,7 +6,7 @@
 	     两边必须声明同一个 group，否则各写各的沙盒，小组件永远读不到数据。 -->
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.com.oaife.airpanel.v2</string>
+		<string>group.0b7900bd78d571ad.1</string>
 	</array>
 </dict>
 </plist>

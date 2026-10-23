@@ -83,12 +83,18 @@ codesign -dv build-ipa/Build/Products/Release-iphoneos/AirPanelV2.app/PlugIns/Ai
 
 ### 关于 App Group（小组件能不能读到数据）
 
-App 与小组件靠 App Group（`group.com.oaife.airpanel.v2`）共享那份快照，而 App Group 属于
+App 与小组件靠 App Group（`group.0b7900bd78d571ad.1`）共享那份快照，而 App Group 属于
 **签名时注入的 entitlements**，不在二进制里。所以：
 
 - 未签名包里没有任何 entitlements，**重签的一方必须在描述文件里带上 App Group**；
 - 描述文件不支持 App Group 时（例如免费 Apple ID），小组件照样能装上、能显示，
   但会一直停在「打开 AirPanel 同步一次」——这不是代码问题，是权限没给。
+
+这个 group 的取值必须落在签名描述文件的 `application-groups` 里，当前值取自 IMEDTRUST
+那份 profile（`group.0b7900bd78d571ad.1` ~ `.5`）。换证书签名时**三处要一起改**：
+`Support/AirPanelV2.entitlements`、`Support/AirPanelWidgets.entitlements`、
+`WidgetShared/WidgetSnapshot.swift` 里的 `WidgetShared.appGroup`——三处不一致，
+App 和扩展就会各写各的沙盒。
 
 如果签名方需要自己注入，`Support/` 下备好了两份 entitlements，**先签内嵌 appex 再签外层 App**
 （顺序反了外层会把内层签名改坏）：
@@ -254,7 +260,7 @@ python3 tools/mock_server.py --port 9527 --user admin --password admin123
 | 统计 | 2×2：通话 / 短信 / 任务 / 拦截 | 2×3：通话 / 未接 / 短信 / 任务 / 失败 / 拦截 |
 
 **数据怎么到桌面上**：小组件是独立进程，没有网络栈也没有 token，所以它**完全不联网**，
-只读 App 写进 App Group（`group.com.oaife.airpanel.v2`）的一份 JSON 快照。
+只读 App 写进 App Group（`group.0b7900bd78d571ad.1`）的一份 JSON 快照。
 
 写入时机全部由 App 侧决定：
 
