@@ -64,26 +64,41 @@ xcodebuild -project AirPanelV2.xcodeproj -scheme AirPanelV2 -configuration Relea
 
 APP=build-ipa/Build/Products/Release-iphoneos/AirPanelV2.app
 
-# ad-hoc 签名并带上 App Group。这一步不能省：
-# 不签的话 entitlements 不会进二进制，小组件读不到 App Group，永远停在「打开 AirPanel」。
-# 先签内嵌的 appex，再签外层 App（顺序反了外层签名会被改坏）。
-codesign --force --sign - --timestamp=none \
-  --entitlements Support/AirPanelWidgets.entitlements \
-  "$APP/PlugIns/AirPanelWidgets.appex"
-codesign --force --sign - --timestamp=none \
-  --entitlements Support/AirPanelV2.entitlements "$APP"
-
 rm -rf dist && mkdir -p dist/Payload
 cp -R "$APP" dist/Payload/
 (cd dist && zip -qry -X AirPanelV2-unsigned.ipa Payload)
 ```
 
-产物 `dist/AirPanelV2-unsigned.ipa`：arm64、ad-hoc 签名（带 App Group）、最低 iOS 26.0，
+产物 `dist/AirPanelV2-unsigned.ipa`：arm64、**完全未签名**（没有 `_CodeSignature`，
+也没有 `embedded.mobileprovision`）、最低 iOS 26.0，
 `Payload/AirPanelV2.app/PlugIns/AirPanelWidgets.appex` 是小组件扩展。
 
-**包不能直接装**，需要重签（TrollStore / Sideloadly / AltStore）。注意：**App Group 需要
-描述文件里有对应能力**，免费 Apple ID 不支持 App Group，那种情况下小组件会一直显示
-「打开 AirPanel 同步一次」——用 TrollStore 安装（保留 ad-hoc 签名里的 entitlements）最稳。
+```bash
+# 复核：两处都应该是 "code object is not signed at all"
+codesign -dv build-ipa/Build/Products/Release-iphoneos/AirPanelV2.app
+codesign -dv build-ipa/Build/Products/Release-iphoneos/AirPanelV2.app/PlugIns/AirPanelWidgets.appex
+```
+
+**包不能直接装**，交给重签工具（Sideloadly / AltStore / 自建签名）处理。
+
+### 关于 App Group（小组件能不能读到数据）
+
+App 与小组件靠 App Group（`group.com.oaife.airpanel.v2`）共享那份快照，而 App Group 属于
+**签名时注入的 entitlements**，不在二进制里。所以：
+
+- 未签名包里没有任何 entitlements，**重签的一方必须在描述文件里带上 App Group**；
+- 描述文件不支持 App Group 时（例如免费 Apple ID），小组件照样能装上、能显示，
+  但会一直停在「打开 AirPanel 同步一次」——这不是代码问题，是权限没给。
+
+如果签名方需要自己注入，`Support/` 下备好了两份 entitlements，**先签内嵌 appex 再签外层 App**
+（顺序反了外层会把内层签名改坏）：
+
+```bash
+codesign --force --sign - --timestamp=none \
+  --entitlements Support/AirPanelWidgets.entitlements "$APP/PlugIns/AirPanelWidgets.appex"
+codesign --force --sign - --timestamp=none \
+  --entitlements Support/AirPanelV2.entitlements "$APP"
+```
 
 ## 登录与凭据
 
