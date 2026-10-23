@@ -139,6 +139,8 @@ final class PanelStore {
         session = nil
         client = nil
         reset()
+        // 桌面上的小组件不能还挂着上一台服务器的设备与通话
+        WidgetSnapshotStore.clear()
     }
 
     private func reset() {
@@ -217,6 +219,8 @@ final class PanelStore {
         backfillRecordingFlags()
 
         lastRefresh = Date()
+        // 桌面小组件只读快照，这里顺手把这一轮结果推过去
+        publishWidgetSnapshot()
     }
 
     /// 轻量刷新：只更新「会自己变」的几项，给前台定时器用。
@@ -229,6 +233,7 @@ final class PanelStore {
             { await self.refreshDevices() }
         ], width: 3)
         lastLiveRefresh = Date()
+        publishWidgetSnapshot()
     }
 
     /// 限流并发：最多 width 个任务同时在飞，完成一个补一个

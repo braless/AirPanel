@@ -39,6 +39,18 @@ struct RootGate: View {
 
     var body: some View {
         ZStack {
+            #if DEBUG
+            // 小组件预览：本机没法长按桌面加小组件，用同一套视图在这里渲染
+            if ProcessInfo.processInfo.arguments.contains("-widgetpreview") {
+                WidgetPreviewScreen()
+            } else if showLogin {
+                LoginView()
+                    .transition(.opacity)
+            } else {
+                RootView()
+                    .transition(.opacity)
+            }
+            #else
             if showLogin {
                 LoginView()
                     .transition(.opacity)
@@ -46,6 +58,7 @@ struct RootGate: View {
                 RootView()
                     .transition(.opacity)
             }
+            #endif
         }
         .motion(Motion.fade, value: showLogin)
         .task {

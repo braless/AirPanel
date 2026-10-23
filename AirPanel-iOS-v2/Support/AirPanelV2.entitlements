@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- App 与小组件共用的容器：App 把数据快照写进去，小组件只读它。
+	     两边必须声明同一个 group，否则各写各的沙盒，小组件永远读不到数据。 -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.oaife.airpanel.v2</string>
+	</array>
+</dict>
+</plist>

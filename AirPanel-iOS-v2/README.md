@@ -46,6 +46,8 @@ xcrun simctl launch booted com.oaife.airpanel.v2
 | `-runschedule 1` | 自动点第 2 张定时卡片的「执行任务」，验证执行中 → 回执 → 4 秒收起 |
 | `-autorefresh 10` | 把前台自动刷新间隔改成 10 秒（默认 60） |
 | `-appearance light\|dark\|system` | 强制外观（走 UserDefaults 参数域，不改偏好） |
+| `-widgetpreview` | 进「桌面小组件」预览页：四类内容 × 小/中两种尺寸，用同一套小组件视图渲染 |
+| `-wg sms` | 配合 `-widgetpreview`，把某个中尺寸卡片滚到屏幕上方（device/calls/sms/stats） |
 | `-bottom` | 概览 / 通信页滚到底部 |
 
 ## 打包未签名 IPA
@@ -61,16 +63,27 @@ xcodebuild -project AirPanelV2.xcodeproj -scheme AirPanelV2 -configuration Relea
   build
 
 APP=build-ipa/Build/Products/Release-iphoneos/AirPanelV2.app
+
+# ad-hoc 签名并带上 App Group。这一步不能省：
+# 不签的话 entitlements 不会进二进制，小组件读不到 App Group，永远停在「打开 AirPanel」。
+# 先签内嵌的 appex，再签外层 App（顺序反了外层签名会被改坏）。
+codesign --force --sign - --timestamp=none \
+  --entitlements Support/AirPanelWidgets.entitlements \
+  "$APP/PlugIns/AirPanelWidgets.appex"
+codesign --force --sign - --timestamp=none \
+  --entitlements Support/AirPanelV2.entitlements "$APP"
+
 rm -rf dist && mkdir -p dist/Payload
 cp -R "$APP" dist/Payload/
-find dist/Payload -name "_CodeSignature" -type d -exec rm -rf {} +
 (cd dist && zip -qry -X AirPanelV2-unsigned.ipa Payload)
 ```
 
-产物 `dist/AirPanelV2-unsigned.ipa`：arm64、未签名、最低 iOS 26.0。
+产物 `dist/AirPanelV2-unsigned.ipa`：arm64、ad-hoc 签名（带 App Group）、最低 iOS 26.0，
+`Payload/AirPanelV2.app/PlugIns/AirPanelWidgets.appex` 是小组件扩展。
 
-**未签名包不能直接安装**，需要先重签（Sideloadly / AltStore / TrollStore，
-或 `codesign` + 描述文件）。也可以只取 `Payload/AirPanelV2.app` 单独重签。
+**包不能直接装**，需要重签（TrollStore / Sideloadly / AltStore）。注意：**App Group 需要
+描述文件里有对应能力**，免费 Apple ID 不支持 App Group，那种情况下小组件会一直显示
+「打开 AirPanel 同步一次」——用 TrollStore 安装（保留 ad-hoc 签名里的 entitlements）最稳。
 
 ## 登录与凭据
 
@@ -212,6 +225,42 @@ python3 tools/mock_server.py --port 9527 --user admin --password admin123
 指令目录与 `static/js/pages/tasks.js` 的 `TASKS` 一一对应，共 18 条：
 查询 5（温度、状态、设备信息、配置、流量）、通信 7（短信、拨号、挂断、DTMF、TTS、呼转、USSD）、
 配置与系统 6（写配置、编辑配置、音量、GPIO、切卡、重启）。
+
+## 桌面小组件
+
+桌面长按 → 左上角「+」→ 搜 AirPanel，加一个；**长按已加的小组件 →「编辑小组件」→「显示内容」**
+在四种内容之间切换，尺寸在小 / 中之间切。
+
+| 内容 | 小尺寸 | 中尺寸 |
+| --- | --- | --- |
+| 设备 | 电量大字 + 电压/温度/信号 + 设备名与在线点 | 电量环 + 最多三台设备的在线状态与电量 |
+| 通话 | 今日通话数 + 呼入/呼出/未接 + 最近一通 | 今日汇总 + 最近三通（含垃圾标记） |
+| 短信 | 今日短信数 + 收/发/拦截 + 最近一条 | 今日汇总 + 最近三条（含垃圾标记） |
+| 统计 | 2×2：通话 / 短信 / 任务 / 拦截 | 2×3：通话 / 未接 / 短信 / 任务 / 失败 / 拦截 |
+
+**数据怎么到桌面上**：小组件是独立进程，没有网络栈也没有 token，所以它不联网。
+App 每次 `refreshAll` / `refreshLive` 结束把结果压成一份 JSON 快照写进 App Group
+（`group.com.oaife.airpanel.v2`），写完立刻 `WidgetCenter.reloadAllTimelines()`；
+小组件只读这份快照，另留 20 分钟兜底刷新。退出登录会清掉快照，桌面不会残留上一台服务器的数据。
+
+几个刻意的取舍：
+
+- **四类内容共用一个 Widget 配置**，而不是做四个小组件：四个会占满小组件库，用户想换内容还得先删再加。
+- **底板不透明**：WidgetKit 里没有实时模糊，半透明底叠在浅色壁纸上会让深色文字读不出来，
+  所以用一层浅/深动态底色 + 主色渐变光晕（跟着设置里的主题配色走）。
+- **预览数据一律用占位**：小组件库里的预览是给别人看的，不该出现真实号码和短信正文。
+- 边距自己算（`contentMarginsDisabled`），否则中组件右侧会多出一圈系统留白。
+
+文件分布（`WidgetShared/` 是同一个 `PBXFileSystemSynchronizedRootGroup` 挂在两个 target 上，
+所以 App 和扩展编译的是同一份视图代码，不会出现「预览和桌面长得不一样」）：
+
+```
+WidgetShared/WidgetSnapshot.swift   快照模型 + App Group 读写（两边都编）
+WidgetShared/WidgetViews.swift      四类内容 × 小/中 的全部布局（两边都编）
+AirPanelWidgets/                    扩展 target：WidgetBundle + AppIntent + TimelineProvider
+AirPanelV2/Model/WidgetBridge.swift App 侧：把 PanelStore 压成快照
+AirPanelV2/Features/WidgetPreviewScreen.swift  -widgetpreview 调试页（仅 Debug）
+```
 
 ## 设计系统
 
@@ -356,6 +405,7 @@ python3 tools/mock_server.py --port 9527 --user admin --password admin123
 | 账户头像 | ✅ 服务端 `brand.avatar` 有值时账户卡正常渲染（图床直链 / 站内相对路径 / base64 三种都支持）；界面设置可改 |
 | 服务端运行时间 | ✅ 概览标题右边显示「· 🖥 1 天 1 小时」（只留图标 + 时长），取自 `/api/stats/summary` 的 `uptimeSec` |
 | 定时任务手动执行 | ✅ `-runschedule 1` 实测：按钮 → 转圈「执行中」→ 绿色 `{"temp":33.8,"unit":"C"}`，4 秒后收起；把 mock 设备置离线后同一按钮回红色「设备当前离线」 |
+| 桌面小组件 | ✅ 扩展注册成功（`pluginkit -m -p com.apple.widgetkit-extension` 列出 `com.oaife.airpanel.v2.widgets`）；`-widgetpreview` 四类 × 小/中 全部渲染正常，数据来自 App Group 快照 |
 
 ## 已知取舍
 
@@ -404,3 +454,6 @@ python3 tools/mock_server.py --port 9527 --user admin --password admin123
 | `29-overview-uptime-light.png` | 浅色模式下同一位置（小点与图标跟标题同基线） |
 | `30-schedule-run-ok.png` | 定时卡片「执行任务」成功回执（绿色 `{"temp":33.8,"unit":"C"}`） |
 | `31-schedule-run-offline.png` | 定时卡片执行失败（红色「设备当前离线」） |
+| `32-widgets-preview-dark.png` | 小组件预览页（深色）：小尺寸四类 + 中尺寸设备/通话 |
+| `33-widgets-medium-dark.png` | 小组件预览页：中尺寸 设备 / 通话 / 短信 / 统计 四种 |
+| `34-widgets-preview-light.png` | 小组件预览页（浅色），核对底板对比度 |
