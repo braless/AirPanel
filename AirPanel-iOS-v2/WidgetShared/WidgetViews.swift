@@ -99,7 +99,9 @@ struct WidgetContent: View {
     @Environment(\.widgetFamily) private var envFamily
 
     private var family: WidgetFamily { familyOverride ?? envFamily }
-    private var data: WidgetSnapshot { snapshot ?? .preview }
+    /// 快照读到就用快照；读不到时**不要**拿示例数据糊弄，
+    /// 明确显示「打开 AirPanel 同步」空态，这样用户能立刻看出是「数据没同步」而不是「组件坏了」。
+    private var data: WidgetSnapshot { snapshot ?? .empty }
     private var accent: Color { WidgetTheme.accent(data.accent) }
     private var isMedium: Bool { family == .systemMedium }
 

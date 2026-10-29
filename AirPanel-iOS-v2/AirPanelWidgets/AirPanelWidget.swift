@@ -1,49 +1,13 @@
-import AppIntents
 import SwiftUI
 import WidgetKit
 
-// MARK: - 可选内容
+// MARK: - 小组件（经典 TimelineProvider）
 //
-// 用户长按桌面 →「编辑小组件」→「显示内容」里看到的就是这三个。
-// 用 AppEnum 而不是自由文本：枚举能出选择器，用户不用打字。
-
-enum WidgetKindOption: String, AppEnum {
-    case device
-    case calls
-    case sms
-    case stats
-
-    static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "显示内容")
-
-    static var caseDisplayRepresentations: [WidgetKindOption: DisplayRepresentation] = [
-        .device: DisplayRepresentation(title: "设备信息",
-                                       subtitle: "电量、电压、温度、信号",
-                                       image: .init(systemName: "iphone.gen3")),
-        .calls: DisplayRepresentation(title: "通话信息",
-                                      subtitle: "今日通话与最近三通",
-                                      image: .init(systemName: "phone.fill")),
-        .sms: DisplayRepresentation(title: "短信息",
-                                    subtitle: "今日短信与最近三条",
-                                    image: .init(systemName: "message.fill")),
-        .stats: DisplayRepresentation(title: "消息统计",
-                                      subtitle: "通话 / 短信 / 任务 / 拦截",
-                                      image: .init(systemName: "chart.bar.fill"))
-    ]
-
-    var kind: WidgetKind { WidgetKind(rawValue: rawValue) ?? .device }
-}
-
-struct AirPanelWidgetIntent: WidgetConfigurationIntent {
-    static var title: LocalizedStringResource = "AirPanel 小组件"
-    static var description = IntentDescription("选择小组件显示的内容；尺寸在系统的「小 / 中」之间切换。")
-
-    @Parameter(title: "显示内容", default: .device)
-    var kind: WidgetKindOption
-
-    init() {}
-}
-
-// MARK: - 时间线
+// 旧版用 AppIntentConfiguration 在部分侧载环境下渲染空白（能添加、有选择器，
+// 但桌面 timeline 不绘制）。这里改回 v1 验证过可用的经典方式：
+// `TimelineProvider` + `StaticConfiguration`，由 4 个独立小组件组成 WidgetBundle，
+// 每个固定显示一类内容（设备 / 通话 / 短信 / 统计）。
+// 数据来源统一是 App 写进 App Group 的快照（WidgetSnapshotStore.load()）。
 
 struct AirPanelEntry: TimelineEntry {
     let date: Date
@@ -51,53 +15,86 @@ struct AirPanelEntry: TimelineEntry {
     let snapshot: WidgetSnapshot?
 }
 
-struct AirPanelProvider: AppIntentTimelineProvider {
+struct AirPanelProvider: TimelineProvider {
+    let kind: WidgetKind
 
     func placeholder(in context: Context) -> AirPanelEntry {
-        AirPanelEntry(date: .now, kind: .device, snapshot: .preview)
+        // 小组件库里的预览用示例数据，好看；真实桌面走 getSnapshot/getTimeline。
+        AirPanelEntry(date: .now, kind: kind, snapshot: .preview)
     }
 
-    func snapshot(for configuration: AirPanelWidgetIntent, in context: Context) async -> AirPanelEntry {
-        // 小组件库里展示的预览一律用占位数据：
-        // 那里是给别人看的，不该出现真实的通话号码和短信内容。
-        AirPanelEntry(
-            date: .now,
-            kind: configuration.kind.kind,
-            snapshot: context.isPreview ? .preview : WidgetSnapshotStore.load()
-        )
+    func getSnapshot(in context: Context, completion: @escaping (AirPanelEntry) -> Void) {
+        // 小组件库预览给示例数据；真实桌面读共享快照。
+        completion(AirPanelEntry(date: .now, kind: kind,
+                                 snapshot: context.isPreview ? .preview : WidgetSnapshotStore.load()))
     }
 
-    func timeline(for configuration: AirPanelWidgetIntent, in context: Context) async -> Timeline<AirPanelEntry> {
-        let entry = AirPanelEntry(
-            date: .now,
-            kind: configuration.kind.kind,
-            snapshot: WidgetSnapshotStore.load()
-        )
+    func getTimeline(in context: Context, completion: @escaping (Timeline<AirPanelEntry>) -> Void) {
+        let entry = AirPanelEntry(date: .now, kind: kind, snapshot: WidgetSnapshotStore.load())
         // 快照只在 App 刷新时变，App 写完会主动 reloadAllTimelines；
-        // 这里仍留 20 分钟兜底，免得系统长期不给刷新机会时时间显示停在很久以前。
-        return Timeline(entries: [entry], policy: .after(Date().addingTimeInterval(20 * 60)))
+        // 这里留 20 分钟兜底，避免系统长期不给刷新机会时时间停在很久以前。
+        completion(Timeline(entries: [entry], policy: .after(Date().addingTimeInterval(20 * 60))))
     }
 }
 
-// MARK: - 小组件
+// MARK: - 4 个独立小组件
 
-struct AirPanelWidget: Widget {
+struct DeviceWidget: Widget {
     var body: some WidgetConfiguration {
-        AppIntentConfiguration(
-            kind: WidgetShared.widgetKind,
-            intent: AirPanelWidgetIntent.self,
-            provider: AirPanelProvider()
-        ) { entry in
+        StaticConfiguration(kind: "AirPanelDevice", provider: AirPanelProvider(kind: .device)) { entry in
             WidgetContent(snapshot: entry.snapshot, kind: entry.kind)
                 .containerBackground(for: .widget) {
                     WidgetBackground(accent: WidgetTheme.accent(entry.snapshot?.accent ?? "blue"))
                 }
         }
-        .configurationDisplayName("AirPanel")
-        .description("设备状态、通话、短信与消息统计。长按小组件 →「编辑小组件」可切换显示内容。")
+        .configurationDisplayName("设备信息")
+        .description("设备状态：电量、电压、温度、信号")
         .supportedFamilies([.systemSmall, .systemMedium])
-        // 边距自己算（WidgetContent 里有 padding），关掉系统的默认边距，
-        // 否则中组件右侧会多出一圈空白。
+        .contentMarginsDisabled()
+    }
+}
+
+struct CallsWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "AirPanelCalls", provider: AirPanelProvider(kind: .calls)) { entry in
+            WidgetContent(snapshot: entry.snapshot, kind: entry.kind)
+                .containerBackground(for: .widget) {
+                    WidgetBackground(accent: WidgetTheme.accent(entry.snapshot?.accent ?? "blue"))
+                }
+        }
+        .configurationDisplayName("通话信息")
+        .description("今日通话与最近三通")
+        .supportedFamilies([.systemSmall, .systemMedium])
+        .contentMarginsDisabled()
+    }
+}
+
+struct SmsWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "AirPanelSms", provider: AirPanelProvider(kind: .sms)) { entry in
+            WidgetContent(snapshot: entry.snapshot, kind: entry.kind)
+                .containerBackground(for: .widget) {
+                    WidgetBackground(accent: WidgetTheme.accent(entry.snapshot?.accent ?? "blue"))
+                }
+        }
+        .configurationDisplayName("短信息")
+        .description("今日短信与最近三条")
+        .supportedFamilies([.systemSmall, .systemMedium])
+        .contentMarginsDisabled()
+    }
+}
+
+struct StatsWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "AirPanelStats", provider: AirPanelProvider(kind: .stats)) { entry in
+            WidgetContent(snapshot: entry.snapshot, kind: entry.kind)
+                .containerBackground(for: .widget) {
+                    WidgetBackground(accent: WidgetTheme.accent(entry.snapshot?.accent ?? "blue"))
+                }
+        }
+        .configurationDisplayName("消息统计")
+        .description("通话 / 短信 / 任务 / 拦截")
+        .supportedFamilies([.systemSmall, .systemMedium])
         .contentMarginsDisabled()
     }
 }
